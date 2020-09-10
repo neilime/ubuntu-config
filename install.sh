@@ -1,9 +1,12 @@
 #!/bin/bash
 
 ppas=( ppa:utappia/stable )
-softwares=( ucaresystem-core )
+aptSoftwares=( ucaresystem-core )
+snapSoftwares=( code spotify )
 
-###################
+# Install zsh
+sh -c "$(wget https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O -)"
+
 # Install PPAs #
 for i in "${ppas[@]}"
 do 
@@ -13,24 +16,43 @@ do
   fi
 done
 
-# Check for non installed softwares
-softwaresToInstall=""
-for i in "${softwares[@]}"
+# Check for non installed apt softwares
+aptSoftwaresToInstall=""
+for i in "${aptSoftwares[@]}"
 do 
-   if ! hash ucaresystem-core >/dev/null 2>&1; then
-     softwaresToInstall="${softwaresToInstall} $i"
+   if ! hash "$i" >/dev/null 2>&1; then
+     aptSoftwaresToInstall="${aptSoftwaresToInstall} $i"
    fi
 done
 
-if [ -n "$softwaresToInstall" ]
+if [ -n "$aptSoftwaresToInstall" ]
 then
- echo "Installing $softwaresToInstall..."
+ echo "Installing $aptSoftwaresToInstall..."
  
  sudo apt update
- sudo apt install -y "$softwaresToInstall"
+ sudo apt install -y "$aptSoftwaresToInstall"
  
  echo "Installation done"
 fi
 
+# Check for non installed snap softwares
+snapSoftwaresToInstall=""
+for i in "${snapSoftwares[@]}"
+do 
+   if ! hash "$i" >/dev/null 2>&1; then
+     snapSoftwaresToInstall="${snapSoftwaresToInstall} $i"
+   fi
+done
+
+if [ -n "$snapSoftwaresToInstall" ]
+then
+ echo "Installing $snapSoftwaresToInstall..."
+ 
+ sudo snap install --classic "$snapSoftwaresToInstall"
+ 
+ echo "Installation done"
+fi
+
+
 echo "Cleaning..."
-sudo ucaresystem-core
+# sudo ucaresystem-core
