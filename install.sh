@@ -27,7 +27,7 @@ then
  echo "Installing $softwaresToInstall..."
  
  sudo apt update
- sudo apt install "$softwaresToInstall"
+ sudo apt install -y "$softwaresToInstall"
  
  echo "Installation done"
 fi
