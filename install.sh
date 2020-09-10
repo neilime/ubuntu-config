@@ -22,12 +22,12 @@ do
    fi
 done
 
-if [ ! -z "$softwaresToInstall" ]
+if [ -n "$softwaresToInstall" ]
 then
  echo "Installing $softwaresToInstall..."
  
  sudo apt update
- sudo apt install $softwaresToInstall
+ sudo apt install "$softwaresToInstall"
  
  echo "Installation done"
 fi
