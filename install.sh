@@ -7,9 +7,9 @@ softwares=( ucaresystem-core )
 # Install PPAs #
 for i in "${ppas[@]}"
 do 
-  if ! grep -q "^deb .*$the_ppa" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
+  if ! grep -q "^deb .*$i" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
     echo "Adding $i PPA"
-    sudo apt-add-repository $i -y
+    sudo apt-add-repository "$i" -y
   fi
 done
 
