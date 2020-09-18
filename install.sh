@@ -74,6 +74,12 @@ zsh -i -c "$(wget https://starship.rs/install.sh -O -)" '' -f
 
 wget https://raw.github.com/neilime/ubuntu-config/master/zshrc -O ~/.zshrc
 
+# Configure git
+wget https://raw.github.com/neilime/ubuntu-config/master/gitconfig -O ~/.gitconfig
+
+# Create default directories
+mkdir -p ~/Documents/dev-projects
+
 echo "Cleaning..."
 sudo ucaresystem-core
 

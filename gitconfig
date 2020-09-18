@@ -1,0 +1,11 @@
+[core]
+    editor = code --wait
+[diff]
+    tool = default-difftool
+    
+[difftool "default-difftool"]
+    cmd = code --wait --diff $LOCAL $REMOTE
+
+[user]
+	name = Emilien Escalle
+	email = emilien.escalle@escemi.com
