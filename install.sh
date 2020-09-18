@@ -2,7 +2,7 @@
 
 ppas=( utappia/stable )
 aptSoftwares=( ucaresystem-core git zsh copyq bat yarn chromium-browser )
-snapSoftwares=( code spotify )
+snapSoftwares=( code spotify slack snowflake )
 
 echo "Start installation..."
 
@@ -75,7 +75,7 @@ zsh -i -c "$(wget https://starship.rs/install.sh -O -)" '' -f
 wget https://raw.github.com/neilime/ubuntu-config/master/zshrc -O ~/.zshrc
 
 echo "Cleaning..."
-#sudo ucaresystem-core
+sudo ucaresystem-core
 
 echo "Installation done"
 
