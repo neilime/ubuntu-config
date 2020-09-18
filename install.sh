@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 ppas=( utappia/stable )
 aptSoftwares=( ucaresystem-core git zsh copyq bat yarn chromium-browser )
 snapSoftwares=( code spotify slack snowflake )
@@ -54,6 +56,9 @@ done
 # Install nvm
 wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
 
+# Prevents antigen error
+rm -f ~/.antigen/.lock
+
 # Install oh-my-zsh
 if [ ! -f ~/.zshrc ] && [ ! -h ~/.zshrc ]; then 
   sh -c "$(wget https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O -)"
@@ -62,10 +67,10 @@ else
 fi
 
 # Setup nerdfont
-# wget https://github.com/ryanoasis/nerd-fonts/releases/latest/download/FiraCode.zip -P /tmp
-# unzip -o /tmp/FiraCode.zip -d ~/.fonts
-# rm -f /tmp/FiraCode.zip
-# fc-cache -fv
+wget https://github.com/ryanoasis/nerd-fonts/releases/latest/download/FiraCode.zip -P /tmp
+unzip -o /tmp/FiraCode.zip -d ~/.fonts
+rm -f /tmp/FiraCode.zip
+fc-cache -fv
 
 # Setup antigen & starship
 wget git.io/antigen -O ~/antigen.zsh
