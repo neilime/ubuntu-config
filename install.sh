@@ -85,6 +85,10 @@ wget https://raw.github.com/neilime/ubuntu-config/master/gitconfig -O ~/.gitconf
 # Create default directories
 mkdir -p ~/Documents/dev-projects
 
+# Configure autostart
+mkdir q -p ~/.config/autostart;
+wget https://raw.github.com/neilime/ubuntu-config/master/config/autostart/sh.desktop -O ~/.config/autostart/sh.desktop
+
 echo "Cleaning..."
 sudo ucaresystem-core
 
