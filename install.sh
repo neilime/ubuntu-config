@@ -11,7 +11,7 @@ aptSoftwares=( \
   # Common tools
   bat zsh copyq \
   # Apps
-  chromium-browser
+  chromium-browser wine
   # Common dev
   git docker-ce docker-ce-cli containerd.io \
   # Js dev
