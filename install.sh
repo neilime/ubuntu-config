@@ -1,6 +1,12 @@
-#!/bin/bash
-
+#!/bin/bash --init-file
 set -e
+
+# If not running interactively, don't do anything
+[ -z "$PS1" ] && echo "$0 must be running interactively" &&  exit 1 
+
+# Versions
+DOCKER_COMPOSE_VERSION=1.27.4 # https://github.com/docker/compose/releases/latest
+NVM_VERSION=0.36.0 # https://github.com/nvm-sh/nvm/releases/latest
 
 ppas=( utappia/stable )
 aptKeys=(https://download.docker.com/linux/ubuntu/gpg https://dl.yarnpkg.com/debian/pubkey.gpg)
@@ -11,7 +17,7 @@ aptSoftwares=( \
   # Common tools
   bat zsh copyq \
   # Apps
-  chromium-browser wine
+  chromium-browser
   # Common dev
   git docker-ce docker-ce-cli containerd.io \
   # Js dev
@@ -20,6 +26,7 @@ aptSoftwares=( \
   php-curl php-gd php-intl php-json php-mbstring php-xml php-zip php-cli \
 )
 snapSoftwares=( code spotify slack snowflake )
+yarnGlobalPackages=( blitz gatsby-cli )
 
 echo "Start installation..."
 
@@ -87,6 +94,19 @@ do
    fi
 done
 
+# Install yarn global packages
+for i in "${yarnGlobalPackages[@]}"
+do 
+  if ! grep -q "\"$i\"" "~/.config/yarn/global/package.json"; then
+    echo "Installing Yarn global package $i..."
+    yarn global add "$i"
+    echo "Yarn global package installation done"
+  fi
+done
+
+# Upgrade yarn global packages
+yarn global upgrade-interactive --latest
+
 # Docker post-install
 if ! grep -q docker /etc/group; then
   sudo groupadd docker   
@@ -97,11 +117,15 @@ if ! getent group docker | grep -q "\b${USER}\b"; then
 fi
 
 # Install docker-compose
-sudo wget "https://github.com/docker/compose/releases/download/1.26.0/docker-compose-$(uname -s)-$(uname -m)" -O /usr/local/bin/docker-compose
+sudo wget "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -O /usr/local/bin/docker-compose
 sudo chmod +x /usr/local/bin/docker-compose
 
 # Install nvm
-wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
+wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v$NVM_VERSION/install.sh | bash
+
+source ~/.bashrc
+
+nvm install --lts
 
 # Install composer
 sudo wget -qO-  https://getcomposer.org/installer | php
@@ -120,6 +144,7 @@ else
 fi
 
 # Setup nerdfont
+rm -f /tmp/FiraCode.zip
 wget https://github.com/ryanoasis/nerd-fonts/releases/latest/download/FiraCode.zip -P /tmp
 unzip -o /tmp/FiraCode.zip -d ~/.fonts
 rm -f /tmp/FiraCode.zip
