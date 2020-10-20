@@ -25,7 +25,7 @@ aptSoftwares=( \
   # Php
   php-curl php-gd php-intl php-json php-mbstring php-xml php-zip php-cli \
 )
-snapSoftwares=( code spotify slack snowflake )
+snapSoftwares=( code spotify slack snowflake jdownloader2 )
 yarnGlobalPackages=( blitz gatsby-cli )
 
 echo "Start installation..."
