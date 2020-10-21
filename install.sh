@@ -171,6 +171,9 @@ mkdir -p ~/.config/autostart;
 wget https://raw.github.com/neilime/ubuntu-config/master/.dot/config/autostart/sh.desktop -O ~/.config/autostart/sh.desktop
 
 echo "Cleaning..."
+
+yarn cache clean --all
+docker system prune
 sudo ucaresystem-core
 
 echo "Installation done"
