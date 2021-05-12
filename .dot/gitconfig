@@ -9,3 +9,6 @@
 [user]
 	name = Emilien Escalle
 	email = emilien.escalle@escemi.com
+
+[pull]
+	rebase = true

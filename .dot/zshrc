@@ -1,10 +1,16 @@
-# Load Antigen
-source ~/antigen.zsh
+export ZSH="/home/emilien/.oh-my-zsh"
 
-# Load Antigen configurations
-antigen init ~/.antigenrc
-
+# Initialize starship
 eval "$(starship init zsh)"
+
+# Plugins to install
+plugins=( thefuck git yarn nvm command-not-found docker docker-compose composer aws) 
+
+source $ZSH/oh-my-zsh.sh
+
+# Configure plugins
+
+export NVM_AUTOLOAD=1
 
 # Aliases
 

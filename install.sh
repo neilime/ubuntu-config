@@ -5,28 +5,37 @@ set -e
 [ -z "$PS1" ] && echo "$0 must be running interactively" &&  exit 1 
 
 # Versions
-DOCKER_COMPOSE_VERSION=1.27.4 # https://github.com/docker/compose/releases/latest
-NVM_VERSION=0.36.0 # https://github.com/nvm-sh/nvm/releases/latest
+get_latest_release() {
+  wget -q "https://api.github.com/repos/$1/releases/latest" -O - | # Get latest release from GitHub api
+    grep '"tag_name":' |                                            # Get tag line
+    sed -E 's/.*"([^"]+)".*/\1/'                                    # Pluck JSON value
+}
+
+REPOSITORY_URL=https://raw.github.com/neilime/ubuntu-config/master
+
+NVM_VERSION=$(get_latest_release "nvm-sh/nvm") # https://github.com/nvm-sh/nvm/releases/latest
 
 ppas=( utappia/stable )
 aptKeys=(https://download.docker.com/linux/ubuntu/gpg https://dl.yarnpkg.com/debian/pubkey.gpg)
 aptKeyFingerprints=( 0EBFCD88 )
 aptSoftwares=( \
   # System
-  ucaresystem-core apt-transport-https ca-certificates gnupg-agent software-properties-common \
+  ucaresystem-core localepurge apt-transport-https ca-certificates gnupg-agent software-properties-common \
   # Common tools
-  bat zsh copyq \
+  bat zsh copyq thefuck \
+  # Needed by thefuck (https://bugs.launchpad.net/ubuntu/+source/thefuck/+bug/1875178)
+  python3-distutils \
   # Apps
   chromium-browser
   # Common dev
   git docker-ce docker-ce-cli containerd.io \
   # Js dev
-  npm yarn \
+  yarn \
   # Php
   php-curl php-gd php-intl php-json php-mbstring php-xml php-zip php-cli \
 )
-snapSoftwares=( code spotify slack snowflake jdownloader2 )
-yarnGlobalPackages=( blitz gatsby-cli )
+snapSoftwares=( code spotify slack snowflake jdownloader2 vlc )
+yarnGlobalPackages=( gatsby-cli )
 
 echo "Start installation..."
 
@@ -38,6 +47,13 @@ do
     sudo apt-add-repository "ppa:$i" -y
   fi
 done
+
+# Install nvm
+wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/$NVM_VERSION/install.sh | bash
+
+source ~/.bashrc
+
+nvm install 'lts/*' --reinstall-packages-from=current --latest-npm
 
 # Install APT keys
 for i in "${aptKeys[@]}"
@@ -74,15 +90,19 @@ do
   fi
 done
 
+# Upgrade APT packages
+sudo apt-get update
+sudo apt-get upgrade -y
+
 if [ -n "$aptSoftwaresToInstall" ]
 then
  echo "Installing apt $aptSoftwaresToInstall..."
 
- sudo apt-get update
  sudo apt-get install -y $aptSoftwaresToInstall
- 
- echo "Apt installation done"
+
+ echo "APT installation done"
 fi
+
 
 # Install snap softwares
 for i in "${snapSoftwares[@]}"
@@ -93,6 +113,9 @@ do
      echo "Snap installation done"
    fi
 done
+
+# Upgrade Snap packages
+sudo snap refresh
 
 # Install yarn global packages
 for i in "${yarnGlobalPackages[@]}"
@@ -107,6 +130,9 @@ done
 # Upgrade yarn global packages
 yarn global upgrade-interactive --latest
 
+# Fix System limit for number of file watchers reached
+echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
+
 # Docker post-install
 if ! grep -q docker /etc/group; then
   sudo groupadd docker   
@@ -120,19 +146,9 @@ fi
 sudo wget "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -O /usr/local/bin/docker-compose
 sudo chmod +x /usr/local/bin/docker-compose
 
-# Install nvm
-wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v$NVM_VERSION/install.sh | bash
-
-source ~/.bashrc
-
-nvm install --lts
-
 # Install composer
 sudo wget -qO-  https://getcomposer.org/installer | php
 sudo mv composer.phar /usr/local/bin/composer
-
-# Prevents antigen error
-rm -f ~/.antigen/.lock
 
 # Install oh-my-zsh
 if [ ! -f ~/.zshrc ] && [ ! -h ~/.zshrc ]; then 
@@ -150,15 +166,13 @@ unzip -o /tmp/FiraCode.zip -d ~/.fonts
 rm -f /tmp/FiraCode.zip
 fc-cache -fv
 
-# Setup antigen & starship
-wget git.io/antigen -O ~/antigen.zsh
-wget https://raw.github.com/neilime/ubuntu-config/master/.dot/antigenrc -O ~/.antigenrc
-zsh -i -c "$(wget https://starship.rs/install.sh -O -)" '' -f
+# Setup starship
+sh -i -c "$(wget https://starship.rs/install.sh -O -)" '' -f
 
-wget https://raw.github.com/neilime/ubuntu-config/master/.dot/zshrc -O ~/.zshrc
+wget $REPOSITORY_URL/.dot/zshrc -O ~/.zshrc
 
 # Configure git
-wget https://raw.github.com/neilime/ubuntu-config/master/.dot/gitconfig -O ~/.gitconfig
+wget $REPOSITORY_URL/.dot/gitconfig -O ~/.gitconfig
 
 # Configure CopyQ
 sed -i '/^\[Shortcuts\]$/,/^\[/ s/^show_clipboard_content\s*=.*/show_clipboard_content=ctrl+shift+c/' ~/.config/copyq/copyq.conf
@@ -168,13 +182,23 @@ mkdir -p ~/Documents/dev-projects
 
 # Configure autostart
 mkdir -p ~/.config/autostart;
-wget https://raw.github.com/neilime/ubuntu-config/master/.dot/config/autostart/sh.desktop -O ~/.config/autostart/sh.desktop
+wget $REPOSITORY_URL/.dot/config/autostart/sh.desktop -O ~/.config/autostart/sh.desktop
 
 echo "Cleaning..."
 
+# Remove globally packages installed with npm
+NPM_GLOBAL_PACKAGES=$(npm ls -gp --depth=0 | awk -F/ '/node_modules/ && !/\/npm$/ {print $NF}');
+[ ! -z "$NPM_GLOBAL_PACKAGES" ] && npm -g rm $NPM_GLOBAL_PACKAGES;
+
+# Clear caches
 yarn cache clean --all
-docker system prune
-sudo ucaresystem-core
+nvm cache clear
+npm cache clean --force 
+
+# Clear useless docker resources
+sudo docker system prune --force
+
+sudo ucaresystem-core -u
 
 echo "Installation done"
 
