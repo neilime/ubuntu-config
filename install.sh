@@ -35,7 +35,6 @@ aptSoftwares=( \
   php-curl php-gd php-intl php-json php-mbstring php-xml php-zip php-cli \
 )
 snapSoftwares=( code spotify slack snowflake jdownloader2 vlc )
-yarnGlobalPackages=( gatsby-cli )
 
 echo "Start installation..."
 
@@ -117,19 +116,6 @@ done
 # Upgrade Snap packages
 sudo snap refresh
 
-# Install yarn global packages
-for i in "${yarnGlobalPackages[@]}"
-do 
-  if ! grep -q "\"$i\"" "~/.config/yarn/global/package.json"; then
-    echo "Installing Yarn global package $i..."
-    yarn global add "$i"
-    echo "Yarn global package installation done"
-  fi
-done
-
-# Upgrade yarn global packages
-yarn global upgrade-interactive --latest
-
 # Fix System limit for number of file watchers reached
 echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
 
@@ -189,6 +175,10 @@ echo "Cleaning..."
 # Remove globally packages installed with npm
 NPM_GLOBAL_PACKAGES=$(npm ls -gp --depth=0 | awk -F/ '/node_modules/ && !/\/npm$/ {print $NF}');
 [ ! -z "$NPM_GLOBAL_PACKAGES" ] && npm -g rm $NPM_GLOBAL_PACKAGES;
+
+# Remove globally packages installed with yarn
+YARN_GLOBAL_PACKAGES=$(yarn global list  | awk -F\" '/info "/ {print $2}' | awk -F@ '{print $1}');
+[ ! -z "$YARN_GLOBAL_PACKAGES" ] && yarn global remove $YARN_GLOBAL_PACKAGES;
 
 # Clear caches
 yarn cache clean --all
