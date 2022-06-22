@@ -1,4 +1,4 @@
-#!/bin/bash --init-file
+#!/bin/bash -i --init-file
 set -e
 
 # If not running interactively, don't do anything
