@@ -22,7 +22,7 @@ aptSoftwares=( \
   # System
   ucaresystem-core localepurge apt-transport-https ca-certificates gnupg-agent software-properties-common \
   # Common tools
-  bat zsh copyq thefuck make \
+  curl bat zsh copyq thefuck make \
   # Needed by thefuck (https://bugs.launchpad.net/ubuntu/+source/thefuck/+bug/1875178)
   python3-distutils \
   # Apps
@@ -32,7 +32,7 @@ aptSoftwares=( \
   # Js dev
   yarn \
   # Php
-  php-curl php-gd php-intl php-json php-mbstring php-xml php-zip php-cli \
+  php-zip php-cli \
 )
 snapSoftwares=( code spotify slack snowflake jdownloader2 vlc htop )
 
