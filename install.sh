@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+{ # this ensures the entire script is downloaded #
+
 #################################################################################################
 #                                       SETUP                                                   #
 #################################################################################################
@@ -28,8 +30,6 @@ aptSoftwares=( \
 snapSoftwares=( code spotify slack snowflake jdownloader2 vlc htop )
 
 REPOSITORY_URL=https://raw.github.com/neilime/ubuntu-config/main
-
-{ # this ensures the entire script is downloaded #
 
 #################################################################################################
 #                                       INSTALLATION                                            #
@@ -119,7 +119,7 @@ install_apt() {
   then
    utils_echo "Installing apt $aptSoftwaresToInstall..."
 
-   sudo apt-get install -y "$aptSoftwaresToInstall"
+   sudo apt-get install -y $aptSoftwaresToInstall
 
    utils_echo "APT installation done"
   fi
