@@ -27,7 +27,7 @@ aptSoftwares=( \
   # Php
   php-zip php-cli \
 )
-snapSoftwares=( code spotify slack snowflake jdownloader2 vlc htop )
+snapSoftwares=( code spotify slack jdownloader2 vlc htop )
 
 REPOSITORY_URL=https://raw.github.com/neilime/ubuntu-config/main
 
