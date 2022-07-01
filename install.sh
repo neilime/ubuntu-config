@@ -101,8 +101,9 @@ install_apt() {
   # Check for non installed apt softwares
   aptSoftwaresToInstall=""
   for i in "${aptSoftwares[@]}"
-  do 
-    if [ $(dpkg-query -W -f='${Status}' "$i" 2>/dev/null | grep -c "ok installed") -eq 0 ];
+  do
+    INSTALLED_PACKAGE=$(dpkg-query -W -f='${Status}' "$i" 2>/dev/null | grep -c "ok installed")
+    if [ "$INSTALLED_PACKAGE" -eq 0 ];
     then
        aptSoftwaresToInstall="${aptSoftwaresToInstall} $i"
     fi
@@ -206,11 +207,11 @@ do_cleaning() {
 
   # Remove globally packages installed with npm
   NPM_GLOBAL_PACKAGES=$(npm ls -gp --depth=0 | awk -F/ '/node_modules/ && !/\/npm$/ {print $NF}');
-  [ ! -z "$NPM_GLOBAL_PACKAGES" ] && npm -g rm $NPM_GLOBAL_PACKAGES;
+  [ -n "$NPM_GLOBAL_PACKAGES" ] && npm -g rm $NPM_GLOBAL_PACKAGES;
 
   # Remove globally packages installed with yarn
   YARN_GLOBAL_PACKAGES=$(yarn global list  | awk -F\" '/info "/ {print $2}' | awk -F@ '{print $1}');
-  [ ! -z "$YARN_GLOBAL_PACKAGES" ] && yarn global remove $YARN_GLOBAL_PACKAGES;
+  [ -n "$YARN_GLOBAL_PACKAGES" ] && yarn global remove $YARN_GLOBAL_PACKAGES;
 
   # Clear caches
   yarn cache clean --all
