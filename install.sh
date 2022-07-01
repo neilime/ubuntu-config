@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-{ # this ensures the entire script is downloaded #
-
 #################################################################################################
 #                                       SETUP                                                   #
 #################################################################################################
@@ -9,6 +7,8 @@
 ppas=( utappia/stable )
 aptKeys=(https://download.docker.com/linux/ubuntu/gpg https://dl.yarnpkg.com/debian/pubkey.gpg)
 aptKeyFingerprints=( 0EBFCD88 )
+
+
 aptSoftwares=( \
   # System
   ucaresystem-core localepurge apt-transport-https ca-certificates gnupg-agent software-properties-common \
@@ -28,6 +28,8 @@ aptSoftwares=( \
 snapSoftwares=( code spotify slack snowflake jdownloader2 vlc htop )
 
 REPOSITORY_URL=https://raw.github.com/neilime/ubuntu-config/main
+
+{ # this ensures the entire script is downloaded #
 
 #################################################################################################
 #                                       INSTALLATION                                            #
