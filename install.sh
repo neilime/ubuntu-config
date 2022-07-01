@@ -65,7 +65,7 @@ install_ppas() {
 # Install nvm
 install_nvm() {
   NVM_VERSION=$(get_latest_release "nvm-sh/nvm") # https://github.com/nvm-sh/nvm/releases/latest
-  wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/$NVM_VERSION/install.sh | bash
+  wget -qO- "https://raw.githubusercontent.com/nvm-sh/nvm/$NVM_VERSION/install.sh" | bash
 
   source ~/.bashrc
 
@@ -76,15 +76,15 @@ install_apt() {
   # Install APT keys
   for i in "${aptKeys[@]}"
   do 
-    echo "Adding APT key $i"
-    wget -qO- $i | sudo apt-key add -
+    utils_echo "Adding APT key $i"
+    wget -qO- "$i" | sudo apt-key add -
   done
 
   # Install APT key fingerprints
   for i in "${aptKeyFingerprints[@]}"
   do 
-    echo "Adding APT key fingerprint $i"
-    sudo apt-key fingerprint $i
+    utils_echo "Adding APT key fingerprint $i"
+    sudo apt-key fingerprint "$i"
   done
 
   # Configure Docker Debian package repository
@@ -102,7 +102,7 @@ install_apt() {
   aptSoftwaresToInstall=""
   for i in "${aptSoftwares[@]}"
   do 
-    if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ];
+    if [ $(dpkg-query -W -f='${Status}' "$i" 2>/dev/null | grep -c "ok installed") -eq 0 ];
     then
        aptSoftwaresToInstall="${aptSoftwaresToInstall} $i"
     fi
@@ -114,11 +114,11 @@ install_apt() {
 
   if [ -n "$aptSoftwaresToInstall" ]
   then
-   echo "Installing apt $aptSoftwaresToInstall..."
+   utils_echo "Installing apt $aptSoftwaresToInstall..."
 
-   sudo apt-get install -y $aptSoftwaresToInstall
+   sudo apt-get install -y "$aptSoftwaresToInstall"
 
-   echo "APT installation done"
+   utils_echo "APT installation done"
   fi
 }
 
@@ -127,9 +127,9 @@ install_snap() {
   for i in "${snapSoftwares[@]}"
   do 
      if ! hash "$i" >/dev/null 2>&1; then
-       echo "Installing snap $i..."
+       utils_echo "Installing snap $i..."
        sudo snap install --classic "$i"
-       echo "Snap installation done"
+       utils_echo "Snap installation done"
      fi
   done
 
@@ -144,7 +144,7 @@ install_docker() {
   fi
 
   if ! getent group docker | grep -q "\b${USER}\b"; then
-    sudo usermod -aG docker $USER
+    sudo usermod -aG docker "$USER"
   fi
 
   # Install docker-compose
