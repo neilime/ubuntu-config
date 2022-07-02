@@ -202,6 +202,9 @@ install_configuration() {
   # Configure autostart
   mkdir -p ~/.config/autostart;
   wget $REPOSITORY_URL/.dot/config/autostart/sh.desktop -O ~/.config/autostart/sh.desktop
+  
+  # Configure default applications
+  xdg-settings set default-web-browser chromium-browser.desktop
 }
 
 do_cleaning() {
