@@ -193,9 +193,6 @@ install_configuration() {
   # Configure git
   wget $REPOSITORY_URL/.dot/gitconfig -O ~/.gitconfig
 
-  # Configure CopyQ
-  sed -i '/^\[Shortcuts\]$/,/^\[/ s/^show_clipboard_content\s*=.*/show_clipboard_content=ctrl+shift+c/' ~/.config/copyq/copyq.conf
-
   # Create default directories
   mkdir -p ~/Documents/dev-projects
 
