@@ -69,6 +69,7 @@ install_nvm() {
   NVM_VERSION=$(get_latest_release "nvm-sh/nvm") # https://github.com/nvm-sh/nvm/releases/latest
   wget -qO- "https://raw.githubusercontent.com/nvm-sh/nvm/$NVM_VERSION/install.sh" | bash
 
+  # shellcheck disable=SC1090
   source ~/.bashrc
 
   nvm install 'lts/*' --reinstall-packages-from=current --latest-npm
@@ -117,11 +118,12 @@ install_apt() {
 
   if [ -n "$aptSoftwaresToInstall" ]
   then
-   utils_echo "Installing apt $aptSoftwaresToInstall..."
+    utils_echo "Installing apt $aptSoftwaresToInstall..."
 
-   sudo apt-get install -y $aptSoftwaresToInstall
+    # shellcheck disable=SC2086
+    sudo apt-get install -y $aptSoftwaresToInstall
 
-   utils_echo "APT installation done"
+    utils_echo "APT installation done"
   fi
 }
 
@@ -219,10 +221,12 @@ do_cleaning() {
 
   # Remove globally packages installed with npm
   NPM_GLOBAL_PACKAGES=$(npm ls -gp --depth=0 | awk -F/ '/node_modules/ && !/\/npm$/ {print $NF}');
+  # shellcheck disable=SC2086
   [ -n "$NPM_GLOBAL_PACKAGES" ] && npm -g rm $NPM_GLOBAL_PACKAGES;
 
   # Remove globally packages installed with yarn
   YARN_GLOBAL_PACKAGES=$(yarn global list  | awk -F\" '/info "/ {print $2}' | awk -F@ '{print $1}');
+  # shellcheck disable=SC2086
   [ -n "$YARN_GLOBAL_PACKAGES" ] && yarn global remove $YARN_GLOBAL_PACKAGES;
 
   # Clear caches
