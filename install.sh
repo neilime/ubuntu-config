@@ -205,6 +205,10 @@ install_configuration() {
   
   # Configure default applications
   xdg-settings set default-web-browser chromium-browser.desktop
+  
+  # Configure appearance
+  gsettings set org.gnome.desktop.interface color-scheme prefer-dark
+
 }
 
 do_cleaning() {
