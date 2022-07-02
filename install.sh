@@ -205,7 +205,10 @@ install_configuration() {
   
   # Configure appearance
   gsettings set org.gnome.desktop.interface color-scheme prefer-dark
-
+  
+  # Configure copyq
+  copyq --start-server
+  copyq eval "var cmds = commands();cmds.find(command => command.internalId === 'copyq_global_toggle').globalShortcuts = ['ctrl+shift+v'];setCommands(cmds)"
 }
 
 do_cleaning() {
