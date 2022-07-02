@@ -19,7 +19,7 @@ aptSoftwares=( \
   # Needed by thefuck (https://bugs.launchpad.net/ubuntu/+source/thefuck/+bug/1875178)
   python3-distutils \
   # Apps
-  chromium-browser
+  chromium-browser simple-scan
   # Common dev
   git docker-ce docker-ce-cli containerd.io \
   # Js dev
