@@ -203,6 +203,9 @@ install_configuration() {
   # Configure default applications
   xdg-settings set default-web-browser chromium-browser.desktop
   
+  # Configure favorite applications
+  gsettings set org.gnome.shell favorite-apps "['gnome-control-center.desktop', 'snap-store_ubuntu-software.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Terminal.desktop', 'chromium_chromium.desktop', 'code_code.desktop', 'slack_slack.desktop', 'spotify_spotify.desktop']"
+  
   # Configure appearance
   gsettings set org.gnome.desktop.interface color-scheme prefer-dark
   
@@ -247,6 +250,8 @@ do_install() {
   install_configuration
   
   utils_echo "Installation done"
+  
+  do_cleaning
 }
 
 do_install
