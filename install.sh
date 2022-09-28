@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+set -e -o pipefail
+set -x
+
 { # this ensures the entire script is downloaded #
 
 #################################################################################################
@@ -10,12 +13,13 @@ ppas=( utappia/stable )
 aptKeys=(https://download.docker.com/linux/ubuntu/gpg https://dl.yarnpkg.com/debian/pubkey.gpg)
 aptKeyFingerprints=( 0EBFCD88 )
 
-
 aptSoftwares=( \
+  # Cleaning
+  localepurge ucaresystem-core \
   # System
-  ucaresystem-core localepurge apt-transport-https ca-certificates gnupg-agent software-properties-common \
+  apt-transport-https ca-certificates gnupg-agent software-properties-common ubuntu-release-upgrader-core gnome-shell-extensions \
   # Common tools
-  curl bat zsh copyq thefuck make \
+  wget curl unzip bat zsh copyq thefuck make \
   # Needed by thefuck (https://bugs.launchpad.net/ubuntu/+source/thefuck/+bug/1875178)
   python3-distutils \
   # Apps
@@ -29,7 +33,12 @@ aptSoftwares=( \
 )
 snapSoftwares=( deja-dup code spotify slack jdownloader2 vlc htop )
 
-REPOSITORY_URL=https://raw.github.com/neilime/ubuntu-config/main
+timezone="Europe/Paris"
+locale="en_US.UTF-8"
+
+if [ -e "$REPOSITORY_URL" ]; then
+  REPOSITORY_URL=https://raw.github.com/neilime/ubuntu-config/main
+fi
 
 #################################################################################################
 #                                       INSTALLATION                                            #
@@ -40,17 +49,59 @@ utils_echo() {
   command printf %s\\n "$*" 2>/dev/null
 }
 
-if [ -z "${BASH_VERSION}" ] || [ -n "${ZSH_VERSION}" ]; then
-  # shellcheck disable=SC2016
-  utils_echo >&2 'Error: the install instructions explicitly say to pipe the install script to `bash`; please follow them'
-  exit 1
-fi
+utils_try_with_attempts() {
 
+  # Retrieve command from arguments
+  COMMAND="$*"
+  # Try 3 attempts
+  attempts=0
+  while [ $attempts -lt 3 ]; do
+    set +e
+    # Execute command
+    eval "$COMMAND"
+    COMMAND_RESULT=$?
+    set -e
+    if [ $COMMAND_RESULT -eq 0 ]; then
+      break
+    fi
+
+    sleep 3
+    attempts=$((attempts+1))
+    if [ $attempts -eq 3 ]; then
+      utils_echo >&2 "Error: failed to run command"
+      exit 1
+    fi
+    
+  done
+}
+
+check_requirements() {
+  utils_echo "Checking requirements..."
+  if [ -z "${BASH_VERSION}" ] || [ -n "${ZSH_VERSION}" ]; then
+    # shellcheck disable=SC2016
+    utils_echo >&2 'Error: the install instructions explicitly say to pipe the install script to `bash`; please follow them'
+    exit 1
+  fi
+}
 
 get_latest_release() {
   wget -q "https://api.github.com/repos/$1/releases/latest" -O - | # Get latest release from GitHub api
     grep '"tag_name":' |                                            # Get tag line
     sed -E 's/.*"([^"]+)".*/\1/'                                    # Pluck JSON value
+}
+
+install_localization() {
+
+  if [ ! -f /etc/localtime ]; then
+    sudo ln -snf /usr/share/zoneinfo/$timezone /etc/localtime
+  fi
+
+  if [ ! -f /etc/timezone ]; then
+    echo "$timezone" | sudo tee -a /etc/timezone
+  fi
+
+  sudo locale-gen --purge "$locale"
+  sudo dpkg-reconfigure -f noninteractive localepurge
 }
 
 # Install PPAs
@@ -69,16 +120,18 @@ install_nvm() {
   NVM_VERSION=$(get_latest_release "nvm-sh/nvm") # https://github.com/nvm-sh/nvm/releases/latest
   wget -qO- "https://raw.githubusercontent.com/nvm-sh/nvm/$NVM_VERSION/install.sh" | bash
 
-  # shellcheck disable=SC1090
-  source ~/.bashrc
+  NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")";
+  # shellcheck disable=SC1091
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh";
 
   nvm install 'lts/*' --reinstall-packages-from=current --latest-npm
 }
 
 install_apt() {
+
   # Install APT keys
   for i in "${aptKeys[@]}"
-  do 
+  do
     utils_echo "Adding APT key $i"
     wget -qO- "$i" | sudo apt-key add -
   done
@@ -101,29 +154,35 @@ install_apt() {
     echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
   fi
 
+  # Upgrade APT packages
+  sudo apt -yqq update
+  sudo apt -yqq upgrade
+
   # Check for non installed apt softwares
+  utils_echo "Check for non installed apt softwares..."
   aptSoftwaresToInstall=""
   for i in "${aptSoftwares[@]}"
   do
+    set +e
     INSTALLED_PACKAGE=$(dpkg-query -W -f='${Status}' "$i" 2>/dev/null | grep -c "ok installed")
+    set -e
     if [ "$INSTALLED_PACKAGE" -eq 0 ];
     then
        aptSoftwaresToInstall="${aptSoftwaresToInstall} $i"
     fi
   done
 
-  # Upgrade APT packages
-  sudo apt-get update
-  sudo apt-get upgrade -y
-
   if [ -n "$aptSoftwaresToInstall" ]
   then
-    utils_echo "Installing apt $aptSoftwaresToInstall..."
+    for i in "${aptSoftwaresToInstall[@]}"
+    do 
+      utils_echo "Installing apt $i..."
+      utils_try_with_attempts sudo DEBIAN_FRONTEND=noninteractive apt -yq install "$i"
+      utils_echo "APT installation of $i done"
+    done
 
-    # shellcheck disable=SC2086
-    sudo apt-get install -y $aptSoftwaresToInstall
-
-    utils_echo "APT installation done"
+  else
+    utils_echo "No APT software to install"
   fi
 }
 
@@ -131,11 +190,11 @@ install_snap() {
   # Install snap softwares
   for i in "${snapSoftwares[@]}"
   do 
-     if ! hash "$i" >/dev/null 2>&1; then
-       utils_echo "Installing snap $i..."
-       sudo snap install --classic "$i"
-       utils_echo "Snap installation done"
-     fi
+    if ! hash "$i" >/dev/null 2>&1; then
+      utils_echo "Installing snap $i..."
+      utils_try_with_attempts sudo DEBIAN_FRONTEND=noninteractive snap install --classic "$i"       
+      utils_echo "Snap installation of $i done"
+    fi
   done
 
   # Upgrade Snap packages
@@ -213,12 +272,10 @@ install_configuration() {
   
   # Configure copyq
   copyq --start-server
-  copyq eval "var cmds = commands();cmds.find(command => command.internalId === 'copyq_global_toggle').globalShortcuts = ['ctrl+shift+v'];setCommands(cmds)"
+  copyq eval "var cmds = commands();var cmd = cmds.find(command => command.internalId === 'copyq_global_toggle'); if(cmd){cmd.globalShortcuts = ['ctrl+shift+v'];}setCommands(cmds)"
 }
 
 do_cleaning() {
-  utils_echo "Cleaning..."
-
   # Remove globally packages installed with npm
   NPM_GLOBAL_PACKAGES=$(npm ls -gp --depth=0 | awk -F/ '/node_modules/ && !/\/npm$/ {print $NF}');
   # shellcheck disable=SC2086
@@ -237,17 +294,21 @@ do_cleaning() {
   # Clear useless docker resources
   sudo docker system prune --force
 
+  sudo localepurge
+  set +e
   sudo ucaresystem-core -u
+  set -e
 }
 
 do_install() {
   utils_echo "Start installation..."
 
   install_ppas
-  install_nvm
   install_apt
-  install_snap
+  install_localization
+  # install_snap
   install_docker
+  install_nvm
   install_php
   install_fonts
   install_zsh
@@ -255,7 +316,9 @@ do_install() {
   
   utils_echo "Installation done"
   
+  utils_echo "Start cleaning..."
   do_cleaning
+  utils_echo "Cleaning done"
 }
 
 do_install
