@@ -9,12 +9,24 @@ on:
       - main
 
 jobs:
-  build:
+  checks:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-        
-      - name: Shell Linter
-        uses: azohra/shell-linter@v0.6.0
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Lint Code Base
+        uses: github/super-linter/slim@v4
+        env:
+          VALIDATE_ALL_CODEBASE: false
+          LOG_LEVEL: WARN
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - run: make build
+      - run: make run
+      - run: make test-ci
 
