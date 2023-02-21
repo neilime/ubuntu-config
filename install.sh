@@ -9,10 +9,6 @@ set -x
 #                                       SETUP                                                   #
 #################################################################################################
 
-ppas=( utappia/stable )
-aptKeys=(https://download.docker.com/linux/ubuntu/gpg https://dl.yarnpkg.com/debian/pubkey.gpg)
-aptKeyFingerprints=( 0EBFCD88 )
-
 aptSoftwares=( \
   # Cleaning
   localepurge ucaresystem-core \
@@ -25,9 +21,7 @@ aptSoftwares=( \
   # Apps
   chromium-browser simple-scan krita
   # Common dev
-  git docker-ce docker-ce-cli containerd.io \
-  # Js dev
-  yarn \
+  git \
   # Php
   php-zip php-cli \
 )
@@ -36,8 +30,8 @@ snapSoftwares=( deja-dup code spotify slack jdownloader2 vlc htop )
 timezone="Europe/Paris"
 locale="en_US.UTF-8"
 
-if [ -e "$REPOSITORY_URL" ]; then
-  REPOSITORY_URL=https://raw.github.com/neilime/ubuntu-config/main
+if [ -z "$REPOSITORY_URL" ]; then
+  export REPOSITORY_URL=https://raw.github.com/neilime/ubuntu-config/main
 fi
 
 #################################################################################################
@@ -75,6 +69,24 @@ utils_try_with_attempts() {
   done
 }
 
+utils_download_repository_file() {
+  if [ -z "$1" ]; then
+    utils_echo >&2 "Error: missing file name"
+    exit 1
+  fi
+  if [ -z "$2" ]; then
+    utils_echo >&2 "Error: missing destination"
+    exit 1
+  fi
+
+  if [ -z "$REPOSITORY_URL" ]; then
+    utils_echo >&2 "Error: missing REPOSITORY_URL"
+    exit 1
+  fi
+
+  wget "$REPOSITORY_URL/$1" -O "$2"
+}
+
 check_requirements() {
   utils_echo "Checking requirements..."
   if [ -z "${BASH_VERSION}" ] || [ -n "${ZSH_VERSION}" ]; then
@@ -104,56 +116,8 @@ install_localization() {
   sudo dpkg-reconfigure -f noninteractive localepurge
 }
 
-# Install PPAs
-install_ppas() {
-  for i in "${ppas[@]}"
-  do 
-    if ! grep -q "^deb .*$i" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
-      utils_echo "Adding $i PPA"
-      sudo apt-add-repository "ppa:$i" -y
-    fi
-  done
-}
-
-# Install nvm
-install_nvm() {
-  NVM_VERSION=$(get_latest_release "nvm-sh/nvm") # https://github.com/nvm-sh/nvm/releases/latest
-  wget -qO- "https://raw.githubusercontent.com/nvm-sh/nvm/$NVM_VERSION/install.sh" | bash
-
-  NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")";
-  # shellcheck disable=SC1091
-  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh";
-
-  nvm install 'lts/*' --reinstall-packages-from=current --latest-npm
-}
-
+# Install APT softwares
 install_apt() {
-
-  # Install APT keys
-  for i in "${aptKeys[@]}"
-  do
-    utils_echo "Adding APT key $i"
-    wget -qO- "$i" | sudo apt-key add -
-  done
-
-  # Install APT key fingerprints
-  for i in "${aptKeyFingerprints[@]}"
-  do 
-    utils_echo "Adding APT key fingerprint $i"
-    sudo apt-key fingerprint "$i"
-  done
-
-  # Configure Docker Debian package repository
-  sudo add-apt-repository \
-    "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-    $(lsb_release -cs) \
-    stable"
-
-  # Configure Yarn Debian package repository
-  if [ ! -f /etc/apt/sources.list.d/yarn.list ]; then 
-    echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-  fi
-
   # Upgrade APT packages
   sudo apt -yqq update
   sudo apt -yqq upgrade
@@ -186,8 +150,8 @@ install_apt() {
   fi
 }
 
+# Install snap softwares
 install_snap() {
-  # Install snap softwares
   for i in "${snapSoftwares[@]}"
   do 
     if ! hash "$i" >/dev/null 2>&1; then
@@ -202,6 +166,15 @@ install_snap() {
 }
 
 install_docker() {
+  sudo mkdir -p /etc/apt/keyrings
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --batch --yes --dearmor -o /etc/apt/keyrings/docker.gpg
+
+  echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+  utils_try_with_attempts sudo DEBIAN_FRONTEND=noninteractive apt -yq install docker-ce docker-ce-cli containerd.io
+
   # Docker post-install
   if ! grep -q docker /etc/group; then
     sudo groupadd docker   
@@ -216,10 +189,32 @@ install_docker() {
   sudo chmod +x /usr/local/bin/docker-compose
 }
 
+# Install nvm
+install_nvm() {
+  NVM_VERSION=$(get_latest_release "nvm-sh/nvm") # https://github.com/nvm-sh/nvm/releases/latest
+  wget -qO- "https://raw.githubusercontent.com/nvm-sh/nvm/$NVM_VERSION/install.sh" | bash
+
+  NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")";
+  # shellcheck disable=SC1091
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh";
+
+  nvm install 'lts/*' --reinstall-packages-from=current --latest-npm
+}
+
+# Install yarn
+install_yarn() {
+  if ! hash yarn >/dev/null 2>&1; then
+    utils_echo "Installing yarn..."
+    curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+    echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+    sudo apt update && sudo apt install --no-install-recommends yarn
+    utils_echo "Installation of yarn done"
+  fi
+}
+
 install_php() {
   # Install composer
-  sudo wget -qO-  https://getcomposer.org/installer | php
-  sudo mv composer.phar /usr/local/bin/composer
+  sudo wget -qO-  https://getcomposer.org/installer | sudo php -- --install-dir=/usr/local/bin --filename=composer
 }
 
 install_fonts() {
@@ -233,12 +228,26 @@ install_fonts() {
 
 # Install oh-my-zsh
 install_zsh() {
+
+  ZSH_CONFIG_EXISTS=true
   if [ ! -f ~/.zshrc ] && [ ! -h ~/.zshrc ]; then 
+    ZSH_CONFIG_EXISTS=false
+  fi
+
+  OMZ_COMMAND_EXISTS=false
+  if command -v omz &> /dev/null; then
+    OMZ_COMMAND_EXISTS=true
+  fi
+
+  # Install oh-my-zsh if config dose exist or omz command does not exist
+  if [ "$ZSH_CONFIG_EXISTS" = false ]; then
+    utils_echo "Installing oh-my-zsh..."
     sh -c "$(wget https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O -)"
-  else 
-    if command -v omz &> /dev/null; then
-      zsh -i -c "omz update"
-    fi
+    utils_echo "Installation of oh-my-zsh done"
+  fi
+  
+  if [ "$OMZ_COMMAND_EXISTS" = true ]; then
+    zsh -i -c "omz update"
   fi
 
   # Setup starship
@@ -249,17 +258,17 @@ install_configuration() {
   # Fix System limit for number of file watchers reached
   echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
 
-  wget $REPOSITORY_URL/.dot/zshrc -O ~/.zshrc
+  utils_download_repository_file ".dot/zshrc" ~/.zshrc
 
   # Configure git
-  wget $REPOSITORY_URL/.dot/gitconfig -O ~/.gitconfig
+  utils_download_repository_file ".dot/gitconfig" ~/.gitconfig
 
   # Create default directories
   mkdir -p ~/Documents/dev-projects
 
   # Configure autostart
   mkdir -p ~/.config/autostart;
-  wget $REPOSITORY_URL/.dot/config/autostart/sh.desktop -O ~/.config/autostart/sh.desktop
+  utils_download_repository_file ".dot/config/autostart/sh.desktop" ~/.config/autostart/sh.desktop
   
   # Configure default applications
   xdg-settings set default-web-browser chromium-browser.desktop
@@ -303,12 +312,12 @@ do_cleaning() {
 do_install() {
   utils_echo "Start installation..."
 
-  install_ppas
   install_apt
   install_localization
-  # install_snap
+  install_snap
   install_docker
   install_nvm
+  install_yarn
   install_php
   install_fonts
   install_zsh

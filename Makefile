@@ -27,7 +27,7 @@ test:
 	@$(call exec, bash "/test.sh")
 
 test-ci:
-	@docker exec -t  ubuntu-config bash "/test.sh"
+	@docker exec ubuntu-config bash "/test.sh"
 
 clean:
 	@docker rm -f ubuntu-config
@@ -45,8 +45,6 @@ lint: ## Execute linting (https://github.com/github/super-linter)
 ## Run ubuntu
 define exec
 	docker exec -it -u $(shell id -u):$(shell id -g) ubuntu-config $(1)
-
-	
 endef
 
 #############################
