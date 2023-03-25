@@ -9,8 +9,8 @@ plugins=( thefuck git yarn nvm command-not-found docker docker-compose composer 
 source $ZSH/oh-my-zsh.sh
 
 # Configure plugins
-
-export NVM_AUTOLOAD=1
+zstyle ':omz:update' mode auto
+zstyle ':omz:plugins:nvm' autoload yes
 
 # Aliases
 
