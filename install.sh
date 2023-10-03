@@ -84,6 +84,22 @@ utils_download_repository_file() {
     exit 1
   fi
 
+  FILE_URL="$REPOSITORY_URL/$1"
+  DESTINATION_PATH="$2"
+
+  # Check if destination file exists
+  if [ -f "$DESTINATION_PATH" ]; then
+    # If remote file is different from local file, prompt user to replace it
+    if ! wget -q --spider "$FILE_URL" || ! diff -q "$DESTINATION_PATH" <(wget -q -O - "$FILE_URL"); then
+      utils_echo "File $DESTINATION_PATH already exists and is different from remote file $FILE_URL"
+      read -p "Do you want to replace it? [y/N] " -n 1 -r
+      echo
+      if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        return
+      fi
+    fi    
+  fi
+
   wget "$REPOSITORY_URL/$1" -O "$2"
 }
 
@@ -312,15 +328,15 @@ do_cleaning() {
 do_install() {
   utils_echo "Start installation..."
 
-  install_apt
-  install_localization
-  install_snap
-  install_docker
-  install_nvm
-  install_yarn
-  install_php
-  install_fonts
-  install_zsh
+  # install_apt
+  # install_localization
+  # install_snap
+  # install_docker
+  # install_nvm
+  # install_yarn
+  # install_php
+  # install_fonts
+  # install_zsh
   install_configuration
   
   utils_echo "Installation done"
