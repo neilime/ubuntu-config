@@ -18,3 +18,6 @@
 
 [push]
 	autoSetupRemote = true
+
+[includeIf "gitdir:~/Documents/dev-projects/clients/allopneus/**"]
+	path = ~/Documents/dev-projects/clients/allopneus/.git/.gitconfig
