@@ -1,0 +1,180 @@
+name: Shared - Continuous Integration for common tasks
+
+on:
+  workflow_call:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # super-linter needs the full git history to get the
+          # list of files that changed across commits
+          fetch-depth: 0
+
+      - name: Super-linter
+        uses: super-linter/super-linter@v5.7.2 # x-release-please-version
+        continue-on-error: true # FIXME: lint issues must tbe fixed
+        env:
+          DEFAULT_BRANCH: main
+          # To report GitHub Actions status checks
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-ci:
+    needs: lint
+    # FIXME: This is a workaround for having workflow actions. See https://github.com/orgs/community/discussions/38659
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
+      issues: read
+      pull-requests: read
+    uses: hoverkraft-tech/ci-github-container/.github/workflows/docker-build-images.yml@0.14.4
+    with:
+      oci-registry: ${{ vars.OCI_REGISTRY }}
+      images: |
+        [
+          {
+            "name": "ansible-ci",
+            "context": ".",
+            "dockerfile": "Dockerfile.ansible",
+            "target": "ci",
+            "platforms": ["linux/amd64"]
+          },
+          {
+            "name": "test-ci",
+            "context": ".",
+            "dockerfile": "Dockerfile.test",
+            "platforms": ["linux/amd64"]
+          }
+        ]
+    secrets:
+      oci-registry-password: ${{ secrets.GITHUB_TOKEN }}
+
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    needs: build-ci
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # super-linter needs the full git history to get the
+          # list of files that changed across commits
+          fetch-depth: 0
+
+      - run: make generate-ssh-key
+
+      - uses: isbang/compose-action@v1.5.1
+        with:
+          compose-file: docker-compose.ci.yml
+        env:
+          ANSIBLE_IMAGE: ${{ fromJSON(needs.build-ci.outputs.built-images).ansible-ci.images[0] }}
+          TEST_IMAGE: ${{ fromJSON(needs.build-ci.outputs.built-images).test-ci.images[0] }}
+
+      - run: docker-compose -f docker-compose.ci.yml exec -T test sh -c "cat /home/test/.ssh/ansible.pub >> /home/test/.ssh/authorized_keys"
+
+      - name: Run Ansible playbook
+        run: docker-compose -f docker-compose.ci.yml exec -T ansible ansible-playbook setup.yml --limit test
+
+      - name: Test Ansible playbook idempotence
+        continue-on-error: true # FIXME: fix non idempotent issues
+        run: |
+          docker-compose -f docker-compose.ci.yml exec -T ansible ansible-playbook setup.yml --limit test | tee /tmp/ansible-playbook-idempotence.log
+          if tail -n 2 /tmp/ansible-playbook-idempotence.log | grep -q 'changed=0.*failed=0'; then
+            echo 'Idempotence test: pass' && exit 0
+          else
+            echo 'Idempotence test: fail' && exit 1
+          fi
+
+      - name: Validate Ansible changes in host - APT packages
+        run: |
+          if docker-compose -f docker-compose.ci.yml exec -T test bash -c 'dpkg -l | grep -q "ucaresystem-core"'; then
+            echo 'APT packages installed: pass' && exit 0
+          else
+            echo 'APT packages installed: fail' && exit 1
+          fi
+
+      - name: Validate Ansible changes in host - docker
+        run: |
+          if docker-compose -f docker-compose.ci.yml exec -T test bash -c 'docker --version | grep -q "Docker"'; then
+            echo 'Docker installed: pass' && exit 0
+          else
+            echo 'Docker installed: fail' && exit 1
+          fi
+
+          if docker-compose -f docker-compose.ci.yml exec -T test bash -c 'docker-compose --version | grep -q "Docker Compose"'; then
+            echo 'Docker installed: pass' && exit 0
+          else
+            echo 'Docker installed: fail' && exit 1
+          fi
+
+      - name: Validate Ansible changes in host - zsh
+        run: |
+          if docker-compose -f docker-compose.ci.yml exec -T test bash -c 'zsh --version | grep -q "zsh"'; then
+            echo 'Zsh installed: pass' && exit 0
+          else
+            echo 'Zsh installed: fail' && exit 1
+          fi
+
+      - name: Validate Ansible changes in host - nodejs & nvm & Yarn
+        run: |
+          if docker-compose -f docker-compose.ci.yml exec -T test bash -c 'node --version | grep -Eq "^v[0-9.]+$"'; then
+            echo 'Nodejs installed: pass' && exit 0
+          else
+            echo 'Nodejs installed: fail' && exit 1
+          fi
+
+          if docker-compose -f docker-compose.ci.yml exec -T test bash -c 'nvm --version | grep -Eq "^[0-9.]+$"'; then
+            echo 'Nvm installed: pass' && exit 0
+          else
+            echo 'Nvm installed: fail' && exit 1
+          fi
+
+          if docker-compose -f docker-compose.ci.yml exec -T test bash -c 'yarn --version | grep -Eq "^[0-9.]+$"'; then
+            echo 'Yarn installed: pass' && exit 0
+          else
+            echo 'Yarn installed: fail' && exit 1
+          fi
+
+      - name: Validate Ansible changes in host - PHP & Composer
+        run: |
+          if docker-compose -f docker-compose.ci.yml exec -T test bash -c 'php --version | grep -q "PHP"'; then
+            echo 'PHP installed: pass' && exit 0
+          else
+            echo 'PHP installed: fail' && exit 1
+          fi
+
+          if docker-compose -f docker-compose.ci.yml exec -T test bash -c 'composer --version | grep -q "Composer"'; then
+            echo 'Composer installed: pass' && exit 0
+          else
+            echo 'Composer installed: fail' && exit 1
+          fi
+
+  build:
+    needs: tests
+    # FIXME: This is a workaround for having workflow actions. See https://github.com/orgs/community/discussions/38659
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
+      issues: read
+      pull-requests: read
+    uses: hoverkraft-tech/ci-github-container/.github/workflows/docker-build-images.yml@0.14.4
+    with:
+      oci-registry: ${{ vars.OCI_REGISTRY }}
+      images: |
+        [
+          {
+            "name": "ansible",
+            "context": ".",
+            "dockerfile": "Dockerfile.ansible",
+            "target": "prod",
+            "platforms": ["linux/amd64"]
+          }
+        ]
+    secrets:
+      oci-registry-password: ${{ secrets.GITHUB_TOKEN }}

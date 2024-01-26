@@ -1,0 +1,18 @@
+version: "3"
+services:
+  ansible:
+    image: ${ANSIBLE_IMAGE}
+    volumes:
+      - ./ansible:/ansible
+      - .ssh/ansible:/root/.ssh/ansible:ro
+    environment:
+      ANSIBLE_USER:
+      ANSIBLE_PASSWORD:
+
+  test:
+    image: ${TEST_IMAGE}
+    shm_size: 1024m
+    cap_add:
+      - SYS_PTRACE
+    volumes:
+      - .ssh/ansible.pub:/home/test/.ssh/ansible.pub:ro

@@ -1,0 +1,37 @@
+---
+- name: Install nvm
+  ansible.builtin.include_role:
+    name: ansible-role-nvm
+  vars:
+    nodejs_version: --lts --latest-npm
+
+- name: Install yarn
+  ansible.builtin.include_role:
+    name: Oefenweb.yarn
+
+- name: Retrieve list of globally installed Yarn packages
+  ansible.builtin.command: yarn global list --depth=0
+  register: yarn_packages_output
+  changed_when: false
+  become_user: "{{ ansible_user }}"
+
+- name: Parse list of installed Yarn packages
+  ansible.builtin.set_fact:
+    installed_packages: "{{ yarn_packages_output.stdout_lines | select('match', '^info .*@') | map('regex_replace', '^info\\s+([^@]+)@.*$', '\\1') | list }}"
+
+- name: Remove useless installed Yarn packages.
+  community.general.yarn:
+    name: "{{ item }}"
+    global: true
+    state: absent
+  loop: "{{ installed_packages }}"
+  when: item not in yarn_packages
+  become_user: "{{ ansible_user }}"
+
+- name: Install Yarn global packages
+  community.general.yarn:
+    name: "{{ item }}"
+    latest: "latest"
+    global: true
+  loop: "{{ yarn_packages }}"
+  become_user: "{{ ansible_user }}"

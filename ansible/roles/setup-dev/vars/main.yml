@@ -1,0 +1,10 @@
+---
+# Git
+git_name: ""
+git_email: ""
+git_signing_key: ""
+
+# Packages to be installed globally
+yarn_packages: []
+
+composer_packages: []

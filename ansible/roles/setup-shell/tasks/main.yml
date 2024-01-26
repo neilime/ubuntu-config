@@ -1,0 +1,30 @@
+---
+- name: Install oh-my-zsh
+  ansible.builtin.include_role:
+    name: gantsign.oh-my-zsh
+  vars:
+    oh_my_zsh_plugins: "{{ zsh_plugins }}"
+    oh_my_zsh_update_mode: auto
+    users:
+      - username: "{{ ansible_user }}"
+
+- name: Install Starship
+  ansible.builtin.include_role:
+    name: bartdorlandt.starship
+
+- name: Configure zsh plugins
+  ansible.builtin.copy:
+    dest: "/home/{{ ansible_user }}/.zshrc"
+    content: |
+      # NVM Autoload
+      zstyle ':omz:plugins:nvm' autoload yes
+
+      # Aliases
+      unalias -m 'cat'
+      alias cat='batcat -pp'
+
+      # Starship
+      eval "$(starship init zsh)"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0644

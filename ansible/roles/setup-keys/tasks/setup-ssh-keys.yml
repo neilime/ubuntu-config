@@ -1,0 +1,26 @@
+---
+- name: Ensure .ssh directory exists
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/.ssh"
+    state: directory
+    mode: "0700"
+
+- name: Retrieve and create SSH key pairs from Bitwarden
+  community.general.bitwarden:
+    item: "{{ item.name }}"
+  register: bw_ssh_key
+  loop: "{{ lookup('community.general.bitwarden', collection_id='bafba515-af11-47e6-abe3-af1200cd18b2') }}"
+
+- name: Prepare ssh keys vars
+  ansible.builtin.set_fact:
+    ssh_keys: |
+      "{{ ssh_keys | default([]) + [{
+        'name': item.name,
+        'private_key_field': item.fields[item.private_key_field],
+        'public_key_field': item.fields[item.public_key_field],
+      }] }}"
+  loop: "{{ bw_ssh_key.results }}"
+
+- name: Setup SSH keys
+  ansible.builtin.import_tasks: setup-ssh-key.yml
+  loop: "{{ ssh_keys }}"

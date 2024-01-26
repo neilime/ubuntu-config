@@ -1,0 +1,15 @@
+FROM gezp/ubuntu-desktop:20.04-cu11.0.3
+
+ARG USER=test
+
+# Create test user
+RUN \
+    useradd -m -s /bin/bash ${USER} \
+    && echo "${USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
+    && chmod go-w /home/${USER} \
+    && chown -R ${USER}:${USER} /home/${USER} \
+    && mkdir /home/${USER}/.ssh \
+    && chmod 700 /home/${USER}/.ssh \
+    && touch /home/${USER}/.ssh/authorized_keys \
+    && chmod 644 /home/${USER}/.ssh/authorized_keys \
+    && chown -R ${USER}:${USER} /home/${USER}/.ssh
