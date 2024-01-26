@@ -1,0 +1,62 @@
+[core]
+    editor = code --wait
+[diff]
+    tool = default-difftool
+    
+[difftool "default-difftool"]
+    cmd = code --wait --diff $LOCAL $REMOTE
+
+[user]
+    name = {{ git_name }}
+    email = {{ git_email }}
+
+[pull]
+    rebase = true
+
+[rerere]
+        enabled = true
+
+[push]
+    autoSetupRemote = true
+
+{% for include_item in git.includes %}
+
+[includeIf "gitdir:~/Documents/dev-projects/clients/allopneus/**"]
+    path = ~/Documents/dev-projects/clients/allopneus/.git/.gitconfig
+
+{% endfor %}
+
+
+[core]
+    editor = code --wait
+[diff]
+    tool = default-difftool
+    
+[difftool "default-difftool"]
+    cmd = code --wait --diff $LOCAL $REMOTE
+
+[user]
+    name = {{ git_name }}
+    email = {{ git_email }}
+    signingkey = {{ git_signing_key }}
+
+[pull]
+ rebase = true
+
+[rerere]
+    enabled = true
+
+[push]
+    autoSetupRemote = true
+
+[credential "https://github.com"]
+    helper = 
+    helper = !/usr/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+    helper = 
+    helper = !/usr/bin/gh auth git-credential
+
+{% for include_item in git.includes %}
+[includeIf "gitdir:~/Documents/dev-projects/{{ include_item }}/**"]
+    path = ~/Documents/dev-projects/{{ include_item }}/.git/.gitconfig
+{% endfor %}

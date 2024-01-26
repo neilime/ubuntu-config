@@ -1,0 +1,55 @@
+---
+- name: Setup personal computer
+  hosts: personal_computer
+  become: true
+  vars:
+    ansible_config_dir: "/home/ansible/config"
+
+  tasks:
+    - name: Setup APT
+      ansible.builtin.include_role:
+        name: setup-apt
+      tags: apt
+      vars:
+        apt_repositories: "{{ aptRepositories }}"
+        apt_packages: "{{ aptPackages }}"
+
+    # FIXME: snapd is running in docker container
+    # - name: Install Snapd
+    #   ansible.builtin.include_role:
+    #     name: professormanhattan.snapd
+    #   tags: snap
+    # - name: Setup snap packages
+    #   community.general.snap:
+    #     name: "{{ item }}"
+    #   loop: "{{ snapPackages }}"
+    #   tags: snap
+
+    # FIXME: needs to retrieve key from bitwarden
+    # - name: Setup keys
+    #   ansible.builtin.include_role:
+    #     name: setup-keys
+    #   tags: keys
+
+    - name: Setup shell
+      ansible.builtin.include_role:
+        name: setup-shell
+      tags: shell
+      vars:
+        zsh_plugins: "{{ zshPlugins }}"
+
+    - name: Setup configuration
+      ansible.builtin.include_role:
+        name: setup-configuration
+      tags: configuration
+
+    - name: Setup dev
+      ansible.builtin.import_role:
+        name: setup-dev
+      vars:
+        git_name: "{{ git.name }}"
+        git_email: "{{ git.email }}"
+        git_signing_key: "{{ git.signingKey }}"
+        yarn_packages: "{{ yarnPackages }}"
+        composer_packages: "{{ composerPackages }}"
+      tags: dev

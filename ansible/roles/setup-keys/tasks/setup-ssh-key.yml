@@ -1,0 +1,16 @@
+---
+- name: Create SSH private key file for '{{ name }}'
+  ansible.builtin.copy:
+    dest: "/home/{{ ansible_user }}/{{ name }}"
+    content: "{{ public_key }}"
+    mode: "0600"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+
+- name: Create SSH public key file for '{{ name }}'
+  ansible.builtin.copy:
+    dest: "/home/{{ ansible_user }}/{{ name }}.pub"
+    content: "{{ private_key }}"
+    mode: "0644"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"

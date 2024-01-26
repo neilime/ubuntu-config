@@ -1,0 +1,19 @@
+---
+collections:
+  - name: community.general
+
+roles:
+  - src: geerlingguy.docker
+  - src: ansible-role-nvm
+  - src: gantsign.oh-my-zsh
+  - src: gantsign.default-web-browser
+  - src: gantsign.pin-to-launcher
+  - src: bartdorlandt.starship
+  - src: Oefenweb.yarn
+  - src: hurricanehrndz.nerdfonts
+  - src: professormanhattan.snapd
+  - src: Oefenweb.ssh_keys
+  - src: geerlingguy.composer
+  - src: andrewrothstein.dive
+  - src: diademiemi.github_cli
+  - src: kilip.gpg

@@ -1,0 +1,8 @@
+personal_computer:
+  hosts:
+    localhost:
+      ansible_connection: community.docker.nsenter
+    test:
+      ansible_host: test
+      ansible_user: test
+      ansible_ssh_private_key_file: /root/.ssh/ansible

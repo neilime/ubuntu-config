@@ -1,0 +1,12 @@
+---
+- name: Retrieve GPG backup from Bitwarden
+  community.general.bitwarden:
+    item: "{{ item.name }}"
+  register: bw_gpg_key
+  loop: "{{ lookup('community.general.bitwarden', collection_id='bafba515-af11-47e6-abe3-af1200cd18b2') }}"
+
+- name: Setup GPG keys
+  ansible.builtin.include_role:
+    name: kilip.gpg
+  vars:
+    gpg_user: "{{ ansible_user }}"

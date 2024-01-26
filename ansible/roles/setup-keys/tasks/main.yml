@@ -1,0 +1,5 @@
+- name: Setup SSH keys
+  ansible.builtin.import_tasks: setup-ssh-keys.yml
+
+- name: Setup GPG keys
+  ansible.builtin.import_tasks: setup-gpg-keys.yml

@@ -1,0 +1,68 @@
+locale: en_US.UTF-8
+timezone: Europe/Paris
+web_browser: chromium-browser.desktop
+favorites:
+  - gnome-control-center.desktop
+  - snap-store_ubuntu-software.desktop
+  - org.gnome.Nautilus.desktop
+  - org.gnome.Terminal.desktop
+  - chromium_chromium.desktop
+  - code_code.desktop
+  - slack_slack.desktop
+  - spotify_spotify.desktop
+
+aptRepositories:
+  - ppa:utappia/stable # ucaresystem-core
+
+aptPackages:
+  # Common
+  - apt-transport-https
+  - ca-certificates
+  - gnupg-agent
+  - software-properties-common
+  - curl
+  - wget
+  - curl
+  - unzip
+  - bat
+  - zsh
+  - copyq
+  - thefuck
+  - make
+  # Cleaning
+  - ucaresystem-core
+  # Apps
+  - chromium-browser
+  - simple-scan
+  - krita
+
+snapPackages:
+  - deja-dup
+  - code
+  - spotify
+  - slack
+  - jdownloader2
+  - vlc
+  - htop
+
+zshPlugins:
+  - thefuck
+  - git
+  - yarn
+  - nvm
+  - command-not-found
+  - docker
+  - docker-compose
+  - composer
+  - aws
+
+git:
+  name: "Emilien Escalle"
+  email: "emilien.escalle@escemi.com"
+  signingKey: ""
+  includes:
+    - clients/allopneus
+
+yarnPackages: []
+
+composerPackages: []

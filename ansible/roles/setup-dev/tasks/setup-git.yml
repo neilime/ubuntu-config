@@ -1,0 +1,18 @@
+---
+- name: Install Git
+  ansible.builtin.apt:
+    name:
+      - git
+    state: latest
+
+- name: Setup Git configuration
+  ansible.builtin.template:
+    src: gitconfig.j2
+    dest: "/home/{{ ansible_user }}/.gitconfig"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0644
+
+- name: Install Github CLI
+  ansible.builtin.include_role:
+    name: diademiemi.github_cli

@@ -1,0 +1,52 @@
+---
+- name: Ensure a locale exists
+  community.general.locale_gen:
+    name: "{{ locale }}"
+    state: present
+
+- name: Set timezone
+  community.general.timezone:
+    name: "{{ timezone }}"
+
+- ansible.posix.sysctl:
+    name: fs.inotify.max_user_watches
+    value: "524288"
+    state: present
+
+- name: Setup default web browser
+  ansible.builtin.include_role:
+    name: gantsign.default-web-browser
+  vars:
+    default_web_browser: "{{ web_browser }}"
+
+- name: Setup favorite applications
+  ansible.builtin.include_role:
+    name: gantsign.default-web-browser
+  vars:
+    pin_to_launcher_favorites: "{{ favorites }}"
+
+- name: Set shell to prefer dark mode
+  community.general.dconf:
+    key: "/org/gnome/shell/ubuntu/color-scheme"
+    value: "'prefer-dark'"
+    state: present
+
+- name: Set appearance to prefer dark mode
+  community.general.dconf:
+    key: "/org/gnome/desktop/interface/color-scheme"
+    value: "'prefer-dark'"
+    state: present
+
+# FIXME: unable to start copyq server
+# - name: Start CopyQ server and set global shortcut
+#   ansible.builtin.shell: |
+#     copyq --start-server
+#     copyq eval "var cmds = commands();var cmd = cmds.find(command => command.internalId === 'copyq_global_toggle'); if(cmd){cmd.globalShortcuts = ['ctrl+shift+v'];}setCommands(cmds)"
+
+- name: enable CopyQ autostart
+  ansible.builtin.copy:
+    src: autostart/copy-q.desktop
+    dest: "/home/{{ ansible_user }}/.config/autostart/"
+    mode: 0644
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"

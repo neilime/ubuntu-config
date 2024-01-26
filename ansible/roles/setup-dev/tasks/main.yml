@@ -1,0 +1,39 @@
+---
+- name: Setup dev folders
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0755
+  loop:
+    - "/home/{{ ansible_user }}/Documents/dev-projects"
+  tags: dev
+
+- name: Setup FiraCode font
+  ansible.builtin.import_role:
+    name: hurricanehrndz.nerdfonts
+  tags: fonts
+  vars:
+    nerdfonts_fonts:
+      - fontname: FiraCode
+
+- name: Setup docker
+  ansible.builtin.import_role:
+    name: geerlingguy.docker
+  tags: docker
+  vars:
+    docker_install_compose: true
+
+- name: Setup Dive
+  ansible.builtin.import_role:
+    name: andrewrothstein.dive
+  tags: docker
+
+- name: Setup NodeJS
+  ansible.builtin.import_tasks: setup-nodejs.yml
+  tags: nodejs
+
+- name: Setup PHP
+  ansible.builtin.import_tasks: setup-php.yml
+  tags: php
