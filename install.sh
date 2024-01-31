@@ -1,98 +1,138 @@
 #!/usr/bin/env bash
 
-set -e -o pipefail
-set -x
-
-{ # this ensures the entire script is downloaded #
-
-#################################################################################################
-#                                       SETUP                                                   #
-#################################################################################################
+set -e
 
 if [ -z "$REPOSITORY_URL" ]; then
-  export REPOSITORY_URL=https://raw.github.com/neilime/ubuntu-config/main
+  export REPOSITORY_URL=https://github.com/neilime/ubuntu-config.git
 fi
 
-#################################################################################################
-#                                       INSTALLATION                                            #
-#################################################################################################
+if [ -z "$REPOSITORY_BRANCH" ]; then
+  export REPOSITORY_BRANCH=main
+fi
 
-install_configuration() {
-  # Fix System limit for number of file watchers reached
-  echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
+BOLD="$(tput bold 2>/dev/null || printf '')"
+GREY="$(tput setaf 0 2>/dev/null || printf '')"
+UNDERLINE="$(tput smul 2>/dev/null || printf '')"
+RED="$(tput setaf 1 2>/dev/null || printf '')"
+GREEN="$(tput setaf 2 2>/dev/null || printf '')"
+YELLOW="$(tput setaf 3 2>/dev/null || printf '')"
+BLUE="$(tput setaf 4 2>/dev/null || printf '')"
+MAGENTA="$(tput setaf 5 2>/dev/null || printf '')"
+NO_COLOR="$(tput sgr0 2>/dev/null || printf '')"
 
-  utils_download_repository_file ".dot/zshrc" ~/.zshrc
-
-  # Configure git
-  utils_download_repository_file ".dot/gitconfig" ~/.gitconfig
-
-  # Create default directories
-  mkdir -p ~/Documents/dev-projects
-
-  # Configure autostart
-  mkdir -p ~/.config/autostart;
-  utils_download_repository_file ".dot/config/autostart/sh.desktop" ~/.config/autostart/sh.desktop
-  
-  # Configure default applications
-  xdg-settings set default-web-browser chromium-browser.desktop
-  
-  # Configure favorite applications
-  gsettings set org.gnome.shell favorite-apps "['gnome-control-center.desktop', 'snap-store_ubuntu-software.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Terminal.desktop', 'chromium_chromium.desktop', 'code_code.desktop', 'slack_slack.desktop', 'spotify_spotify.desktop']"
-  
-  # Configure appearance
-  gsettings set org.gnome.desktop.interface color-scheme prefer-dark
-  
-  # Configure copyq
-  copyq --start-server
-  copyq eval "var cmds = commands();var cmd = cmds.find(command => command.internalId === 'copyq_global_toggle'); if(cmd){cmd.globalShortcuts = ['ctrl+shift+v'];}setCommands(cmds)"
+info() {
+  printf '%s\n' "${BOLD}${GREY}>${NO_COLOR} $*"
 }
 
-do_cleaning() {
-  # Remove globally packages installed with npm
-  NPM_GLOBAL_PACKAGES=$(npm ls -gp --depth=0 | awk -F/ '/node_modules/ && !/\/npm$/ {print $NF}');
-  # shellcheck disable=SC2086
-  [ -n "$NPM_GLOBAL_PACKAGES" ] && npm -g rm $NPM_GLOBAL_PACKAGES;
-
-  # Remove globally packages installed with yarn
-  YARN_GLOBAL_PACKAGES=$(yarn global list  | awk -F\" '/info "/ {print $2}' | awk -F@ '{print $1}');
-  # shellcheck disable=SC2086
-  [ -n "$YARN_GLOBAL_PACKAGES" ] && yarn global remove $YARN_GLOBAL_PACKAGES;
-
-  # Clear caches
-  yarn cache clean --all
-  nvm cache clear
-  npm cache clean --force 
-
-  # Clear useless docker resources
-  sudo docker system prune --force
-
-  sudo localepurge
-  set +e
-  sudo ucaresystem-core -u
-  set -e
+warn() {
+  printf '%s\n' "${YELLOW}! $*${NO_COLOR}"
 }
 
-do_install() {
-  utils_echo "Start installation..."
-
-  # install_apt
-  # install_localization
-  # install_snap
-  # install_docker
-  # install_nvm
-  # install_yarn
-  # install_php
-  # install_fonts
-  # install_zsh
-  install_configuration
-  
-  utils_echo "Installation done"
-  
-  utils_echo "Start cleaning..."
-  do_cleaning
-  utils_echo "Cleaning done"
+error() {
+  printf '%s\n' "${RED}x $*${NO_COLOR}" >&2
 }
 
-do_install
+completed() {
+  printf '%s\n' "${GREEN}✓${NO_COLOR} $*"
+}
 
-} # this ensures the entire script is downloaded #
+has() {
+  command -v "$1" 1>/dev/null 2>&1
+}
+
+check_requirements() {
+  info "Checking requirements..."
+  if [ -z "${BASH_VERSION}" ] || [ -n "${ZSH_VERSION}" ]; then
+    # shellcheck disable=SC2016
+    utils_echo >&2 'Error: the install instructions explicitly say to pipe the install script to `bash`; please follow them'
+    exit 1
+  fi
+
+  if ! has sudo; then
+    error 'Could not find the command "sudo", needed to get permissions for install.'
+    info "rerun this script. Otherwise, please install sudo."
+    exit 1
+  fi
+
+  # Check if sudo needs password
+  if ! sudo -n true 2>/dev/null; then
+    if ! sudo -v; then
+      error "Superuser not granted, aborting installation"
+      exit 1
+    fi
+  fi
+}
+
+# Install APT softwares
+install_pipx() {
+  info "Installing pipx..."
+  # Install pipx
+  if ! command -v pipx &> /dev/null; then
+    sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-venv pipx
+    completed "pipx installation of $i done"
+  else
+    completed "pipx already installed"
+  fi
+  sudo PIPX_BIN_DIR=/usr/local/bin pipx ensurepath
+}
+
+install_ansible_pull() {
+  info "Installing ansible-pull..."
+  # Install ansible
+  if [ ! -f "/usr/local/bin/ansible-pull" ]; then
+    sudo PIPX_BIN_DIR=/usr/local/bin pipx install --force --include-deps ansible
+    sudo PIPX_BIN_DIR=/usr/local/bin pipx inject ansible jmespath
+    completed "ansible-pull installation done"
+  else
+    completed "ansible-pull already installed"
+  fi
+}
+
+run_setup_playbook() {
+  info "Running setup playbook..."
+
+  ANSIBLE_USER=${USER}
+
+  sudo ansible-pull \
+    --purge \
+    -U "$REPOSITORY_URL" \
+    -C "$REPOSITORY_BRANCH" \
+    -d "/tmp/ubuntu-config" -i "/tmp/ubuntu-config/ansible/inventory.yml" \
+    --extra-vars "ansible_user=${ANSIBLE_USER}" \
+    --limit "localhost" \
+    "/tmp/ubuntu-config/ansible/install-requirements.yml"
+
+  sudo ansible-pull \
+    --purge \
+    -U "$REPOSITORY_URL" \
+    -C "$REPOSITORY_BRANCH" \
+    -d "/tmp/ubuntu-config" -i "/tmp/ubuntu-config/ansible/inventory.yml" \
+    --extra-vars "ansible_user=${ANSIBLE_USER}" \
+    --limit "localhost" \
+    "/tmp/ubuntu-config/ansible/install-requirements.yml" \
+    "/tmp/ubuntu-config/ansible/setup.yml" \
+    "/tmp/ubuntu-config/ansible/cleanup.yml"
+}
+
+#######################################
+
+printf "\n%s\n" "#######################################"
+printf "#        %s        #\n" "${BOLD}Install ubuntu-config${NO_COLOR}"
+printf "%s\n\n" "#######################################"
+
+
+info "${BOLD}User${NO_COLOR}: ${GREEN}${USER}${NO_COLOR}"
+info "${BOLD}Repository url${NO_COLOR}: ${GREEN}${REPOSITORY_URL}${NO_COLOR}"
+info "${BOLD}Repository branch${NO_COLOR}: ${GREEN}${REPOSITORY_BRANCH}${NO_COLOR}"
+
+printf "\n%s\n\n" "---------------------------------------"
+
+info "Start installation..."
+
+check_requirements
+install_pipx
+install_ansible_pull
+run_setup_playbook
+
+completed "Installation done"

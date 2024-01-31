@@ -22,20 +22,20 @@
     mode: "0644"
 
 - name: Retrieve list of globally installed Composer packages
+  become: true
   ansible.builtin.command: composer global show --direct --format=json
   register: composer_packages_output
   changed_when: false
-  become_user: "{{ ansible_user }}"
 
 - name: Parse list of installed Composer packages
   ansible.builtin.set_fact:
     installed_composer_packages: "{{ composer_packages_output.stdout_lines[0] | from_json | community.general.json_query('installed[*].name') | default([], true) }}"
 
 - name: Remove useless installed Composer packages.
+  become: true
   community.general.composer:
     global_command: true
     command: remove
     arguments: "{{ item }}"
   loop: "{{ installed_composer_packages }}"
   when: item not in composer_packages
-  become_user: "{{ ansible_user }}"

@@ -3,21 +3,28 @@ services:
   ansible:
     build:
       context: .
-      dockerfile: Dockerfile.ansible
+      dockerfile: docker/ansible/Dockerfile
       target: ci
     volumes:
       - ./ansible:/ansible
-      - .ssh/ansible:/root/.ssh/ansible:ro
     environment:
       ANSIBLE_USER:
       ANSIBLE_PASSWORD:
 
-  test:
+  ubuntu:
     build:
-      context: .
-      dockerfile: Dockerfile.test
+      context: docker/ubuntu
     shm_size: 1024m
     cap_add:
       - SYS_PTRACE
+    environment:
+      REPOSITORY_URL: http://git/ubuntu-config.git
+      REPOSITORY_BRANCH: main
+
+  git:
+    build:
+      context: .
+      dockerfile: docker/git/Dockerfile
     volumes:
-      - .ssh/ansible.pub:/home/test/.ssh/ansible.pub:ro
+      - ./install.sh:/var/lib/git/ubuntu-config/install.sh:ro
+      - ./ansible:/var/lib/git/ubuntu-config/ansible:ro

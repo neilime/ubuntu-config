@@ -7,45 +7,44 @@
 
   tasks:
     - name: Setup APT
-      ansible.builtin.include_role:
-        name: setup-apt
+      ansible.builtin.import_role:
+        name: setup_apt
       tags: apt
       vars:
         apt_repositories: "{{ aptRepositories }}"
         apt_packages: "{{ aptPackages }}"
 
-    # FIXME: snapd is running in docker container
-    # - name: Install Snapd
-    #   ansible.builtin.include_role:
-    #     name: professormanhattan.snapd
-    #   tags: snap
-    # - name: Setup snap packages
-    #   community.general.snap:
-    #     name: "{{ item }}"
-    #   loop: "{{ snapPackages }}"
-    #   tags: snap
+    - name: Setup Snap
+      ansible.builtin.import_role:
+        name: setup_snap
+      tags: snap
+      vars:
+        snap_packages: "{{ snapPackages }}"
 
     # FIXME: needs to retrieve key from bitwarden
     # - name: Setup keys
     #   ansible.builtin.include_role:
-    #     name: setup-keys
+    #     name: setup_keys
     #   tags: keys
+    #   vars:
+    #     bitwarden_ssh_keys_collection_id: "{{ bitwarden.sshKeysCollectionId }}"
 
     - name: Setup shell
-      ansible.builtin.include_role:
-        name: setup-shell
+      ansible.builtin.import_role:
+        name: setup_shell
       tags: shell
+      become: true
       vars:
         zsh_plugins: "{{ zshPlugins }}"
 
     - name: Setup configuration
-      ansible.builtin.include_role:
-        name: setup-configuration
+      ansible.builtin.import_role:
+        name: setup_configuration
       tags: configuration
 
     - name: Setup dev
       ansible.builtin.import_role:
-        name: setup-dev
+        name: setup_dev
       vars:
         git_name: "{{ git.name }}"
         git_email: "{{ git.email }}"
