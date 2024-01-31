@@ -37,13 +37,16 @@
     value: "'prefer-dark'"
     state: present
 
-# FIXME: unable to start copyq server
-# - name: Start CopyQ server and set global shortcut
-#   ansible.builtin.shell: |
-#     copyq --start-server
-#     copyq eval "var cmds = commands();var cmd = cmds.find(command => command.internalId === 'copyq_global_toggle'); if(cmd){cmd.globalShortcuts = ['ctrl+shift+v'];}setCommands(cmds)"
+- name: Get facts on current container
+  community.docker.current_container_facts:
 
-- name: enable CopyQ autostart
+- name: Start CopyQ server and set global shortcut
+  when: not ansible_module_running_in_container
+  ansible.builtin.shell: |
+    copyq --start-server
+    copyq eval "var cmds = commands();var cmd = cmds.find(command => command.internalId === 'copyq_global_toggle'); if(cmd){cmd.globalShortcuts = ['ctrl+shift+v'];}setCommands(cmds)"
+
+- name: Enable CopyQ autostart
   ansible.builtin.copy:
     src: autostart/copy-q.desktop
     dest: "/home/{{ ansible_user }}/.config/autostart/"

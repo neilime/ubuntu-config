@@ -10,6 +10,18 @@ on:
       - main
 
 jobs:
+  clean:
+    uses: hoverkraft-tech/ci-github-container/.github/workflows/prune-pull-requests-images-tags.yml@0.14.4
+    # FIXME: This is a workaround for having workflow actions. See https://github.com/orgs/community/discussions/38659
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
+      issues: read
+      pull-requests: read
+    with:
+      images: '["ansible-ci","ubuntu-ci","git-ci"]'
+
   ci:
     name: Continuous Integration
     uses: ./.github/workflows/__shared-ci.yml

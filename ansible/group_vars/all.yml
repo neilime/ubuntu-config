@@ -66,3 +66,6 @@ git:
 yarnPackages: []
 
 composerPackages: []
+
+bitwarden:
+  sshKeysCollectionId: "bafba515-af11-47e6-abe3-af1200cd18b2"

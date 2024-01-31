@@ -9,7 +9,7 @@
   community.general.bitwarden:
     item: "{{ item.name }}"
   register: bw_ssh_key
-  loop: "{{ lookup('community.general.bitwarden', collection_id='bafba515-af11-47e6-abe3-af1200cd18b2') }}"
+  loop: "{{ lookup('community.general.bitwarden', collection_id='{{ bitwarden_ssh_keys_collection_id }}') }}"
 
 - name: Prepare ssh keys vars
   ansible.builtin.set_fact:

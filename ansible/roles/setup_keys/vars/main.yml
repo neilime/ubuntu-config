@@ -1,0 +1,3 @@
+---
+# Bitwarden collection ID for SSH keys
+bitwarden_ssh_keys_collection_id: ""

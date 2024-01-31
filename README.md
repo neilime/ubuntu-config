@@ -9,7 +9,7 @@ My own Ubuntu setup &amp; config. This project uses Ansible to set up and config
 ## Execute installation
 
 ```sh
-bash <(wget -qO- https://raw.githubusercontent.com/neilime/ubuntu-config/main/install.sh)
+wget -qO- "https://raw.githubusercontent.com/neilime/ubuntu-config/main/install.sh" | bash
 ```
 
 ## Project Structure
@@ -18,22 +18,10 @@ The project has the following structure:
 
 ```txt
 ubuntu-config
-├── ansible
-│   ├── roles
-│   │   ├── setup
-│   │   │   ├── tasks
-│   │   │   │   └── main.yml
-│   │   │   ├── handlers
-│   │   │   │   └── main.yml
-│   │   │   ├── files
-│   │   │   └── vars
-│   │   │       └── main.yml
-│   ├── ansible.cfg
-│   ├── inventory.ini
-│   └── playbook.yml
 ├── .github
-│   └── workflows
-│       └── main-ci.yml
+│   └── workflows: GitHub Actions workflows for CI
+├── docker: Dockerfiles to build dev/ci images
+├── ansible: Ansible roles and playbooks
 └── README.md
 ```
 
@@ -43,7 +31,7 @@ ubuntu-config
 
 ```bash
 git clone https://github.com/neilime/ubuntu-config.git
-cd neilime/ubuntu-config
+cd ubuntu-config
 ```
 
 2. Setup the development stack:

@@ -1,0 +1,49 @@
+---
+- name: Cleanup personal computer
+  hosts: personal_computer
+  become: true
+  vars:
+    ansible_config_dir: "/home/ansible/config"
+  tasks:
+    - name: Clear Yarn cache
+      ansible.builtin.command: yarn cache clean --all
+
+    - name: Clear NVM cache
+      ansible.builtin.command: nvm cache clear
+
+    - name: Clear NPM cache
+      ansible.builtin.command: npm cache clean --force
+
+    - name: Clear Composer cache
+      ansible.builtin.command: composer clear-cache
+
+    - name: Docker prune
+      community.docker.docker_prune:
+        containers: true
+        images: true
+        images_filters:
+          dangling: false
+        networks: true
+        volumes: true
+        builder_cache: true
+
+    - name: Clear useless apt resources using localepurge
+      ansible.builtin.apt:
+        name: localepurge
+        state: present
+      notify: Run localepurge
+
+    - name: Refresh snap packages
+      ansible.builtin.command: snap refresh
+
+    - name: Update system using ucaresystem-core
+      ansible.builtin.command: ucaresystem-core -u
+
+    - name: Remove APT dependencies that are no longer required and purge their configuration files
+      ansible.builtin.apt:
+        autoremove: yes
+        purge: true
+
+  handlers:
+    - name: Run localepurge
+      ansible.builtin.command: localepurge

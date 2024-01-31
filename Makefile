@@ -18,16 +18,8 @@ lint: ## Execute linting
 		--rm \
 		$$LINTER_IMAGE
 
-generate-ssh-key: ## Generate ssh key if not exists
-	@test -f .ssh/ansible || ssh-keygen -t rsa -b 4096 -C "ansible@localhost" -f .ssh/ansible -q -N ""
-
 setup: ## Setup the project stack
-	@${MAKE} generate-ssh-key
 	@docker-compose up --remove-orphans --build -d
-	@${MAKE} authorize-ssh-key
-
-authorize-ssh-key: ## Authorize ssh key
-	@docker-compose exec test sh -c "cat /home/test/.ssh/ansible.pub >> /home/test/.ssh/authorized_keys"
 
 down: ## Stop the project stack
 	@docker-compose down --rmi all --remove-orphans
@@ -42,7 +34,7 @@ ansible-galaxy: ## Run ansible-galaxy
 	@docker-compose exec ansible ansible-galaxy $(filter-out $@,$(MAKECMDGOALS))
 
 test: ## Test playbook against test container
-	@docker-compose exec ansible ansible-playbook setup.yml --limit test $(filter-out $@,$(MAKECMDGOALS))
+	@docker-compose exec --user ubuntu ubuntu sh -c 'wget -qO- "http://git/?p=ubuntu-config/.git;a=blob_plain;f=install.sh;hb=refs/heads/main" | bash'
 
 #############################
 # Argument fix workaround
