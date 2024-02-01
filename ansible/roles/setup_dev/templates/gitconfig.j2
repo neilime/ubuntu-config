@@ -57,6 +57,6 @@
     helper = !/usr/bin/gh auth git-credential
 
 {% for include_item in git.includes %}
-[includeIf "gitdir:~/Documents/dev-projects/{{ include_item }}/**"]
-    path = ~/Documents/dev-projects/{{ include_item }}/.git/.gitconfig
+[includeIf "gitdir:{{ git_check_script_path }}/{{ include_item }}/**"]
+    path = {{ git_check_script_path }}/{{ include_item }}/.git/.gitconfig
 {% endfor %}

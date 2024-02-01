@@ -16,3 +16,32 @@
 - name: Install Github CLI
   ansible.builtin.include_role:
     name: diademiemi.github_cli
+
+- name: Create git check script
+  ansible.builtin.template:
+    src: git-check.sh.j2
+    dest: "{{ git_check_script_path }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0755"
+
+- name: Add cron job for git check script
+  ansible.builtin.cron:
+    name: "Git check cron job"
+    job: "{{ git_check_script_path }}"
+    special_time: daily
+    user: "{{ ansible_user }}"
+
+- name: Create systemd service file for git check
+  ansible.builtin.template:
+    src: git-check.service.j2
+    dest: /etc/systemd/system/git-check.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Enable and start git check service
+  ansible.builtin.systemd:
+    name: git-check.service
+    enabled: yes
+    state: started
