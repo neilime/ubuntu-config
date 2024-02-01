@@ -18,3 +18,4 @@ roles:
   - src: diademiemi.github_cli
   - src: kilip.gpg
   - src: professormanhattan.snapd
+  - src: redbeard28.bashaliases

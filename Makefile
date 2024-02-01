@@ -34,7 +34,7 @@ ansible-galaxy: ## Run ansible-galaxy
 	@docker-compose exec ansible ansible-galaxy $(filter-out $@,$(MAKECMDGOALS))
 
 test: ## Test playbook against test container
-	@docker-compose exec --user ubuntu ubuntu sh -c 'wget -qO- "http://git/?p=ubuntu-config/.git;a=blob_plain;f=install.sh;hb=refs/heads/main" | bash'
+	@docker-compose exec --user kasm-user ubuntu sh -c 'wget -qO- "http://git/?p=ubuntu-config/.git;a=blob_plain;f=install.sh;hb=refs/heads/main" | bash'
 
 #############################
 # Argument fix workaround

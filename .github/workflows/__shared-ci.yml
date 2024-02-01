@@ -23,7 +23,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-ci:
-    needs: lint
     # FIXME: This is a workaround for having workflow actions. See https://github.com/orgs/community/discussions/38659
     permissions:
       id-token: write
@@ -64,7 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-ci
     env:
-      DOCKER_COMPOSE_EXEC: docker-compose -f docker-compose.ci.yml exec --user ubuntu -T ubuntu sh -c
+      DOCKER_COMPOSE_EXEC: docker-compose -f docker-compose.ci.yml exec --user kasm-user -T ubuntu sh -c
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

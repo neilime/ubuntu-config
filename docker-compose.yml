@@ -20,6 +20,9 @@ services:
     environment:
       REPOSITORY_URL: http://git/ubuntu-config.git
       REPOSITORY_BRANCH: main
+      VNC_PW: password
+    ports:
+      - 6901:6901
 
   git:
     build:
