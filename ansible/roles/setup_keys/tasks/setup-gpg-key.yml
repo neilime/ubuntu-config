@@ -1,0 +1,16 @@
+---
+- name: Ensure mandatory variables are set
+  ansible.builtin.fail:
+    msg: "name, private_key are required"
+  when: not name or not private_key
+
+- name: Import private key for '{{ name }}'
+  ansible.builtin.shell: "echo '{{ private_key }}' | gpg --import"
+  register: gpg_import_private_key
+  become_user: "{{ ansible_user }}"
+  failed_when:
+    - '"secret key imported" not in gpg_import_private_key.stderr'
+    - '"gpg: Total number processed: 1" not in gpg_import_private_key.stderr'
+    - '"gpg:       secret keys read: 1" not in gpg_import_private_key.stderr'
+    - gpg_import_private_key.rc != 0
+  changed_when: '"gpg:  secret keys unchanged: 1" not in gpg_import_private_key.stderr'

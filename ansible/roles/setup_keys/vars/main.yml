@@ -1,3 +1,11 @@
 ---
+# Bitwarden credentials
+bitwarden_server: ""
+bitwarden_email: ""
+bitwarden_password: ""
+
 # Bitwarden collection ID for SSH keys
 bitwarden_ssh_keys_collection_id: ""
+
+# Bitwarden collection ID for GPG keys
+bitwarden_gpg_keys_collection_id: ""

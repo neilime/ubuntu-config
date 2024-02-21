@@ -9,6 +9,12 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=private \
     apt-get update && \
     apt-get install -y --no-install-recommends dconf-cli
 
+# FIXME: install Bitwarden CLI as we cannot install it with snap
+RUN set -eu; \
+    wget https://github.com/bitwarden/clients/releases/download/cli-v2024.2.0/bw-linux-2024.2.0.zip -O /tmp/bw-linux.zip && \
+    unzip /tmp/bw-linux.zip -d /usr/local/bin && \
+    chmod +x /usr/local/bin/bw
+
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 ENV USER=kasm-user

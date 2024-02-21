@@ -1,12 +1,36 @@
 ---
-- name: Retrieve GPG backup from Bitwarden
-  community.general.bitwarden:
-    item: "{{ item.name }}"
-  register: bw_gpg_key
-  loop: "{{ lookup('community.general.bitwarden', collection_id='bafba515-af11-47e6-abe3-af1200cd18b2') }}"
+# FIXME: should use community.general.bitwarden
+# "{{ lookup('community.general.bitwarden', collection_id=bitwarden_gpg_keys_collection_id, bw_session=bw_session) }}"
+- name: Retrieve GPG keys from Bitwarden
+  local_action:
+    module: ansible.builtin.shell
+    cmd: bw list items --collectionid "{{ bitwarden_gpg_keys_collection_id }}" --session "{{ bw_session }}" --response
+  register: bw_items
+  changed_when: false
+
+- ansible.builtin.set_fact:
+    gpg_keys: |
+      {{ 
+        bw_items.stdout 
+        | from_json 
+        | community.general.json_query(gpg_keys_query)
+      }}
+  vars:
+    # FIXME: GPG Private key exceed the field size limit so it is stored in notes
+    # private_key: fields[?name=='private_key'].value | [0]
+    gpg_keys_query: |
+      data.data[].{
+        name: name,
+        public_key: fields[?name=='public_key'].value | [0],
+        private_key: notes
+      }
 
 - name: Setup GPG keys
-  ansible.builtin.include_role:
-    name: kilip.gpg
+  ansible.builtin.include_tasks: setup-gpg-key.yml
   vars:
-    gpg_user: "{{ ansible_user }}"
+    name: "{{ item.name }}"
+    private_key: "{{ item.private_key }}"
+    public_key: "{{ item.public_key }}"
+  loop: "{{ gpg_keys }}"
+  loop_control:
+    label: "{{ item.name }}"

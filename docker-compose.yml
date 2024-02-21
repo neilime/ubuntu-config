@@ -7,9 +7,9 @@ services:
       target: ci
     volumes:
       - ./ansible:/ansible
-    environment:
-      ANSIBLE_USER:
-      ANSIBLE_PASSWORD:
+      - ./multipass:/multipass
+    env_file:
+      - .env
 
   ubuntu:
     build:
@@ -21,6 +21,8 @@ services:
       REPOSITORY_URL: http://git/ubuntu-config.git
       REPOSITORY_BRANCH: main
       VNC_PW: password
+      BITWARDEN_EMAIL:
+      BITWARDEN_PASSWORD:
     ports:
       - 6901:6901
 

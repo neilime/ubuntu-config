@@ -14,6 +14,8 @@ services:
     environment:
       REPOSITORY_URL: http://git/ubuntu-config.git
       REPOSITORY_BRANCH: main
+      BITWARDEN_EMAIL:
+      BITWARDEN_PASSWORD:
 
   git:
     image: ${GIT_IMAGE}

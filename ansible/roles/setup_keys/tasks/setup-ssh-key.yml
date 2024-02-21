@@ -1,7 +1,12 @@
 ---
+- name: Ensure mandatory variables are set
+  ansible.builtin.fail:
+    msg: "name, private_key, public_key are required"
+  when: not name or not private_key or not public_key
+
 - name: Create SSH private key file for '{{ name }}'
   ansible.builtin.copy:
-    dest: "/home/{{ ansible_user }}/{{ name }}"
+    dest: "/home/{{ ansible_user }}/.ssh/{{ name }}"
     content: "{{ public_key }}"
     mode: "0600"
     owner: "{{ ansible_user }}"
@@ -9,7 +14,7 @@
 
 - name: Create SSH public key file for '{{ name }}'
   ansible.builtin.copy:
-    dest: "/home/{{ ansible_user }}/{{ name }}.pub"
+    dest: "/home/{{ ansible_user }}/.ssh/{{ name }}.pub"
     content: "{{ private_key }}"
     mode: "0644"
     owner: "{{ ansible_user }}"

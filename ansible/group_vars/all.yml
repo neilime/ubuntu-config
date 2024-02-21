@@ -44,6 +44,10 @@ snapPackages:
   - jdownloader2
   - vlc
   - htop
+  - bitwarden
+  - bw
+  - multipass
+  - remmina
 
 zshPlugins:
   - thefuck
@@ -68,4 +72,8 @@ yarnPackages: []
 composerPackages: []
 
 bitwarden:
-  sshKeysCollectionId: "bafba515-af11-47e6-abe3-af1200cd18b2"
+  server: "https://vault.bitwarden.eu"
+  email: "{{ BITWARDEN_EMAIL }}"
+  password: "{{ BITWARDEN_PASSWORD }}"
+  sshKeysCollectionId: "7ac0c067-9d61-49c0-b01e-b10d0135372a"
+  gpgKeysCollectionId: "9ff2a152-3c88-44cd-a04b-b11d00c8b267"

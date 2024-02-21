@@ -1,0 +1,60 @@
+---
+- name: Login and unlock Bitwarden
+  block:
+    - name: Ensure bitwarden vars are set
+      ansible.builtin.fail:
+        msg: "bitwarden_server, bitwarden_email and bitwarden_password are required"
+      when: not bitwarden_server or not bitwarden_email or not bitwarden_password
+
+    - name: Get bw server
+      local_action:
+        module: ansible.builtin.shell
+        cmd: bw config server
+      changed_when: false
+      register: bw_server
+
+    - name: Set bw server
+      when: bw_server.stdout != bitwarden_server
+      local_action:
+        module: ansible.builtin.shell
+        cmd: bw config server "{{ bitwarden_server }}"
+
+    - name: Get bw status
+      local_action:
+        module: ansible.builtin.shell
+        cmd: bw status
+      changed_when: false
+      register: bw_status
+
+    - name: Login to Bitwarden
+      when: bw_status.stdout | from_json | community.general.json_query('status') == "unauthenticated"
+      local_action:
+        module: ansible.builtin.shell
+        cmd: bw login "{{ bitwarden_email }}" "{{ bitwarden_password }}" --raw
+      any_errors_fatal: true
+
+    - name: Unlock Bitwarden
+      when: bw_status.stdout | from_json | community.general.json_query('status') != "unlocked"
+      local_action:
+        module: ansible.builtin.shell
+        cmd: bw unlock --raw "{{ bitwarden_password }}"
+      register: bw_session
+
+    - ansible.builtin.set_fact:
+        bw_session: "{{ bw_session.stdout }}"
+
+    - name: Ensure bw is unlocked
+      local_action:
+        module: ansible.builtin.shell
+        cmd: bw status
+      register: bw_status
+      changed_when: false
+      failed_when: bw_status.stdout | from_json | community.general.json_query('status') != "unlocked"
+      environment:
+        BW_SESSION: "{{ bw_session }}"
+
+  rescue:
+    - name: Logout to Bitwarden
+      local_action: ansible.builtin.command bw logout
+    - ansible.builtin.fail:
+        msg: "{{ ansible_failed_result }}"

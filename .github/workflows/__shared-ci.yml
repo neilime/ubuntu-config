@@ -75,6 +75,8 @@ jobs:
           ANSIBLE_IMAGE: ${{ fromJSON(needs.build-ci.outputs.built-images).ansible-ci.images[0] }}
           UBUNTU_IMAGE: ${{ fromJSON(needs.build-ci.outputs.built-images).ubuntu-ci.images[0] }}
           GIT_IMAGE: ${{ fromJSON(needs.build-ci.outputs.built-images).git-ci.images[0] }}
+          BITWARDEN_EMAIL: ${{ secrets.BITWARDEN_EMAIL }}
+          BITWARDEN_PASSWORD: ${{ secrets.BITWARDEN_PASSWORD }}
 
       - name: Run setup
         run: $DOCKER_COMPOSE_EXEC 'wget -qO- "http://git/?p=ubuntu-config/.git;a=blob_plain;f=install.sh;hb=refs/heads/main" | bash'
@@ -96,6 +98,18 @@ jobs:
           else
             echo 'APT packages installed: fail' && exit 1
           fi
+
+      - name: Validate Ansible changes in host - SSH keys
+        run: |
+          if $DOCKER_COMPOSE_EXEC 'test -f ~/.ssh/id_rsa_escemi'; then
+            echo 'SSH keys installed: pass' && exit 0
+          else
+            echo 'SSH keys installed: fail' && exit 1
+          fi
+
+      - name: Validate Ansible changes in host - GPG keys
+        run: |
+          if $DOCKER_COMPOSE_EXEC 'gpg --list-keys | grep -q "/home/ubuntu/.gnupg/pubring.kbx"'
 
       - name: Validate Ansible changes in host - docker
         run: |

@@ -63,6 +63,23 @@ check_requirements() {
   fi
 }
 
+ask_for_bitwarden_credentials() {
+  if [ -n "$BITWARDEN_EMAIL" ] && [ -n "$BITWARDEN_PASSWORD" ]; then
+    return
+  fi
+  
+  while [ -z "$BITWARDEN_EMAIL" ]; do
+    read -p "Bitwarden email: " BITWARDEN_EMAIL
+  done
+  export BITWARDEN_EMAIL
+
+  while [ -z "$BITWARDEN_PASSWORD" ]; do
+    read -s -p "Bitwarden password: " BITWARDEN_PASSWORD
+  done
+
+  export BITWARDEN_PASSWORD
+}
+
 # Install APT softwares
 install_pipx() {
   info "Installing pipx..."
@@ -112,7 +129,8 @@ run_setup_playbook() {
     --limit "localhost" \
     "/tmp/ubuntu-config/ansible/install-requirements.yml" \
     "/tmp/ubuntu-config/ansible/setup.yml" \
-    "/tmp/ubuntu-config/ansible/cleanup.yml"
+    "/tmp/ubuntu-config/ansible/cleanup.yml" \
+    --diff
 }
 
 #######################################
@@ -131,6 +149,7 @@ printf "\n%s\n\n" "---------------------------------------"
 info "Start installation..."
 
 check_requirements
+ask_for_bitwarden_credentials
 install_pipx
 install_ansible_pull
 run_setup_playbook

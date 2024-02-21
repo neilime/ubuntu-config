@@ -10,15 +10,38 @@ lint: ## Execute linting
 	DEFAULT_WORKSPACE="$(CURDIR)"; \
 	LINTER_IMAGE="linter:latest"; \
 	VOLUME="$$DEFAULT_WORKSPACE:$$DEFAULT_WORKSPACE"; \
-	docker build --tag $$LINTER_IMAGE .; \
+	docker build --tag $$LINTER_IMAGE -f Dockerfile.lint .; \
 	docker run \
+		-it --rm --init --sig-proxy=true \
 		-e DEFAULT_WORKSPACE="$$DEFAULT_WORKSPACE" \
 		-e FILTER_REGEX_INCLUDE="$(filter-out $@,$(MAKECMDGOALS))" \
 		-v $$VOLUME \
-		--rm \
 		$$LINTER_IMAGE
 
+setup-ssh-keys: ## Setup ssh keys for VM access
+	./multipass/setup-ssh-keys.sh
+
+setup-vm: ## Setup the VM
+	$(MAKE) setup-ssh-keys
+	@multipass list --format json | jq -e '.list[] | select(.name == "ubuntu-config-test" and .state == "Running")' && \
+	echo "VM is already up" || ( \
+		multipass launch lts --name ubuntu-config-test --cloud-init multipass/cloud-init.yaml --cpus 4 --disk 10G --memory 4G && \
+		multipass exec ubuntu-config-test -- sh -c 'sudo apt update -y && sudo apt install -y ubuntu-desktop xrdp' && \
+		multipass stop ubuntu-config-test && \
+		multipass snapshot ubuntu-config-test --name "initial-setup" && \
+		multipass start ubuntu-config-test \
+	)
+
+restore-vm: ## Restore the VM
+	@multipass list --format json | jq -e '.list[] | select(.name == "ubuntu-config-test" and .state == "Running")' && \
+	&& multipass list --snapshots --format json | jq -e '.info["ubuntu-config-test"]' && \
+	&& multipass restore -d ubuntu-config-test.initial-setup || echo "No VM to restore"
+
+down-vm: ## Stop the VM
+	@multipass list | grep -q ubuntu-config-test && (multipass delete ubuntu-config-test && multipass purge) || echo "VM is already down"
+
 setup: ## Setup the project stack
+	$(MAKE) setup-ssh-keys
 	@docker-compose up --remove-orphans --build -d
 
 down: ## Stop the project stack
@@ -33,8 +56,20 @@ ansible-playbook: ## Run ansible-playbook
 ansible-galaxy: ## Run ansible-galaxy
 	@docker-compose exec ansible ansible-galaxy $(filter-out $@,$(MAKECMDGOALS))
 
-test: ## Test playbook against test container
+test-docker: ## Test playbook against test container
 	@docker-compose exec --user kasm-user ubuntu sh -c 'wget -qO- "http://git/?p=ubuntu-config/.git;a=blob_plain;f=install.sh;hb=refs/heads/main" | bash'
+
+test-vm: ## Test playbook against VM
+	docker-compose exec ansible sh -c '/root/.local/bin/ansible-playbook setup.yml \
+		--limit ubuntu-config-test \
+		-e ANSIBLE_HOST=$(shell multipass info ubuntu-config-test | grep IPv4 | awk '{print $$2}') \
+		-e BITWARDEN_EMAIL="$$BITWARDEN_EMAIL" \
+		-e BITWARDEN_PASSWORD="$$BITWARDEN_PASSWORD" \
+		--diff \
+	'
+
+open-vm: ## Open the VM
+	@remmina -c rdp:$(shell multipass info ubuntu-config-test | grep IPv4 | awk '{print $$2}')
 
 #############################
 # Argument fix workaround

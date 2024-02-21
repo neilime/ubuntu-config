@@ -8,11 +8,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=private \
     set -eu; \
     export DEBIAN_FRONTEND=noninteractive && \
     apt-get update && \
-    apt-get install -y --no-install-recommends software-properties-common gnupg-agent sshpass wget pipx && \
+    apt-get install -y --no-install-recommends software-properties-common gnupg-agent openssh-client sshpass wget pipx unzip vim && \
     pipx ensurepath
-
-RUN apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /root/.ssh
 WORKDIR /ansible
@@ -26,6 +23,12 @@ RUN --mount=type=cache,target=/root/.cache/pipx,sharing=private \
 COPY ./ansible/requirements.yml /ansible/requirements.yml
 RUN set -eu; \
     /root/.local/bin/ansible-galaxy install -r /ansible/requirements.yml
+
+# Install Bitwarden CLI
+RUN set -eu; \
+    wget https://github.com/bitwarden/clients/releases/download/cli-v2024.2.0/bw-linux-2024.2.0.zip -O /tmp/bw-linux.zip && \
+    unzip /tmp/bw-linux.zip -d /usr/local/bin && \
+    chmod +x /usr/local/bin/bw
 
 FROM base as ci
 

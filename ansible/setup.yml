@@ -21,13 +21,16 @@
       vars:
         snap_packages: "{{ snapPackages }}"
 
-    # FIXME: needs to retrieve key from bitwarden
-    # - name: Setup keys
-    #   ansible.builtin.include_role:
-    #     name: setup_keys
-    #   tags: keys
-    #   vars:
-    #     bitwarden_ssh_keys_collection_id: "{{ bitwarden.sshKeysCollectionId }}"
+    - name: Setup keys
+      ansible.builtin.import_role:
+        name: setup_keys
+      tags: keys
+      vars:
+        bitwarden_server: "{{ bitwarden.server }}"
+        bitwarden_email: "{{ bitwarden.email }}"
+        bitwarden_password: "{{ bitwarden.password }}"
+        bitwarden_ssh_keys_collection_id: "{{ bitwarden.sshKeysCollectionId }}"
+        bitwarden_gpg_keys_collection_id: "{{ bitwarden.gpgKeysCollectionId }}"
 
     - name: Setup shell
       ansible.builtin.import_role:
