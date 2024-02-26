@@ -9,31 +9,39 @@
       - username: "{{ ansible_user }}"
 
 - name: Install Starship
-  ansible.builtin.include_role:
-    name: bartdorlandt.starship
-
-- name: Configure zsh plugins
-  ansible.builtin.copy:
-    dest: "/home/{{ ansible_user }}/.zshrc"
-    content: |
-      zstyle ':omz:update' mode auto
-
-      # NVM Autoload
-      zstyle ':omz:plugins:nvm' autoload yes
-
-      # Starship
-      eval "$(starship init zsh)"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-    mode: 0644
+  ansible.builtin.shell:
+    cmd: "curl -sS https://starship.rs/install.sh | sh"
+    creates: "/usr/local/bin/starship"
+  register: starship_install
 
 - name: Define aliases
   ansible.builtin.include_role:
     name: redbeard28.bashaliases
+    apply:
+      become: true
+      become_user: "{{ ansible_user }}"
   vars:
+    aliases_shell: zsh
     shell_aliases:
       - { alias: "cat", command: "batcat -pp" }
       # Enforce security for git aliases
-      - { alias: "ggl", command: "ggfl" }
-      - { alias: "gcam", command: "gcasm" }
-      - { alias: "gcan!", command: "gcans!" }
+      - {
+          alias: "ggl",
+          command: 'echo \"\e[31mUse \e[1;31mggfl\e[0m!\" && return 1',
+        }
+      - {
+          alias: "gcam",
+          command: 'echo \"\e[31mUse \e[1;31mgcasm\e[0m!\" && return 1',
+        }
+      - {
+          alias: "gcan!",
+          command: 'echo \"\e[31mUse \e[1;31mgcans!\e[0m!\" && return 1',
+        }
+    shell_aliases_extra: []
+
+- name: Configure zsh NVM plugin
+  ansible.builtin.lineinfile:
+    path: "/home/{{ ansible_user }}/.zshrc"
+    search_string: "zstyle ':omz:plugins:nvm'"
+    insertafter: "zstyle '"
+    line: "zstyle ':omz:plugins:nvm' autoload yes"

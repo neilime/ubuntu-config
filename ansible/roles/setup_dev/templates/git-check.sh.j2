@@ -6,6 +6,7 @@ PROJECTS_DIR="{{ dev_projects_directory }}"
 # Initialize notification message
 NOTIFICATION_MESSAGE_MAX_LENGTH=220
 ISSUED_REPOSITORIES=0
+LOG_MESSAGE=""
 NOTIFICATION_MESSAGE=""
 
 # Function to check for a Git repository in a directory
@@ -43,9 +44,10 @@ find_git_repos() {
 
 # Function to check git status
 check_git() {
-    cd "$1" || return
+    local repo_path=$1
+    cd "$repo_path" || return
 
-    local repo_name=$(basename "$1")
+    local repo_name=$(basename "$repo_path")
     local uncommitted_changes=false
     local unpushed_changes=false
 
@@ -82,18 +84,19 @@ check_git() {
         repo_notification_message+="unpushed commits"
     fi
 
-    repo_notification_message=" - $repo_name: $repo_notification_message"
-    NOTIFICATION_MESSAGE+="$repo_notification_message\n"
+    LOG_MESSAGE+=" - $repo_path: $repo_notification_message\n"
+    NOTIFICATION_MESSAGE+=" - $repo_name: $repo_notification_message\n"
 
 }
 
 # Find all git directories and check them
 find_git_repos "$PROJECTS_DIR"
 
+echo -e "$LOG_MESSAGE"
+
 # Send a single notification if there are any changes
 if [ ! -z "$NOTIFICATION_MESSAGE" ]; then
 
-    echo -e "$NOTIFICATION_MESSAGE"
     
     # Truncate message to 120 characters
     if [ ${#NOTIFICATION_MESSAGE} -gt $NOTIFICATION_MESSAGE_MAX_LENGTH ]; then

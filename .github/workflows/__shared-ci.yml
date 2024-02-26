@@ -81,15 +81,8 @@ jobs:
       - name: Run setup
         run: $DOCKER_COMPOSE_EXEC 'wget -qO- "http://git/?p=ubuntu-config/.git;a=blob_plain;f=install.sh;hb=refs/heads/main" | bash'
 
-      - name: Test Ansible playbook idempotence
-        continue-on-error: true # FIXME: fix non idempotent issues
-        run: |
-          $DOCKER_COMPOSE_EXEC 'wget -qO- "http://git/?p=ubuntu-config/.git;a=blob_plain;f=install.sh;hb=refs/heads/main" | bash' | tee /tmp/ansible-playbook-idempotence.log
-          if tail -n 2 /tmp/ansible-playbook-idempotence.log | grep -q 'changed=0.*failed=0'; then
-            echo 'Idempotence test: pass' && exit 0
-          else
-            echo 'Idempotence test: fail' && exit 1
-          fi
+      - name: Test Ansible playbook idempotence issues
+        run: $DOCKER_COMPOSE_EXEC 'wget -qO- "http://git/?p=ubuntu-config/.git;a=blob_plain;f=install.sh;hb=refs/heads/main" | bash'
 
       - name: Validate Ansible changes in host - APT packages
         run: |

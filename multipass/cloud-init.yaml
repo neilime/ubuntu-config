@@ -1,0 +1,15 @@
+# cloud-init configuration
+
+# Install packages
+package_update: true
+packages:
+  - ubuntu-desktop
+  - xcb
+  - qt5dxcb-plugin
+  - xrdp
+
+users:
+  - name: ubuntu
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+    ssh-authorized-keys:
+      - "{{ ssh_public_key }}"

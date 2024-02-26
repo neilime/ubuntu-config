@@ -126,6 +126,8 @@ run_setup_playbook() {
     -C "$REPOSITORY_BRANCH" \
     -d "/tmp/ubuntu-config" -i "/tmp/ubuntu-config/ansible/inventory.yml" \
     --extra-vars "ansible_user=${ANSIBLE_USER}" \
+    --extra-vars "BITWARDEN_EMAIL=${BITWARDEN_EMAIL}" \
+    --extra-vars "BITWARDEN_PASSWORD=${BITWARDEN_PASSWORD}" \
     --limit "localhost" \
     "/tmp/ubuntu-config/ansible/install-requirements.yml" \
     "/tmp/ubuntu-config/ansible/setup.yml" \

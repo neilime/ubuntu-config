@@ -52,6 +52,7 @@
         git_name: "{{ git.name }}"
         git_email: "{{ git.email }}"
         git_signing_key: "{{ git.signingKey }}"
+        git_includes: "{{ git.includes }}"
         yarn_packages: "{{ yarnPackages }}"
         composer_packages: "{{ composerPackages }}"
       tags: dev

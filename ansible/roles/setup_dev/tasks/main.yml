@@ -10,14 +10,6 @@
     - "{{ dev_projects_directory }}"
   tags: dev
 
-- name: Setup FiraCode font
-  ansible.builtin.import_role:
-    name: hurricanehrndz.nerdfonts
-  tags: fonts
-  vars:
-    nerdfonts_fonts:
-      - fontname: FiraCode
-
 - name: Setup docker
   ansible.builtin.import_role:
     name: geerlingguy.docker

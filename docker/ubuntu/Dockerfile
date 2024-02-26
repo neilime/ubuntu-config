@@ -7,7 +7,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=private \
     set -eu; \
     export DEBIAN_FRONTEND=noninteractive && \
     apt-get update && \
-    apt-get install -y --no-install-recommends dconf-cli
+    apt-get install -y --no-install-recommends ubuntu-desktop xcb qt5dxcb-plugin
 
 # FIXME: install Bitwarden CLI as we cannot install it with snap
 RUN set -eu; \

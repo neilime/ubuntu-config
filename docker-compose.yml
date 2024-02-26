@@ -21,10 +21,10 @@ services:
       REPOSITORY_URL: http://git/ubuntu-config.git
       REPOSITORY_BRANCH: main
       VNC_PW: password
-      BITWARDEN_EMAIL:
-      BITWARDEN_PASSWORD:
     ports:
       - 6901:6901
+    env_file:
+      - .env
 
   git:
     build:

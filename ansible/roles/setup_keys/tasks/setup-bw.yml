@@ -1,11 +1,11 @@
 ---
+- name: Ensure bitwarden vars are set
+  ansible.builtin.fail:
+    msg: "bitwarden_server, bitwarden_email and bitwarden_password are required"
+  when: not bitwarden_server or not bitwarden_email or not bitwarden_password
+
 - name: Login and unlock Bitwarden
   block:
-    - name: Ensure bitwarden vars are set
-      ansible.builtin.fail:
-        msg: "bitwarden_server, bitwarden_email and bitwarden_password are required"
-      when: not bitwarden_server or not bitwarden_email or not bitwarden_password
-
     - name: Get bw server
       local_action:
         module: ansible.builtin.shell

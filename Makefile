@@ -25,12 +25,18 @@ setup-vm: ## Setup the VM
 	$(MAKE) setup-ssh-keys
 	@multipass list --format json | jq -e '.list[] | select(.name == "ubuntu-config-test" and .state == "Running")' && \
 	echo "VM is already up" || ( \
-		multipass launch lts --name ubuntu-config-test --cloud-init multipass/cloud-init.yaml --cpus 4 --disk 10G --memory 4G && \
-		multipass exec ubuntu-config-test -- sh -c 'sudo apt update -y && sudo apt install -y ubuntu-desktop xrdp' && \
+		SSH_PUBLIC_KEY=$$(cat multipass/id_rsa.pub) && cat multipass/cloud-init.yaml | sed "s#{{ ssh_public_key }}#$$SSH_PUBLIC_KEY#g" | \
+		multipass launch lts --name ubuntu-config-test --cpus 4 --disk 15G --memory 4G --timeout 3600 --cloud-init - && \
 		multipass stop ubuntu-config-test && \
 		multipass snapshot ubuntu-config-test --name "initial-setup" && \
 		multipass start ubuntu-config-test \
 	)
+
+open-vm: ## Open the VM
+	@remmina -c rdp:$(shell multipass info ubuntu-config-test | grep IPv4 | awk '{print $$2}')
+
+shell-vm: ## Open a shell in the VM
+	@ssh -X -i multipass/id_rsa ubuntu@$(shell multipass info ubuntu-config-test | grep IPv4 | awk '{print $$2}')
 
 restore-vm: ## Restore the VM
 	@multipass list --format json | jq -e '.list[] | select(.name == "ubuntu-config-test" and .state == "Running")' && \
@@ -38,7 +44,7 @@ restore-vm: ## Restore the VM
 	&& multipass restore -d ubuntu-config-test.initial-setup || echo "No VM to restore"
 
 down-vm: ## Stop the VM
-	@multipass list | grep -q ubuntu-config-test && (multipass delete ubuntu-config-test && multipass purge) || echo "VM is already down"
+	@multipass list | grep -q ubuntu-config-test && (multipass delete -v -p ubuntu-config-test) || echo "VM is already down"
 
 setup: ## Setup the project stack
 	$(MAKE) setup-ssh-keys
@@ -66,10 +72,8 @@ test-vm: ## Test playbook against VM
 		-e BITWARDEN_EMAIL="$$BITWARDEN_EMAIL" \
 		-e BITWARDEN_PASSWORD="$$BITWARDEN_PASSWORD" \
 		--diff \
+		$(filter-out $@,$(MAKECMDGOALS)) \
 	'
-
-open-vm: ## Open the VM
-	@remmina -c rdp:$(shell multipass info ubuntu-config-test | grep IPv4 | awk '{print $$2}')
 
 #############################
 # Argument fix workaround

@@ -6,6 +6,7 @@ git_name: ""
 git_email: ""
 git_signing_key: ""
 git_check_script_path: /usr/local/bin/git-check.sh
+git_includes: []
 
 # Packages to be installed globally
 yarn_packages: []

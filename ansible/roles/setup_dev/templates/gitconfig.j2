@@ -19,13 +19,13 @@
 [push]
     autoSetupRemote = true
 
-{% for include_item in git.includes %}
+{% for include_item in git_includes %}
+{% set include_path = dev_projects_directory ~ '/' ~ include_item %}
 
-[includeIf "gitdir:~/Documents/dev-projects/clients/allopneus/**"]
-    path = ~/Documents/dev-projects/clients/allopneus/.git/.gitconfig
+[includeIf "gitdir:{{ include_path }}/**"]
+    path = {{ include_path }}/.git/.gitconfig
 
 {% endfor %}
-
 
 [core]
     editor = code --wait

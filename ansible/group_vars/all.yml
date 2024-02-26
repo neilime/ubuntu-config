@@ -20,15 +20,17 @@ aptPackages:
   - ca-certificates
   - gnupg-agent
   - software-properties-common
+  - dconf-cli
   - curl
   - wget
   - curl
   - unzip
   - bat
   - zsh
-  - copyq
   - thefuck
   - make
+  - copyq
+  - fonts-firacode
   # Cleaning
   - ucaresystem-core
   # Apps

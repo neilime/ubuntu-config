@@ -2,9 +2,6 @@ version: "3"
 services:
   ansible:
     image: ${ANSIBLE_IMAGE}
-    environment:
-      ANSIBLE_USER:
-      ANSIBLE_PASSWORD:
 
   ubuntu:
     image: ${UBUNTU_IMAGE}
@@ -14,8 +11,6 @@ services:
     environment:
       REPOSITORY_URL: http://git/ubuntu-config.git
       REPOSITORY_BRANCH: main
-      BITWARDEN_EMAIL:
-      BITWARDEN_PASSWORD:
 
   git:
     image: ${GIT_IMAGE}

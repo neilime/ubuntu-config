@@ -10,14 +10,4 @@ else
   ssh-keygen -t rsa -b 4096 -f "$KEY_PATH" -N ""
 fi
 
-CLOUD_INIT_CONFIG=$(cat <<EOF
-#cloud-config
-users:
-  - name: ubuntu
-    sudo: ['ALL=(ALL) NOPASSWD:ALL']
-    ssh-authorized-keys:
-      - $(cat $KEY_PATH.pub)
-EOF
-)
-
-echo "$CLOUD_INIT_CONFIG" >"$SCRIPT_DIR/cloud-init.yaml"
+SSH_PUBLIC_KEY=$(cat "$KEY_PATH.pub")
