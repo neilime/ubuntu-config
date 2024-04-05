@@ -5,22 +5,7 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          # super-linter needs the full git history to get the
-          # list of files that changed across commits
-          fetch-depth: 0
-
-      - name: Super-linter
-        uses: super-linter/super-linter@v6.3.1 # x-release-please-version
-        continue-on-error: true # FIXME: lint issues must tbe fixed
-        env:
-          DEFAULT_BRANCH: main
-          # To report GitHub Actions status checks
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    uses: hoverkraft-tech/ci-github-common/.github/workflows/linter.yml@0.13.0
 
   build-ci:
     # FIXME: This is a workaround for having workflow actions. See https://github.com/orgs/community/discussions/38659
@@ -68,7 +53,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - uses: isbang/compose-action@v2.0.0
+      - uses: hoverkraft-tech/compose-action@v2.0.0
         with:
           compose-file: docker-compose.ci.yml
         env:
