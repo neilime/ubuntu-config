@@ -129,6 +129,7 @@ run_setup_playbook() {
     -d "/tmp/ubuntu-config" -i "/tmp/ubuntu-config/ansible/inventory.yml" \
     --extra-vars "ansible_user=${ANSIBLE_USER}" \
     --limit "localhost" \
+    -v \
     "/tmp/ubuntu-config/ansible/install-requirements.yml"
 
   sudo ansible-pull \
@@ -143,7 +144,8 @@ run_setup_playbook() {
     "/tmp/ubuntu-config/ansible/install-requirements.yml" \
     "/tmp/ubuntu-config/ansible/setup.yml" \
     "/tmp/ubuntu-config/ansible/cleanup.yml" \
-    --diff
+    --diff \
+    -v
 }
 
 #######################################
