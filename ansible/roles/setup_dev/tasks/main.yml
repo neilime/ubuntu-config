@@ -10,6 +10,10 @@
     - "{{ dev_projects_directory }}"
   tags: dev
 
+- name: Setup Git
+  ansible.builtin.import_tasks: setup-git.yml
+  tags: git
+    
 - name: Setup docker
   ansible.builtin.import_role:
     name: geerlingguy.docker
