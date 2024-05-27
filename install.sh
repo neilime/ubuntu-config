@@ -97,7 +97,7 @@ install_pipx() {
 install_ansible_pull() {
   info "Installing ansible-pull..."
   # Install ansible
-  if [ ! -f "/usr/local/bin/ansible-pull" ]; then
+  if ! sudo test -f "/usr/local/bin/ansible-pull"; then
     sudo PIPX_BIN_DIR=/usr/local/bin pipx install --force --include-deps ansible
     sudo PIPX_BIN_DIR=/usr/local/bin pipx inject ansible jmespath
     completed "ansible-pull installation done"
