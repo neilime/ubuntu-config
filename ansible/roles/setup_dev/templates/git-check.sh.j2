@@ -3,6 +3,8 @@
 # Directory containing your git projects
 PROJECTS_DIR="{{ dev_projects_directory }}"
 
+{% raw %}
+
 # Initialize notification message
 NOTIFICATION_MESSAGE_MAX_LENGTH=220
 ISSUED_REPOSITORIES=0
@@ -111,3 +113,5 @@ if [ ! -z "$NOTIFICATION_MESSAGE" ]; then
         -i /usr/share/icons/Adwaita/scalable/status/weather-severe-alert-symbolic.svg \
         "Git Repositories Status ($ISSUED_REPOSITORIES)" "$NOTIFICATION_MESSAGE"
 fi
+
+{% endraw %}
