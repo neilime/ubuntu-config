@@ -6,6 +6,8 @@ git_name: ""
 git_email: ""
 git_signing_key: ""
 git_check_script_path: /usr/local/bin/git-check.sh
+git_backup_script_path: /usr/local/bin/git-backup.sh
+git_restore_script_path: /usr/local/bin/git-restore.sh
 git_includes: []
 
 # Packages to be installed globally

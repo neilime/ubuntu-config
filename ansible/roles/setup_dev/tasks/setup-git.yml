@@ -45,3 +45,19 @@
     name: git-check.service
     enabled: yes
     state: started
+
+- name: Create git backup script
+  ansible.builtin.template:
+    src: git-backup.sh.j2
+    dest: "{{ git_backup_script_path }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0755"
+
+- name: Create git restore script
+  ansible.builtin.template:
+    src: git-restore.sh.j2
+    dest: "{{ git_restore_script_path }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0755"
