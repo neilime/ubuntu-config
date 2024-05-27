@@ -2,11 +2,6 @@
 - name: Get facts on current container
   community.docker.current_container_facts:
 
-- name: Install Snapd
-  when: not ansible_module_running_in_container
-  ansible.builtin.import_role:
-    name: professormanhattan.snapd
-
 - name: Setup snap packages
   when: not ansible_module_running_in_container
   community.general.snap:
