@@ -10,7 +10,7 @@
 
 - name: Install Starship
   ansible.builtin.shell:
-    cmd: "curl -sS https://starship.rs/install.sh | sh"
+    cmd: "curl -sS https://starship.rs/install.sh | sh -s -- --force"
     creates: "/usr/local/bin/starship"
   register: starship_install
 
