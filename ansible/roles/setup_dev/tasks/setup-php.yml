@@ -23,6 +23,7 @@
 
 - name: Retrieve list of globally installed Composer packages
   become: true
+  become_user: "{{ ansible_user }}"
   ansible.builtin.command: composer global show --direct --format=json
   register: composer_packages_output
   changed_when: false
@@ -33,6 +34,7 @@
 
 - name: Remove useless installed Composer packages.
   become: true
+  become_user: "{{ ansible_user }}"
   community.general.composer:
     global_command: true
     command: remove
