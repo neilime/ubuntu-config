@@ -106,6 +106,17 @@ install_ansible_pull() {
   fi
 }
 
+function install_git() {
+  info "Installing git..."
+  if git --version > /dev/null 2>&1; then
+    completed "Git is already installed"
+  else
+    sudo apt update
+    sudo apt install -y git
+    completed "git installation done"
+  fi
+}
+
 run_setup_playbook() {
   info "Running setup playbook..."
 
@@ -154,6 +165,7 @@ check_requirements
 ask_for_bitwarden_credentials
 install_pipx
 install_ansible_pull
+install_git
 run_setup_playbook
 
 completed "Installation done"
