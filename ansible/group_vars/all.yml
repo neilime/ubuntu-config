@@ -53,6 +53,7 @@ snapPackages:
   - bw
   - multipass
   - remmina
+  - helm
 
 zshPlugins:
   - thefuck
