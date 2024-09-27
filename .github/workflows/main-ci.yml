@@ -11,7 +11,7 @@ on:
 
 jobs:
   clean:
-    uses: hoverkraft-tech/ci-github-container/.github/workflows/prune-pull-requests-images-tags.yml@0.17.5
+    uses: hoverkraft-tech/ci-github-container/.github/workflows/prune-pull-requests-images-tags.yml@0.18.0
     # FIXME: This is a workaround for having workflow actions. See https://github.com/orgs/community/discussions/38659
     permissions:
       id-token: write
