@@ -5,7 +5,7 @@ on:
 
 jobs:
   lint:
-    uses: hoverkraft-tech/ci-github-common/.github/workflows/linter.yml@0.14.0
+    uses: hoverkraft-tech/ci-github-common/.github/workflows/linter.yml@0.15.0
 
   build-ci:
     # FIXME: This is a workaround for having workflow actions. See https://github.com/orgs/community/discussions/38659
@@ -15,7 +15,7 @@ jobs:
       packages: write
       issues: read
       pull-requests: read
-    uses: hoverkraft-tech/ci-github-container/.github/workflows/docker-build-images.yml@0.17.5
+    uses: hoverkraft-tech/ci-github-container/.github/workflows/docker-build-images.yml@0.18.0
     with:
       oci-registry: ${{ vars.OCI_REGISTRY }}
       images: |
@@ -53,7 +53,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - uses: hoverkraft-tech/compose-action@v2.0.1
+      - uses: hoverkraft-tech/compose-action@v2.0.2
         with:
           compose-file: docker-compose.ci.yml
         env:
