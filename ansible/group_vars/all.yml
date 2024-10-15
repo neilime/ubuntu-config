@@ -46,6 +46,7 @@ snapPackages:
   - code
   - spotify
   - slack
+  - fFmpeg
   - jdownloader2
   - vlc
   - htop
