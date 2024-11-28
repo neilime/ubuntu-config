@@ -1,22 +1,17 @@
 .PHONY: help
 
-MAKEFLAGS += --silent
-.DEFAULT_GOAL := help
-
-help: ## Show help message
-	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m\033[0m\n"} /^[$$()% a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+help: ## Display help
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 lint: ## Execute linting
-	DEFAULT_WORKSPACE="$(CURDIR)"; \
-	LINTER_IMAGE="linter:latest"; \
-	VOLUME="$$DEFAULT_WORKSPACE:$$DEFAULT_WORKSPACE"; \
-	docker build --tag $$LINTER_IMAGE -f Dockerfile.lint .; \
-	docker run \
-		-it --rm --init --sig-proxy=true \
-		-e DEFAULT_WORKSPACE="$$DEFAULT_WORKSPACE" \
-		-e FILTER_REGEX_INCLUDE="$(filter-out $@,$(MAKECMDGOALS))" \
-		-v $$VOLUME \
-		$$LINTER_IMAGE
+	$(call run_linter,)
+
+lint-fix: ## Execute linting and fix
+	$(call run_linter, \
+		-e FIX_YAML_PRETTIER=true \
+		-e FIX_MARKDOWN=true \
+		-e FIX_MARKDOWN_PRETTIER=true \
+		-e FIX_NATURAL_LANGUAGE=true)
 
 setup-ssh-keys: ## Setup ssh keys for VM access
 	./multipass/setup-ssh-keys.sh
@@ -74,6 +69,19 @@ test-vm: ## Test playbook against VM
 		--diff \
 		$(filter-out $@,$(MAKECMDGOALS)) \
 	'
+define run_linter
+	DEFAULT_WORKSPACE="$(CURDIR)"; \
+	LINTER_IMAGE="linter:latest"; \
+	VOLUME="$$DEFAULT_WORKSPACE:$$DEFAULT_WORKSPACE"; \
+	docker build --build-arg UID=$(id -u) --build-arg GID=$(id -g) --tag $$LINTER_IMAGE .; \
+	docker run \
+		-e DEFAULT_WORKSPACE="$$DEFAULT_WORKSPACE" \
+		-e FILTER_REGEX_INCLUDE="$(filter-out $@,$(MAKECMDGOALS))" \
+		$(1) \
+		-v $$VOLUME \
+		--rm \
+		$$LINTER_IMAGE
+endef
 
 #############################
 # Argument fix workaround

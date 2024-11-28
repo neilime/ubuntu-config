@@ -55,6 +55,7 @@ snapPackages:
   - multipass
   - remmina
   - helm
+  - dive
 
 zshPlugins:
   - thefuck

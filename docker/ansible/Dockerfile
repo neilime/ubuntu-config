@@ -30,6 +30,13 @@ RUN set -eu; \
     unzip /tmp/bw-linux.zip -d /usr/local/bin && \
     chmod +x /usr/local/bin/bw
 
+# Install Ansible Mitogen
+RUN set -eu; \
+    wget https://files.pythonhosted.org/packages/source/m/mitogen/mitogen-0.3.9.tar.gz -O /tmp/mitogen.tar.gz && \
+    tar -xvf /tmp/mitogen.tar.gz -C /tmp && \
+    mkdir -p /etc/ansible && \
+    mv /tmp/mitogen-0.3.9 /etc/ansible/mitogen
+
 FROM base as ci
 
 CMD ["tail", "-f", "/dev/null"]
