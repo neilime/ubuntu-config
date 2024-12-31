@@ -21,8 +21,8 @@
     gpg_keys_query: |
       data.data[].{
         name: name,
-        public_key: fields[?name=='public_key'].value | [0],
-        private_key: notes
+        private_key: notes,
+        public_key: fields[?name=='public_key'].value | [0]
       }
 
 - name: Setup GPG keys
