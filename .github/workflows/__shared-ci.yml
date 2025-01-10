@@ -5,7 +5,7 @@ on:
 
 jobs:
   lint:
-    uses: hoverkraft-tech/ci-github-common/.github/workflows/linter.yml@0.15.0
+    uses: hoverkraft-tech/ci-github-common/.github/workflows/linter.yml@0.16.0
 
   build-ci:
     # FIXME: This is a workaround for having workflow actions. See https://github.com/orgs/community/discussions/38659
@@ -15,7 +15,7 @@ jobs:
       packages: write
       issues: read
       pull-requests: read
-    uses: hoverkraft-tech/ci-github-container/.github/workflows/docker-build-images.yml@0.18.0
+    uses: hoverkraft-tech/ci-github-container/.github/workflows/docker-build-images.yml@0.19.0
     with:
       oci-registry: ${{ vars.OCI_REGISTRY }}
       images: |
