@@ -15,6 +15,7 @@ RUN mkdir -p /root/.ssh
 WORKDIR /ansible
 
 # Install pipx packages
+# hadolint ignore=DL3013
 RUN --mount=type=cache,target=/root/.cache/pipx,sharing=private \
     set -eu; \
     pipx install --include-deps ansible && \
@@ -26,13 +27,13 @@ RUN set -eu; \
 
 # Install Bitwarden CLI
 RUN set -eu; \
-    wget https://github.com/bitwarden/clients/releases/download/cli-v2024.2.0/bw-linux-2024.2.0.zip -O /tmp/bw-linux.zip && \
+    wget -q https://github.com/bitwarden/clients/releases/download/cli-v2024.2.0/bw-linux-2024.2.0.zip -O /tmp/bw-linux.zip && \
     unzip /tmp/bw-linux.zip -d /usr/local/bin && \
     chmod +x /usr/local/bin/bw
 
 # Install Ansible Mitogen
 RUN set -eu; \
-    wget https://files.pythonhosted.org/packages/source/m/mitogen/mitogen-0.3.9.tar.gz -O /tmp/mitogen.tar.gz && \
+    wget -q https://files.pythonhosted.org/packages/source/m/mitogen/mitogen-0.3.9.tar.gz -O /tmp/mitogen.tar.gz && \
     tar -xvf /tmp/mitogen.tar.gz -C /tmp && \
     mkdir -p /etc/ansible && \
     mv /tmp/mitogen-0.3.9 /etc/ansible/mitogen

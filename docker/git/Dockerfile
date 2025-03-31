@@ -11,9 +11,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=private \
 COPY ./ansible /var/lib/git/ubuntu-config/ansible
 COPY ./install.sh /var/lib/git/ubuntu-config/install.sh
 
-RUN \
-    cd /var/lib/git/ubuntu-config && \
-    git init -b main && \
+WORKDIR /var/lib/git/ubuntu-config
+
+RUN git init -b main && \
     git config user.email "test@test.com" && \
     git config user.name "Test Git" && \
     git add . && \
