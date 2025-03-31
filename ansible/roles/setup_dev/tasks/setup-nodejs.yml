@@ -5,8 +5,8 @@
   ansible.builtin.include_role:
     name: stephdewit.nvm
   vars:
-    nvm_version: 'latest'
-    nvm_node_version: 'latest'
+    nvm_version: "latest"
+    nvm_node_version: "latest"
 
 - name: Install yarn
   ansible.builtin.include_role:

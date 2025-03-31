@@ -16,13 +16,12 @@
 
 - name: Define aliases
   ansible.builtin.include_role:
-    name: redbeard28.bashaliases
+    name: ferrarimarco.bash-aliases
     apply:
       become: true
       become_user: "{{ ansible_user }}"
   vars:
-    aliases_shell: zsh
-    shell_aliases:
+    bashalias_aliases:
       - { alias: "cat", command: "batcat -pp" }
       # Enforce security for git aliases
       - {
@@ -37,7 +36,6 @@
           alias: "gcan!",
           command: 'echo \"\e[31mUse \e[1;31mgcans!\e[0m!\" && return 1',
         }
-    shell_aliases_extra: []
 
 - name: Configure zsh NVM plugin
   ansible.builtin.lineinfile:

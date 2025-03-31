@@ -11,28 +11,22 @@ roles:
   - src: stephdewit.nvm
     version: v3.4.5
   - src: gantsign.oh-my-zsh
-    version: 2.7.0    
+    version: 2.7.0
   - src: gantsign.default-web-browser
     version: 4.0.0
   - src: gantsign.pin-to-launcher
     version: 4.0.0
   - src: bartdorlandt.starship
-    version: 1.0.0    
+    version: 0.0.5
   - src: Oefenweb.yarn
     version: v1.0.57
-  - src: hurricanehrndz.nerdfonts
-    version: 1.0.0
   - src: Oefenweb.ssh_keys
     version: v5.0.5
   - src: geerlingguy.composer
     version: 4.0.0
   - src: andrewrothstein.dive
-    version: 1.0.0    
+    version: 1.0.0
   - src: diademiemi.github_cli
     version: 1.0.0
-  - src: kilip.gpg
-    version: 1.0.0
-  - src: professormanhattan.snapd
-    version: 1.0.0
-  - src: redbeard28.bashaliases
-    version: 1.0.0
+  - src: ferrarimarco.bash-aliases
+    version: 1.0.3
