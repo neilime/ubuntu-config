@@ -67,6 +67,7 @@ zshPlugins:
   - docker-compose
   - composer
   - aws
+  - pre-commit
 
 git:
   name: "Emilien Escalle"

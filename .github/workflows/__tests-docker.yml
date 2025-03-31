@@ -1,0 +1,143 @@
+name: Shared - Tests - Docker
+description: Test installation against Docker container
+
+on:
+  workflow_call:
+
+jobs:
+  build-images:
+    # FIXME: This is a workaround for having workflow actions. See https://github.com/orgs/community/discussions/38659
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
+      issues: read
+      pull-requests: read
+    uses: hoverkraft-tech/ci-github-container/.github/workflows/docker-build-images.yml@0.24.1
+    with:
+      oci-registry: ${{ vars.OCI_REGISTRY }}
+      images: |
+        [
+          {
+            "name": "ansible-ci",
+            "context": ".",
+            "dockerfile": "./docker/ansible/Dockerfile",
+            "target": "ci",
+            "platforms": ["linux/amd64"]
+          },
+          {
+            "name": "ubuntu-ci",
+            "context": "./docker/ubuntu",
+            "dockerfile": "Dockerfile",
+            "platforms": ["linux/amd64"]
+          },
+          {
+            "name": "git-ci",
+            "context": ".",
+            "dockerfile": "./docker/git/Dockerfile",
+            "platforms": ["linux/amd64"]
+          }
+        ]
+    secrets:
+      oci-registry-password: ${{ secrets.GITHUB_TOKEN }}
+
+  tests-docker:
+    name: Tests - Docker
+    runs-on: ubuntu-latest
+    needs: build-images
+    env:
+      ANSIBLE_IMAGE: ${{ fromJSON(needs.build-images.outputs.built-images).ansible-ci.images[0] }}
+      UBUNTU_IMAGE: ${{ fromJSON(needs.build-images.outputs.built-images).ubuntu-ci.images[0] }}
+      GIT_IMAGE: ${{ fromJSON(needs.build-images.outputs.built-images).git-ci.images[0] }}
+      BITWARDEN_EMAIL: ${{ secrets.BITWARDEN_EMAIL }}
+      BITWARDEN_PASSWORD: ${{ secrets.BITWARDEN_PASSWORD }}
+      DOCKER_COMPOSE_EXEC: docker compose -f compose.ci.yml exec --user kasm-user -T ubuntu sh -c
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: hoverkraft-tech/compose-action@v2.2.0
+        with:
+          compose-file: compose.ci.yml
+
+      - name: Run setup
+        run: $DOCKER_COMPOSE_EXEC 'wget -qO- "http://git/?p=ubuntu-config/.git;a=blob_plain;f=install.sh;hb=refs/heads/main" | bash'
+
+      - name: Test Ansible playbook idempotence issues
+        run: $DOCKER_COMPOSE_EXEC 'wget -qO- "http://git/?p=ubuntu-config/.git;a=blob_plain;f=install.sh;hb=refs/heads/main" | bash'
+
+      - name: Validate Ansible changes in host - APT packages
+        run: |
+          if $DOCKER_COMPOSE_EXEC 'dpkg -l | grep -q "ucaresystem-core"'; then
+            echo 'APT packages installed: pass' && exit 0
+          else
+            echo 'APT packages installed: fail' && exit 1
+          fi
+
+      - name: Validate Ansible changes in host - SSH keys
+        run: |
+          if $DOCKER_COMPOSE_EXEC 'test -f ~/.ssh/id_rsa_escemi'; then
+            echo 'SSH keys installed: pass' && exit 0
+          else
+            echo 'SSH keys installed: fail' && exit 1
+          fi
+
+      - name: Validate Ansible changes in host - GPG keys
+        run: |
+          if $DOCKER_COMPOSE_EXEC 'gpg --list-keys | grep -q "/home/ubuntu/.gnupg/pubring.kbx"'
+
+      - name: Validate Ansible changes in host - docker
+        run: |
+          if $DOCKER_COMPOSE_EXEC 'docker --version | grep -q "Docker"'; then
+            echo 'Docker installed: pass' && exit 0
+          else
+            echo 'Docker installed: fail' && exit 1
+          fi
+
+          if $DOCKER_COMPOSE_EXEC 'docker-compose --version | grep -q "Docker Compose"'; then
+            echo 'Docker installed: pass' && exit 0
+          else
+            echo 'Docker installed: fail' && exit 1
+          fi
+
+      - name: Validate Ansible changes in host - zsh
+        run: |
+          if $DOCKER_COMPOSE_EXEC 'zsh --version | grep -q "zsh"'; then
+            echo 'Zsh installed: pass' && exit 0
+          else
+            echo 'Zsh installed: fail' && exit 1
+          fi
+
+      - name: Validate Ansible changes in host - nodejs & nvm & Yarn
+        run: |
+          if $DOCKER_COMPOSE_EXEC 'node --version | grep -Eq "^v[0-9.]+$"'; then
+            echo 'Nodejs installed: pass' && exit 0
+          else
+            echo 'Nodejs installed: fail' && exit 1
+          fi
+
+          if $DOCKER_COMPOSE_EXEC 'nvm --version | grep -Eq "^[0-9.]+$"'; then
+            echo 'Nvm installed: pass' && exit 0
+          else
+            echo 'Nvm installed: fail' && exit 1
+          fi
+
+          if $DOCKER_COMPOSE_EXEC 'yarn --version | grep -Eq "^[0-9.]+$"'; then
+            echo 'Yarn installed: pass' && exit 0
+          else
+            echo 'Yarn installed: fail' && exit 1
+          fi
+
+      - name: Validate Ansible changes in host - PHP & Composer
+        run: |
+          if $DOCKER_COMPOSE_EXEC 'php --version | grep -q "PHP"'; then
+            echo 'PHP installed: pass' && exit 0
+          else
+            echo 'PHP installed: fail' && exit 1
+          fi
+
+          if $DOCKER_COMPOSE_EXEC 'composer --version | grep -q "Composer"'; then
+            echo 'Composer installed: pass' && exit 0
+          else
+            echo 'Composer installed: fail' && exit 1
+          fi

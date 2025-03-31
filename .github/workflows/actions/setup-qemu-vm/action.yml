@@ -1,0 +1,73 @@
+name: "Setup QEMU VM"
+description: "Composite action to set up a QEMU virtual machine"
+
+inputs:
+  iso-url:
+    description: "URL to the Ubuntu Desktop ISO"
+    required: true
+
+  user:
+    description: "Username created VM user"
+    required: true
+    default: "e2e"
+
+  password:
+    description: "Password for created user"
+    required: true
+    default: "e2epass"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y qemu-system-x86 genisoimage wget
+
+    - name: Download Ubuntu Desktop ISO
+      run: wget "${{ inputs.iso-url }}" -O "seed.iso"
+
+    - name: Create cloud-init ISO
+      run: |
+        mkdir -p cloud-init
+        cat > cloud-init/user-data <<EOF
+        #cloud-config
+        users:
+          - name: ${{ inputs.user }}
+            groups: sudo
+            shell: /bin/bash
+            sudo: ALL=(ALL) NOPASSWD:ALL
+            lock_passwd: false
+            passwd: $(openssl passwd -1 "${{ inputs.password }}")          
+        EOF
+        touch cloud-init/meta-data
+        genisoimage -output seed.iso -volid cidata -joliet -rock cloud-init/user-data cloud-init/meta-data
+
+    - name: Create QEMU disk image
+      run: |
+        qemu-img create -f qcow2 ubuntu-disk.qcow2 15G
+
+    - name: Boot Ubuntu Desktop in QEMU (headless)
+      run: |
+        qemu-system-x86_64 \
+          -m 4096 \
+          -smp 2 \
+          -enable-kvm \
+          -nographic \
+          -boot d \
+          -cdrom ubuntu.iso \
+          -drive file=ubuntu-disk.qcow2,format=qcow2 \
+          -drive file=seed.iso,format=raw \
+          -no-reboot
+
+    - name: Mount disk
+      run: |
+        sudo apt install -y nbdkit qemu-utils
+        sudo modprobe nbd
+        sudo qemu-nbd --connect=/dev/nbd0 ubuntu-disk.qcow2
+        sleep 5
+        sudo mkdir -p /mnt/ubuntu
+        sudo mount /dev/nbd0p1 /mnt/ubuntu || echo "Try other partitions if needed"

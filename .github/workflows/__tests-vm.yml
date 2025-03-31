@@ -1,0 +1,32 @@
+name: Shared - Tests - VM
+description: Test installation against VM
+
+on:
+  workflow_call:
+
+jobs:
+  tests-vm:
+    name: Tests - VM
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU VM
+        uses: ./.github/workflows/actions/setup-qemu-vm
+        with:
+          iso-url: https://releases.ubuntu.com/22.04/ubuntu-22.04.3-desktop-amd64.iso
+
+      - name: Run setup script
+        run: |
+          if [ -f /mnt/ubuntu/e2e.success ]; then
+          echo "✅ Setup script completed successfully"
+          else
+          echo "❌ Setup script failed"
+          exit 1
+          fi
+
+      - name: Unmount disk
+        run: |
+          sudo umount /mnt/ubuntu
+          sudo qemu-nbd --disconnect /dev/nbd0

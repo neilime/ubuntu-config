@@ -13,34 +13,6 @@ lint-fix: ## Execute linting and fix
 		-e FIX_MARKDOWN_PRETTIER=true \
 		-e FIX_NATURAL_LANGUAGE=true)
 
-setup-ssh-keys: ## Setup ssh keys for VM access
-	./multipass/setup-ssh-keys.sh
-
-setup-vm: ## Setup the VM
-	$(MAKE) setup-ssh-keys
-	@multipass list --format json | jq -e '.list[] | select(.name == "ubuntu-config-test" and .state == "Running")' && \
-	echo "VM is already up" || ( \
-		SSH_PUBLIC_KEY=$$(cat multipass/id_rsa.pub) && cat multipass/cloud-init.yaml | sed "s#{{ ssh_public_key }}#$$SSH_PUBLIC_KEY#g" | \
-		multipass launch lts --name ubuntu-config-test --cpus 4 --disk 15G --memory 4G --timeout 3600 --cloud-init - && \
-		multipass stop ubuntu-config-test && \
-		multipass snapshot ubuntu-config-test --name "initial-setup" && \
-		multipass start ubuntu-config-test \
-	)
-
-open-vm: ## Open the VM
-	@remmina -c rdp:$(shell multipass info ubuntu-config-test | grep IPv4 | awk '{print $$2}')
-
-shell-vm: ## Open a shell in the VM
-	@ssh -X -i multipass/id_rsa ubuntu@$(shell multipass info ubuntu-config-test | grep IPv4 | awk '{print $$2}')
-
-restore-vm: ## Restore the VM
-	@multipass list --format json | jq -e '.list[] | select(.name == "ubuntu-config-test" and .state == "Running")' && \
-	&& multipass list --snapshots --format json | jq -e '.info["ubuntu-config-test"]' && \
-	&& multipass restore -d ubuntu-config-test.initial-setup || echo "No VM to restore"
-
-down-vm: ## Stop the VM
-	@multipass list | grep -q ubuntu-config-test && (multipass delete -v -p ubuntu-config-test) || echo "VM is already down"
-
 setup: ## Setup the project stack
 	$(MAKE) setup-ssh-keys
 	@docker-compose up --remove-orphans --build -d
@@ -56,6 +28,34 @@ ansible-playbook: ## Run ansible-playbook
 
 ansible-galaxy: ## Run ansible-galaxy
 	@docker-compose exec ansible ansible-galaxy $(filter-out $@,$(MAKECMDGOALS))
+
+setup-ssh-keys: ## Setup ssh keys for VM access
+	./cloud-init/setup-ssh-keys.sh
+
+setup-vm: ## Setup the VM
+	$(MAKE) setup-ssh-keys
+	@multipass list --format json | jq -e '.list[] | select(.name == "ubuntu-config-test" and .state == "Running")' && \
+	echo "VM is already up" || ( \
+		SSH_PUBLIC_KEY=$$(cat cloud-init/id_rsa.pub) && cat cloud-init/user-data.yml | sed "s#{{ ssh_public_key }}#$$SSH_PUBLIC_KEY#g" | \
+		multipass launch lts --name ubuntu-config-test --cpus 4 --disk 15G --memory 4G --timeout 3600 --cloud-init - && \
+		multipass stop ubuntu-config-test && \
+		multipass snapshot ubuntu-config-test --name "initial-setup" && \
+		multipass start ubuntu-config-test \
+	)
+
+open-vm: ## Open the VM
+	@remmina -c rdp:$(shell multipass info ubuntu-config-test | grep IPv4 | awk '{print $$2}')
+
+shell-vm: ## Open a shell in the VM
+	@ssh -X -i cloud-init/id_rsa ubuntu@$(shell multipass info ubuntu-config-test | grep IPv4 | awk '{print $$2}')
+
+restore-vm: ## Restore the VM
+	@multipass list --format json | jq -e '.list[] | select(.name == "ubuntu-config-test" and .state == "Running")' && \
+	&& multipass list --snapshots --format json | jq -e '.info["ubuntu-config-test"]' && \
+	&& multipass restore -d ubuntu-config-test.initial-setup || echo "No VM to restore"
+
+down-vm: ## Stop the VM
+	@multipass list | grep -q ubuntu-config-test && (multipass delete -v -p ubuntu-config-test) || echo "VM is already down"
 
 test-docker: ## Test playbook against test container
 	@docker-compose exec --user kasm-user ubuntu sh -c 'wget -qO- "http://git/?p=ubuntu-config/.git;a=blob_plain;f=install.sh;hb=refs/heads/main" | bash'
