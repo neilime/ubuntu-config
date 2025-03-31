@@ -34,7 +34,7 @@ find_git_repos() {
 	if is_git_repo "$current_dir"; then
 
 		# Strip $PROJECTS_DIR from $current_dir to get the relative path
-		backup_dir="$DEST_DIR/${current_dir#$PROJECTS_DIR/}"
+		backup_dir="$DEST_DIR/${current_dir#"$PROJECTS_DIR"/}"
 		backup_project "$current_dir" "$backup_dir"
 		return # Stop further searching in this branch if a Git repo is found
 	fi

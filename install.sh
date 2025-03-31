@@ -12,12 +12,9 @@ fi
 
 BOLD="$(tput bold 2>/dev/null || printf '')"
 GREY="$(tput setaf 0 2>/dev/null || printf '')"
-UNDERLINE="$(tput smul 2>/dev/null || printf '')"
 RED="$(tput setaf 1 2>/dev/null || printf '')"
 GREEN="$(tput setaf 2 2>/dev/null || printf '')"
 YELLOW="$(tput setaf 3 2>/dev/null || printf '')"
-BLUE="$(tput setaf 4 2>/dev/null || printf '')"
-MAGENTA="$(tput setaf 5 2>/dev/null || printf '')"
 NO_COLOR="$(tput sgr0 2>/dev/null || printf '')"
 
 info() {
@@ -69,12 +66,14 @@ ask_for_bitwarden_credentials() {
 	fi
 
 	while [ -z "$BITWARDEN_EMAIL" ]; do
-		read -p "Bitwarden email: " BITWARDEN_EMAIL
+		echo "Bitwarden email:"
+		IFS= read -r BITWARDEN_EMAIL
 	done
 	export BITWARDEN_EMAIL
 
 	while [ -z "$BITWARDEN_PASSWORD" ]; do
-		read -s -p "Bitwarden password: " BITWARDEN_PASSWORD
+		echo "Bitwarden password:"
+		IFS= read -r -s BITWARDEN_PASSWORD
 	done
 
 	export BITWARDEN_PASSWORD
@@ -87,7 +86,7 @@ install_pipx() {
 	if ! command -v pipx &>/dev/null; then
 		sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
 		sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-venv pipx
-		completed "pipx installation of $i done"
+		completed "pipx installation done"
 	else
 		completed "pipx already installed"
 	fi

@@ -1,4 +1,4 @@
-FROM kostyaesmukov/gitweb-readonly
+FROM rockstorm/gitweb:2.45
 
 # hadolint ignore=DL3008
 RUN --mount=type=cache,target=/var/cache/apt,sharing=private \

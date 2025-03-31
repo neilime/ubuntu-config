@@ -9,5 +9,3 @@ if [ -f "$KEY_PATH" ]; then
 else
 	ssh-keygen -t rsa -b 4096 -f "$KEY_PATH" -N ""
 fi
-
-SSH_PUBLIC_KEY=$(cat "$KEY_PATH.pub")

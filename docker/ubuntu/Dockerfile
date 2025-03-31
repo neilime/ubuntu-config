@@ -2,6 +2,7 @@ FROM kasmweb/ubuntu-jammy-dind:1.14.0
 
 USER root
 
+# hadolint ignore=DL3008
 RUN --mount=type=cache,target=/var/cache/apt,sharing=private \
     --mount=type=cache,target=/var/lib/apt,sharing=private \
     set -eu; \
