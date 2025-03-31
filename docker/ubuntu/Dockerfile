@@ -1,4 +1,4 @@
-FROM kasmweb/ubuntu-jammy-dind:1.14.0
+FROM kasmweb/ubuntu-jammy-dind:1.16.1
 
 USER root
 
