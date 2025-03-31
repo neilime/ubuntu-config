@@ -16,7 +16,7 @@
 
 - name: Define aliases
   ansible.builtin.include_role:
-    name: ferrarimarco.bash-aliases
+    name: IronicBadger.bash_aliases
     apply:
       become: true
       become_user: "{{ ansible_user }}"

@@ -26,5 +26,5 @@ roles:
     version: 1.9.2
   - src: andrewrothstein.dive
     version: v1.0.2
-  - src: ferrarimarco.bash-aliases
+  - src: IronicBadger.bash_aliases
     version: 1.0.3
