@@ -12,12 +12,12 @@
 - name: Retrieve list of globally installed Yarn packages
   become: true
   ansible.builtin.command: yarn global list --depth=0
-  register: yarn_packages_output
+  register: setup_dev_yarn_packages_output
   changed_when: false
 
 - name: Parse list of installed Yarn packages
   ansible.builtin.set_fact:
-    installed_packages: "{{ yarn_packages_output.stdout_lines | select('match', '^info .*@') | map('regex_replace', '^info\\s+([^@]+)@.*$', '\\1') | list }}"
+    installed_packages: "{{ setup_dev_yarn_packages_output.stdout_lines | select('match', '^info .*@') | map('regex_replace', '^info\\s+([^@]+)@.*$', '\\1') | list }}"
 
 - name: Remove useless installed Yarn packages.
   become: true
@@ -26,7 +26,7 @@
     global: true
     state: absent
   loop: "{{ installed_packages }}"
-  when: item not in yarn_packages
+  when: item not in setup_dev_yarn_packages
 
 - name: Install Yarn global packages
   become: true
@@ -34,4 +34,4 @@
     name: "{{ item }}"
     latest: "latest"
     global: true
-  loop: "{{ yarn_packages }}"
+  loop: "{{ setup_dev_yarn_packages }}"

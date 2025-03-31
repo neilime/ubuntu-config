@@ -3,16 +3,30 @@ name: Shared - Continuous Integration for common tasks
 on:
   workflow_call:
 
+permissions: {}
+
 jobs:
   lint:
     uses: hoverkraft-tech/ci-github-common/.github/workflows/linter.yml@198d391bd7046a3c8ca503d3387ad9c5ba8f9f29 # 0.22.0
+    permissions:
+      contents: read
+      statuses: write
+      security-events: write
 
   tests-docker:
     needs: lint
     uses: ./.github/workflows/__tests-docker.yml
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
+      issues: read
+      pull-requests: read
     secrets: inherit
 
   tests-vm:
     needs: lint
     uses: ./.github/workflows/__tests-vm.yml
+    permissions:
+      contents: read
     secrets: inherit

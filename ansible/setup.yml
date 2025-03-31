@@ -11,15 +11,15 @@
         name: setup_apt
       tags: apt
       vars:
-        apt_repositories: "{{ aptRepositories }}"
-        apt_packages: "{{ aptPackages }}"
+        setup_apt_repositories: "{{ apt_repositories }}"
+        setup_apt_packages: "{{ apt_packages }}"
 
     - name: Setup Snap
       ansible.builtin.import_role:
         name: setup_snap
       tags: snap
       vars:
-        snap_packages: "{{ snapPackages }}"
+        snap_packages: "{{ snap_packages }}"
 
     - name: Setup keys
       ansible.builtin.import_role:
@@ -38,7 +38,7 @@
       tags: shell
       become: true
       vars:
-        zsh_plugins: "{{ zshPlugins }}"
+        zsh_plugins: "{{ zsh_plugins }}"
 
     - name: Setup configuration
       ansible.builtin.import_role:
@@ -49,10 +49,10 @@
       ansible.builtin.import_role:
         name: setup_dev
       vars:
-        git_name: "{{ git.name }}"
-        git_email: "{{ git.email }}"
-        git_signing_key: "{{ git.signingKey }}"
-        git_includes: "{{ git.includes }}"
-        yarn_packages: "{{ yarnPackages }}"
-        composer_packages: "{{ composerPackages }}"
+        setup_dev_git_name: "{{ git.name }}"
+        setup_dev_git_email: "{{ git.email }}"
+        setup_dev_git_signing_key: "{{ git.signingKey }}"
+        setup_dev_git_includes: "{{ git.includes }}"
+        setup_dev_yarn_packages: "{{ yarn.packages }}"
+        setup_dev_composer_packages: "{{ composer.packages }}"
       tags: dev

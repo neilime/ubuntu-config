@@ -1,16 +1,16 @@
 ---
-dev_projects_directory: "/home/{{ ansible_user }}/Documents/dev-projects"
+setup_dev_projects_directory: "/home/{{ ansible_user }}/Documents/dev-projects"
 
 # Git
-git_name: ""
-git_email: ""
-git_signing_key: ""
-git_check_script_path: /usr/local/bin/git-check.sh
-git_backup_script_path: /usr/local/bin/git-backup.sh
-git_restore_script_path: /usr/local/bin/git-restore.sh
-git_includes: []
+setup_dev_git_name: ""
+setup_dev_git_email: ""
+setup_dev_git_signing_key: ""
+setup_dev_git_check_script_path: /usr/local/bin/git-check.sh
+setup_dev_git_backup_script_path: /usr/local/bin/git-backup.sh
+setup_dev_git_restore_script_path: /usr/local/bin/git-restore.sh
+setup_dev_git_includes: []
 
 # Packages to be installed globally
-yarn_packages: []
+setup_dev_yarn_packages: []
 
-composer_packages: []
+setup_dev_composer_packages: []

@@ -7,7 +7,7 @@ if [ -z "$BACKUP_DIR" ]; then
 	exit 1
 fi
 
-PROJECTS_DIR="{{ dev_projects_directory }}"
+PROJECTS_DIR="{{ setup_dev_projects_directory }}"
 
 # Function to extract the remote URL from the .git/config.bak file
 get_remote_url() {

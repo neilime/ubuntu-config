@@ -20,7 +20,7 @@
 - name: Create git check script
   ansible.builtin.template:
     src: git-check.sh.j2
-    dest: "{{ git_check_script_path }}"
+    dest: "{{ setup_dev_git_check_script_path }}"
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: "0755"
@@ -28,7 +28,7 @@
 - name: Add cron job for git check script
   ansible.builtin.cron:
     name: "Git check cron job"
-    job: "{{ git_check_script_path }}"
+    job: "{{ setup_dev_git_check_script_path }}"
     special_time: daily
     user: "{{ ansible_user }}"
 
@@ -49,7 +49,7 @@
 - name: Create git backup script
   ansible.builtin.template:
     src: git-backup.sh.j2
-    dest: "{{ git_backup_script_path }}"
+    dest: "{{ setup_dev_git_backup_script_path }}"
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: "0755"
@@ -57,7 +57,7 @@
 - name: Create git restore script
   ansible.builtin.template:
     src: git-restore.sh.j2
-    dest: "{{ git_restore_script_path }}"
+    dest: "{{ setup_dev_git_restore_script_path }}"
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: "0755"

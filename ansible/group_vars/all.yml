@@ -11,10 +11,10 @@ favorites:
   - slack_slack.desktop
   - spotify_spotify.desktop
 
-aptRepositories:
+apt_repositories:
   - ppa:utappia/stable # ucaresystem-core
 
-aptPackages:
+apt_packages:
   # Common
   - apt-transport-https
   - ca-certificates
@@ -41,7 +41,7 @@ aptPackages:
   - simple-scan
   - krita
 
-snapPackages:
+snap_packages:
   - deja-dup
   - code
   - spotify
@@ -57,7 +57,7 @@ snapPackages:
   - helm
   - dive
 
-zshPlugins:
+zsh_plugins:
   - thefuck
   - git
   - yarn
@@ -76,9 +76,11 @@ git:
   includes:
     - clients/allopneus
 
-yarnPackages: []
+yarn:
+  packages: []
 
-composerPackages: []
+composer:
+  packages: []
 
 bitwarden:
   server: "https://vault.bitwarden.eu"
