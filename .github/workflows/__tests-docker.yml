@@ -12,7 +12,7 @@ jobs:
       packages: write
       issues: read
       pull-requests: read
-    uses: hoverkraft-tech/ci-github-container/.github/workflows/docker-build-images.yml@ce450ab2df7353da7d38ed842ac3bb3a14747dee # 0.24.1
+    uses: hoverkraft-tech/ci-github-container/.github/workflows/docker-build-images.yml@00be6bf5e8054d319e621cd8523cc05ca5102462 # 0.25.0
     with:
       oci-registry: ${{ vars.OCI_REGISTRY }}
       images: |
