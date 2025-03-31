@@ -129,7 +129,7 @@ run_setup_playbook() {
 		--extra-vars "ansible_user=${ANSIBLE_USER}" \
 		--limit "localhost" \
 		-v \
-		"/tmp/ubuntu-config/ansible/install-requirements.yml"
+		"/tmp/ubuntu-config/ansible/tasks/install-requirements.yml"
 
 	sudo ansible-pull \
 		--purge \
@@ -140,9 +140,8 @@ run_setup_playbook() {
 		--extra-vars "BITWARDEN_EMAIL=${BITWARDEN_EMAIL}" \
 		--extra-vars "BITWARDEN_PASSWORD=${BITWARDEN_PASSWORD}" \
 		--limit "localhost" \
-		"/tmp/ubuntu-config/ansible/install-requirements.yml" \
-		"/tmp/ubuntu-config/ansible/setup.yml" \
-		"/tmp/ubuntu-config/ansible/cleanup.yml" \
+		"/tmp/ubuntu-config/ansible/tasks/setup.yml" \
+		"/tmp/ubuntu-config/ansible/tasks/cleanup.yml" \
 		--diff \
 		-v
 }

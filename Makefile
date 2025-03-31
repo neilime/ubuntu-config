@@ -69,7 +69,7 @@ test-docker: ## Test playbook against test container
 	@docker-compose exec --user kasm-user ubuntu sh -c 'wget -qO- "http://git/?p=ubuntu-config/.git;a=blob_plain;f=install.sh;hb=refs/heads/main" | bash'
 
 test-vm: ## Test playbook against VM
-	docker-compose exec ansible sh -c '/root/.local/bin/ansible-playbook setup.yml \
+	docker-compose exec ansible sh -c '/root/.local/bin/ansible-playbook tasks/setup.yml \
 		--limit ubuntu-config-test \
 		-e ANSIBLE_HOST=$(shell multipass info ubuntu-config-test | grep IPv4 | awk '{print $$2}') \
 		-e BITWARDEN_EMAIL="$$BITWARDEN_EMAIL" \

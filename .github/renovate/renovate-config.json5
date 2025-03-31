@@ -1,0 +1,11 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  onboarding: true,
+  platform: "github",
+  platformCommit: "enabled",
+  prConcurrentLimit: 0,
+  prHourlyLimit: 20,
+  semanticCommits: "enabled",
+  enabledManagers: ["ansible", "ansible-galaxy"],
+  packageRules: [],
+}
