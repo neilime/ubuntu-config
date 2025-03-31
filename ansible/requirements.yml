@@ -7,7 +7,7 @@ collections:
 
 roles:
   - src: geerlingguy.docker
-    version: 4.0.0
+    version: 7.4.7
   - src: ansible-role-nvm
     version: 1.0.0
   - src: gantsign.oh-my-zsh
