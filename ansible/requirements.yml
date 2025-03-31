@@ -15,7 +15,7 @@ roles:
   - src: gantsign.default-web-browser
     version: 1.0.0
   - src: gantsign.pin-to-launcher
-    version: 1.0.0
+    version: 4.0.0
   - src: bartdorlandt.starship
     version: 1.0.0    
   - src: Oefenweb.yarn
