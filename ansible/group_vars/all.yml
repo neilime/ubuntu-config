@@ -1,6 +1,7 @@
 locale: en_US.UTF-8
 timezone: Europe/Paris
 web_browser: chromium-browser.desktop
+
 favorites:
   - gnome-control-center.desktop
   - snap-store_ubuntu-software.desktop

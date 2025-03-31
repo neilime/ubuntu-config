@@ -1,12 +1,12 @@
 ---
 - name: Ensure a locale exists
   community.general.locale_gen:
-    name: "{{ locale }}"
+    name: "{{ setup_configuration_locale }}"
     state: present
 
 - name: Set timezone
   community.general.timezone:
-    name: "{{ timezone }}"
+    name: "{{ setup_configuration_timezone }}"
 
 - ansible.posix.sysctl:
     name: fs.inotify.max_user_watches
@@ -17,13 +17,13 @@
   ansible.builtin.include_role:
     name: gantsign.default-web-browser
   vars:
-    default_web_browser: "{{ web_browser }}"
+    default_web_browser: "{{ setup_configuration_web_browser }}"
 
 - name: Setup favorite applications
   ansible.builtin.include_role:
-    name: gantsign.default-web-browser
+    name: gantsign.pin-to-launcher
   vars:
-    pin_to_launcher_favorites: "{{ favorites }}"
+    pin_to_launcher_favorites: "{{ setup_configuration_favorites }}"
 
 - name: Set shell to prefer dark mode
   community.general.dconf:

@@ -43,6 +43,11 @@
     - name: Setup configuration
       ansible.builtin.import_role:
         name: setup_configuration
+      vars:
+        setup_configuration_locale: "{{ locale }}"
+        setup_configuration_timezone: "{{ timezone }}"
+        setup_configuration_web_browser: "{{ web_browser }}"
+        setup_configuration_favorites: "{{ favorites }}"
       tags: configuration
 
     - name: Setup dev

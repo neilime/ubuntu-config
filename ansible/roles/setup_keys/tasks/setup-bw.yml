@@ -24,7 +24,7 @@
       register: bw_status
 
     - name: Login to Bitwarden
-      when: bw_status.stdout | from_json | community.general.json_query('status') == "unauthenticated"      
+      when: bw_status.stdout | from_json | community.general.json_query('status') == "unauthenticated"
       delegate_to: localhost
       ansible.builtin.command: bw login "{{ setup_keys_bitwarden_email }}" "{{ setup_keys_bitwarden_password }}" --raw
       any_errors_fatal: true
