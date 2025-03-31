@@ -23,7 +23,7 @@ roles:
   - src: hurricanehrndz.nerdfonts
     version: 1.0.0
   - src: Oefenweb.ssh_keys
-    version: 1.0.0
+    version: v5.0.5
   - src: geerlingguy.composer
     version: 4.0.0
   - src: andrewrothstein.dive
