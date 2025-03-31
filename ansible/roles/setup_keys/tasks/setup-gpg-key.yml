@@ -1,10 +1,10 @@
 ---
 - name: Ensure mandatory variables are set
   ansible.builtin.fail:
-    msg: "name, private_key, public_key are required"
-  when: not name or not private_key or not public_key
+    msg: "key_name, private_key, public_key are required"
+  when: not key_name or not private_key or not public_key
 
-- name: Import private key for '{{ name }}'
+- name: Import private key for '{{ key_name }}'
   ansible.builtin.shell: |
     set -o pipefail
     echo '{{ private_key }}' | gpg --import
@@ -18,8 +18,8 @@
     - gpg_import_private_key.rc != 0
   changed_when: '"gpg:  secret keys unchanged: 1" not in gpg_import_private_key.stderr'
 
-- name: Import public key for '{{ name }}'
-  ansible.builtin.shell:  |
+- name: Import public key for '{{ key_name }}'
+  ansible.builtin.shell: |
     set -o pipefail
     echo '{{ public_key }}' | gpg --import
   register: gpg_import_public_key

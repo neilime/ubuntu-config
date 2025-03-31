@@ -27,7 +27,7 @@
 - name: Setup GPG keys
   ansible.builtin.include_tasks: setup-gpg-key.yml
   vars:
-    name: "{{ item.name }}"
+    key_name: "{{ item.name }}"
     private_key: "{{ item.private_key }}"
     public_key: "{{ item.public_key }}"
   loop: "{{ gpg_keys }}"
