@@ -35,6 +35,6 @@
   become: true
   community.general.yarn:
     name: "{{ item }}"
-    latest: "latest"
+    state: "latest"
     global: true
   loop: "{{ setup_dev_yarn_packages }}"

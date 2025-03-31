@@ -2,7 +2,7 @@
 - name: Install php
   ansible.builtin.apt:
     name: "php"
-    state: latest
+    state: latest # noqa package-latest
 
 - name: Install composer
   ansible.builtin.include_role:

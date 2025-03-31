@@ -5,8 +5,11 @@
   when: not name or not private_key or not public_key
 
 - name: Import private key for '{{ name }}'
-  ansible.builtin.shell: "echo '{{ private_key }}' | gpg --import"
+  ansible.builtin.shell: |
+    set -o pipefail
+    echo '{{ private_key }}' | gpg --import
   register: gpg_import_private_key
+  become: true
   become_user: "{{ ansible_user }}"
   failed_when:
     - '"secret key imported" not in gpg_import_private_key.stderr'
@@ -16,8 +19,11 @@
   changed_when: '"gpg:  secret keys unchanged: 1" not in gpg_import_private_key.stderr'
 
 - name: Import public key for '{{ name }}'
-  ansible.builtin.shell: "echo '{{ public_key }}' | gpg --import"
+  ansible.builtin.shell:  |
+    set -o pipefail
+    echo '{{ public_key }}' | gpg --import
   register: gpg_import_public_key
+  become: true
   become_user: "{{ ansible_user }}"
   failed_when:
     - '"secret key imported" not in gpg_import_public_key.stderr'

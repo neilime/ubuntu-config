@@ -3,7 +3,7 @@
   ansible.builtin.apt:
     name:
       - git
-    state: latest
+    state: latest # noqa package-latest
 
 - name: Setup Git configuration
   ansible.builtin.template:
