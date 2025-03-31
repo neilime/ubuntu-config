@@ -31,3 +31,7 @@ RUN \
     crontab /etc/cron.d/commit-changes
 
 CMD ["/bin/sh","-c","cron && echo \"FCGI_GROUP=${GIT_GROUP}\" > /etc/default/fcgiwrap &&   envsubst '$GITWEB_BASE_PATH' < /etc/nginx/default.tmpl > /etc/nginx/sites-enabled/default &&   service fcgiwrap start &&   exec nginx"]
+
+HEALTHCHECK --interval=5s --timeout=3s --retries=3 CMD ["curl", "-f", "http://localhost:80"]
+
+USER git

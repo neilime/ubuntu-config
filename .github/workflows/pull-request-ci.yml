@@ -9,8 +9,19 @@ on:
     branches:
       - main
 
+permissions: {}
+
 jobs:
   ci:
     name: Continuous Integration
     uses: ./.github/workflows/__shared-ci.yml
+    permissions:
+      contents: read
+      statuses: write
+      security-events: write
+      packages: write
+      issues: read
+      pull-requests: read
+      # FIXME: This is a workaround for having workflow actions. See https://github.com/orgs/community/discussions/38659
+      id-token: write
     secrets: inherit

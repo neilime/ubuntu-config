@@ -37,6 +37,11 @@ RUN set -eu; \
     mkdir -p /etc/ansible && \
     mv /tmp/mitogen-0.3.9 /etc/ansible/mitogen
 
+HEALTHCHECK --interval=5s --timeout=3s --retries=3 CMD [ "ansible", "--version" ]
+
+USER ansible
+
 FROM base as ci
 
 CMD ["tail", "-f", "/dev/null"]
+
