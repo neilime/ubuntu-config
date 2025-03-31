@@ -8,6 +8,9 @@ lint: ## Execute linting
 
 lint-fix: ## Execute linting and fix
 	$(call run_linter, \
+		-e IGNORE_GITIGNORED_FILES=true \
+		-e FIX_ANSIBLE=true \
+		-e FIX_ENV=true \
 		-e FIX_JSON_PRETTIER=true \
 		-e FIX_JAVASCRIPT_PRETTIER=true \
 		-e FIX_JAVASCRIPT_STANDARD=true \
