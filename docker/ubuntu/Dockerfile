@@ -1,4 +1,4 @@
-FROM kasmweb/ubuntu-noble-dind:1.16.0
+FROM kasmweb/ubuntu-noble-dind:1.16.1
 
 USER root
 
