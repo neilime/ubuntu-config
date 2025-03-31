@@ -3,7 +3,7 @@
   ansible.builtin.include_role:
     name: gantsign.oh-my-zsh
   vars:
-    oh_my_zsh_plugins: "{{ zsh_plugins }}"
+    oh_my_setup_shell_zsh_plugins: "{{ setup_shell_zsh_plugins }}"
     oh_my_zsh_update_mode: auto
     users:
       - username: "{{ ansible_user }}"

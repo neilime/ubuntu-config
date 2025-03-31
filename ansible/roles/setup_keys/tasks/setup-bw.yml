@@ -1,8 +1,8 @@
 ---
 - name: Ensure bitwarden vars are set
   ansible.builtin.fail:
-    msg: "bitwarden_server, bitwarden_email and bitwarden_password are required"
-  when: not bitwarden_server or not bitwarden_email or not bitwarden_password
+    msg: "setup_keys_bitwarden_server, setup_keys_bitwarden_email and setup_keys_bitwarden_password are required"
+  when: not setup_keys_bitwarden_server or not setup_keys_bitwarden_email or not setup_keys_bitwarden_password
 
 - name: Login and unlock Bitwarden
   block:
@@ -14,10 +14,10 @@
       register: bw_server
 
     - name: Set bw server
-      when: bw_server.stdout != bitwarden_server
+      when: bw_server.stdout != setup_keys_bitwarden_server
       local_action:
         module: ansible.builtin.shell
-        cmd: bw config server "{{ bitwarden_server }}"
+        cmd: bw config server "{{ setup_keys_bitwarden_server }}"
 
     - name: Get bw status
       local_action:
@@ -30,14 +30,14 @@
       when: bw_status.stdout | from_json | community.general.json_query('status') == "unauthenticated"
       local_action:
         module: ansible.builtin.shell
-        cmd: bw login "{{ bitwarden_email }}" "{{ bitwarden_password }}" --raw
+        cmd: bw login "{{ setup_keys_bitwarden_email }}" "{{ setup_keys_bitwarden_password }}" --raw
       any_errors_fatal: true
 
     - name: Unlock Bitwarden
       when: bw_status.stdout | from_json | community.general.json_query('status') != "unlocked"
       local_action:
         module: ansible.builtin.shell
-        cmd: bw unlock --raw "{{ bitwarden_password }}"
+        cmd: bw unlock --raw "{{ setup_keys_bitwarden_password }}"
       register: bw_session
 
     - ansible.builtin.set_fact:

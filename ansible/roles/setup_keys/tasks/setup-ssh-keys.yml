@@ -5,17 +5,17 @@
     state: directory
     mode: "0700"
 
-- name: Ensure bitwarden_ssh_keys_collection_id is set
+- name: Ensure setup_keys_bitwarden_ssh_keys_collection_id is set
   ansible.builtin.fail:
-    msg: "bitwarden_ssh_keys_collection_id is required"
-  when: not bitwarden_ssh_keys_collection_id
+    msg: "setup_keys_bitwarden_ssh_keys_collection_id is required"
+  when: not setup_keys_bitwarden_ssh_keys_collection_id
 
 # FIXME: should use community.general.bitwarden
-# "{{ lookup('community.general.bitwarden', collection_id=bitwarden_ssh_keys_collection_id, bw_session=bw_session) }}"
+# "{{ lookup('community.general.bitwarden', collection_id=setup_keys_bitwarden_ssh_keys_collection_id, bw_session=bw_session) }}"
 - name: Retrieve ssh keys from Bitwarden
   local_action:
     module: ansible.builtin.shell
-    cmd: bw list items --collectionid "{{ bitwarden_ssh_keys_collection_id }}" --session "{{ bw_session }}" --response
+    cmd: bw list items --collectionid "{{ setup_keys_bitwarden_ssh_keys_collection_id }}" --session "{{ bw_session }}" --response
   register: bw_items
   changed_when: false
 

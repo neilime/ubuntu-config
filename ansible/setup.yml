@@ -26,11 +26,11 @@
         name: setup_keys
       tags: keys
       vars:
-        bitwarden_server: "{{ bitwarden.server }}"
-        bitwarden_email: "{{ bitwarden.email }}"
-        bitwarden_password: "{{ bitwarden.password }}"
-        bitwarden_ssh_keys_collection_id: "{{ bitwarden.sshKeysCollectionId }}"
-        bitwarden_gpg_keys_collection_id: "{{ bitwarden.gpgKeysCollectionId }}"
+        setup_keys_bitwarden_server: "{{ bitwarden.server }}"
+        setup_keys_bitwarden_email: "{{ bitwarden.email }}"
+        setup_keys_bitwarden_password: "{{ bitwarden.password }}"
+        setup_keys_bitwarden_ssh_keys_collection_id: "{{ bitwarden.sshKeysCollectionId }}"
+        setup_keys_bitwarden_gpg_keys_collection_id: "{{ bitwarden.gpgKeysCollectionId }}"
 
     - name: Setup shell
       ansible.builtin.import_role:
@@ -38,7 +38,7 @@
       tags: shell
       become: true
       vars:
-        zsh_plugins: "{{ zsh_plugins }}"
+        setup_shell_zsh_plugins: "{{ zsh_plugins }}"
 
     - name: Setup configuration
       ansible.builtin.import_role:
