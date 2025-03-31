@@ -1,21 +1,38 @@
 ---
 collections:
   - name: community.general
+    version: 3.0.2
   - name: community.docker
+    version: 2.8.0
 
 roles:
   - src: geerlingguy.docker
+    version: 4.0.0
   - src: ansible-role-nvm
+    version: 1.0.0
   - src: gantsign.oh-my-zsh
+    version: 2.0.0    
   - src: gantsign.default-web-browser
+    version: 1.0.0
   - src: gantsign.pin-to-launcher
+    version: 1.0.0
   - src: bartdorlandt.starship
+    version: 1.0.0    
   - src: Oefenweb.yarn
+    version: 1.0.0
   - src: hurricanehrndz.nerdfonts
+    version: 1.0.0
   - src: Oefenweb.ssh_keys
+    version: 1.0.0
   - src: geerlingguy.composer
+    version: 4.0.0
   - src: andrewrothstein.dive
+    version: 1.0.0    
   - src: diademiemi.github_cli
+    version: 1.0.0
   - src: kilip.gpg
+    version: 1.0.0
   - src: professormanhattan.snapd
+    version: 1.0.0
   - src: redbeard28.bashaliases
+    version: 1.0.0
