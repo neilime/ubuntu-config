@@ -3,7 +3,9 @@
 # Directory containing your git projects
 PROJECTS_DIR="{{ setup_dev_projects_directory }}"
 
+# shellcheck disable=all
 {% raw %}
+# shellcheck enable=all
 
 # Initialize notification message
 NOTIFICATION_MESSAGE_MAX_LENGTH=220
@@ -113,4 +115,6 @@ if [ ! -z "$NOTIFICATION_MESSAGE" ]; then
 		"Git Repositories Status ($ISSUED_REPOSITORIES)" "$NOTIFICATION_MESSAGE"
 fi
 
+# shellcheck disable=all
 {% endraw %}
+# shellcheck enable=all
