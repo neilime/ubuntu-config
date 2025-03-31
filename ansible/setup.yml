@@ -19,7 +19,7 @@
         name: setup_snap
       tags: snap
       vars:
-        snap_packages: "{{ snap_packages }}"
+        setup_snap_packages: "{{ snap_packages }}"
 
     - name: Setup keys
       ansible.builtin.import_role:

@@ -2,9 +2,8 @@
 # FIXME: should use community.general.bitwarden
 # "{{ lookup('community.general.bitwarden', collection_id=setup_keys_bitwarden_gpg_keys_collection_id, bw_session=bw_session) }}"
 - name: Retrieve GPG keys from Bitwarden
-  local_action:
-    module: ansible.builtin.shell
-    cmd: bw list items --collectionid "{{ setup_keys_bitwarden_gpg_keys_collection_id }}" --session "{{ bw_session }}" --response
+  delegate_to: localhost
+  ansible.builtin.command: bw list items --collectionid "{{ setup_keys_bitwarden_gpg_keys_collection_id }}" --session "{{ bw_session }}" --response
   register: bw_items
   changed_when: false
 

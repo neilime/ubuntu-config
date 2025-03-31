@@ -7,7 +7,7 @@
   community.general.snap:
     name: "{{ item }}"
     classic: yes
-  loop: "{{ snap_packages }}"
+  loop: "{{ setup_snap_packages }}"
 
 - name: Refresh snap packages
   when: not ansible_module_running_in_container
