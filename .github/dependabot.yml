@@ -26,16 +26,3 @@ updates:
       docker-dependencies:
         patterns:
           - "*"
-
-  - package-ecosystem: pip
-    open-pull-requests-limit: 20
-    directory: /ansible
-    schedule:
-      interval: weekly
-      day: friday
-      time: "04:00"
-    versioning-strategy: increase
-    groups:
-      pip-dependencies:
-        patterns:
-          - "*"
