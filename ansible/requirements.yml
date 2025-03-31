@@ -9,7 +9,7 @@ roles:
   - src: geerlingguy.docker
     version: 7.4.7
   - src: stephdewit.nvm
-    version: 3.4.5
+    version: v3.4.5
   - src: gantsign.oh-my-zsh
     version: 2.7.0    
   - src: gantsign.default-web-browser
