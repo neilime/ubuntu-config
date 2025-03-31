@@ -23,14 +23,17 @@ runs:
       uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # ratchet:docker/setup-qemu-action@v3.6.0
 
     - name: Install dependencies
+      shell: bash
       run: |
         sudo apt-get update
         sudo apt-get install -y qemu-system-x86 genisoimage wget
 
     - name: Download Ubuntu Desktop ISO
+      shell: bash
       run: wget "${{ inputs.iso-url }}" -O "seed.iso"
 
     - name: Create cloud-init ISO
+      shell: bash
       run: |
         mkdir -p cloud-init
         cat > cloud-init/user-data <<EOF
@@ -47,10 +50,12 @@ runs:
         genisoimage -output seed.iso -volid cidata -joliet -rock cloud-init/user-data cloud-init/meta-data
 
     - name: Create QEMU disk image
+      shell: bash
       run: |
         qemu-img create -f qcow2 ubuntu-disk.qcow2 15G
 
     - name: Boot Ubuntu Desktop in QEMU (headless)
+      shell: bash
       run: |
         qemu-system-x86_64 \
           -m 4096 \
@@ -64,6 +69,7 @@ runs:
           -no-reboot
 
     - name: Mount disk
+      shell: bash
       run: |
         sudo apt install -y nbdkit qemu-utils
         sudo modprobe nbd

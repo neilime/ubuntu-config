@@ -1,5 +1,4 @@
 name: Shared - Tests - Docker
-description: Test installation against Docker container
 
 on:
   workflow_call:
@@ -84,7 +83,11 @@ jobs:
 
       - name: Validate Ansible changes in host - GPG keys
         run: |
-          if $DOCKER_COMPOSE_EXEC 'gpg --list-keys | grep -q "/home/ubuntu/.gnupg/pubring.kbx"'
+          if $DOCKER_COMPOSE_EXEC 'gpg --list-keys | grep -q "/home/ubuntu/.gnupg/pubring.kbx"' ; then
+            echo 'GPG keys installed: pass' && exit 0
+          else
+            echo 'GPG keys installed: fail' && exit 1
+          fi
 
       - name: Validate Ansible changes in host - docker
         run: |
