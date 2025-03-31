@@ -11,7 +11,7 @@ roles:
   - src: ansible-role-nvm
     version: 1.0.0
   - src: gantsign.oh-my-zsh
-    version: 2.0.0    
+    version: 2.7.0    
   - src: gantsign.default-web-browser
     version: 1.0.0
   - src: gantsign.pin-to-launcher
