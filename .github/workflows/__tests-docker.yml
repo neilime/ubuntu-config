@@ -13,7 +13,7 @@ jobs:
       packages: write
       issues: read
       pull-requests: read
-    uses: hoverkraft-tech/ci-github-container/.github/workflows/docker-build-images.yml@0.24.1
+    uses: hoverkraft-tech/ci-github-container/.github/workflows/docker-build-images.yml@ce450ab2df7353da7d38ed842ac3bb3a14747dee # 0.24.1
     with:
       oci-registry: ${{ vars.OCI_REGISTRY }}
       images: |
@@ -54,9 +54,9 @@ jobs:
       DOCKER_COMPOSE_EXEC: docker compose -f compose.ci.yml exec --user kasm-user -T ubuntu sh -c
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - uses: hoverkraft-tech/compose-action@v2.2.0
+      - uses: hoverkraft-tech/compose-action@8be2d741e891ac9b8ac20825e6f3904149599925 # v2.2.0
         with:
           compose-file: compose.ci.yml
 
