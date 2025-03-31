@@ -23,9 +23,9 @@ roles:
   - src: Oefenweb.ssh_keys
     version: v5.0.5
   - src: geerlingguy.composer
-    version: 4.0.0
+    version: 1.9.2
   - src: andrewrothstein.dive
-    version: 1.0.0
+    version: 1.5.2
   - src: diademiemi.github_cli
     version: 1.0.0
   - src: ferrarimarco.bash-aliases
