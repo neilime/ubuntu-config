@@ -26,7 +26,5 @@ roles:
     version: 1.9.2
   - src: andrewrothstein.dive
     version: v1.0.2
-  - src: diademiemi.github_cli
-    version: 1.0.0
   - src: ferrarimarco.bash-aliases
     version: 1.0.3

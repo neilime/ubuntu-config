@@ -26,6 +26,7 @@ apt_packages:
   - wget
   - curl
   - unzip
+  - htop
   - bat
   - zsh
   - python3-dev
@@ -35,28 +36,25 @@ apt_packages:
   - make
   - copyq
   - fonts-firacode
+  - gh
   # Cleaning
   - ucaresystem-core
   # Apps
   - chromium-browser
   - simple-scan
   - krita
+  - deja-dup
+  - vlc
 
 snap_packages:
-  - deja-dup
   - code
   - spotify
   - slack
-  - fFmpeg
   - jdownloader2
-  - vlc
-  - htop
-  - bitwarden
   - bw
   - multipass
   - remmina
   - helm
-  - dive
 
 zsh_plugins:
   - thefuck

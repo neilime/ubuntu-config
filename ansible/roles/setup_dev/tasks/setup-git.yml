@@ -13,10 +13,6 @@
     group: "{{ ansible_user }}"
     mode: 0644
 
-- name: Install Github CLI
-  ansible.builtin.include_role:
-    name: diademiemi.github_cli
-
 - name: Create git check script
   ansible.builtin.template:
     src: git-check.sh.j2
