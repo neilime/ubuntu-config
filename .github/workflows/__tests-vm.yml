@@ -18,7 +18,7 @@ jobs:
       - name: Set up QEMU VM
         uses: ./.github/actions/setup-qemu-vm
         with:
-          iso-url: https://releases.ubuntu.com/22.04/ubuntu-22.04.3-desktop-amd64.iso
+          iso-url: https://releases.ubuntu.com/24.04.2/ubuntu-24.04.2-desktop-amd64.iso
 
       - name: Run setup script
         run: |
