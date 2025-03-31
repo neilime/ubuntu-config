@@ -3,11 +3,11 @@
 set -e
 
 if [ -z "$REPOSITORY_URL" ]; then
-  export REPOSITORY_URL=https://github.com/neilime/ubuntu-config.git
+	export REPOSITORY_URL=https://github.com/neilime/ubuntu-config.git
 fi
 
 if [ -z "$REPOSITORY_BRANCH" ]; then
-  export REPOSITORY_BRANCH=main
+	export REPOSITORY_BRANCH=main
 fi
 
 BOLD="$(tput bold 2>/dev/null || printf '')"
@@ -21,131 +21,131 @@ MAGENTA="$(tput setaf 5 2>/dev/null || printf '')"
 NO_COLOR="$(tput sgr0 2>/dev/null || printf '')"
 
 info() {
-  printf '%s\n' "${BOLD}${GREY}>${NO_COLOR} $*"
+	printf '%s\n' "${BOLD}${GREY}>${NO_COLOR} $*"
 }
 
 warn() {
-  printf '%s\n' "${YELLOW}! $*${NO_COLOR}"
+	printf '%s\n' "${YELLOW}! $*${NO_COLOR}"
 }
 
 error() {
-  printf '%s\n' "${RED}x $*${NO_COLOR}" >&2
+	printf '%s\n' "${RED}x $*${NO_COLOR}" >&2
 }
 
 completed() {
-  printf '%s\n' "${GREEN}✓${NO_COLOR} $*"
+	printf '%s\n' "${GREEN}✓${NO_COLOR} $*"
 }
 
 has() {
-  command -v "$1" 1>/dev/null 2>&1
+	command -v "$1" 1>/dev/null 2>&1
 }
 
 check_requirements() {
-  info "Checking requirements..."
-  if [ -z "${BASH_VERSION}" ] || [ -n "${ZSH_VERSION}" ]; then
-    # shellcheck disable=SC2016
-    utils_echo >&2 'Error: the install instructions explicitly say to pipe the install script to `bash`; please follow them'
-    exit 1
-  fi
+	info "Checking requirements..."
+	if [ -z "${BASH_VERSION}" ] || [ -n "${ZSH_VERSION}" ]; then
+		# shellcheck disable=SC2016
+		utils_echo >&2 'Error: the install instructions explicitly say to pipe the install script to `bash`; please follow them'
+		exit 1
+	fi
 
-  if ! has sudo; then
-    error 'Could not find the command "sudo", needed to get permissions for install.'
-    info "rerun this script. Otherwise, please install sudo."
-    exit 1
-  fi
+	if ! has sudo; then
+		error 'Could not find the command "sudo", needed to get permissions for install.'
+		info "rerun this script. Otherwise, please install sudo."
+		exit 1
+	fi
 
-  # Check if sudo needs password
-  if ! sudo -n true 2>/dev/null; then
-    if ! sudo -v; then
-      error "Superuser not granted, aborting installation"
-      exit 1
-    fi
-  fi
+	# Check if sudo needs password
+	if ! sudo -n true 2>/dev/null; then
+		if ! sudo -v; then
+			error "Superuser not granted, aborting installation"
+			exit 1
+		fi
+	fi
 }
 
 ask_for_bitwarden_credentials() {
-  if [ -n "$BITWARDEN_EMAIL" ] && [ -n "$BITWARDEN_PASSWORD" ]; then
-    return
-  fi
-  
-  while [ -z "$BITWARDEN_EMAIL" ]; do
-    read -p "Bitwarden email: " BITWARDEN_EMAIL
-  done
-  export BITWARDEN_EMAIL
+	if [ -n "$BITWARDEN_EMAIL" ] && [ -n "$BITWARDEN_PASSWORD" ]; then
+		return
+	fi
 
-  while [ -z "$BITWARDEN_PASSWORD" ]; do
-    read -s -p "Bitwarden password: " BITWARDEN_PASSWORD
-  done
+	while [ -z "$BITWARDEN_EMAIL" ]; do
+		read -p "Bitwarden email: " BITWARDEN_EMAIL
+	done
+	export BITWARDEN_EMAIL
 
-  export BITWARDEN_PASSWORD
+	while [ -z "$BITWARDEN_PASSWORD" ]; do
+		read -s -p "Bitwarden password: " BITWARDEN_PASSWORD
+	done
+
+	export BITWARDEN_PASSWORD
 }
 
 # Install APT softwares
 install_pipx() {
-  info "Installing pipx..."
-  # Install pipx
-  if ! command -v pipx &> /dev/null; then
-    sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
-    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-venv pipx
-    completed "pipx installation of $i done"
-  else
-    completed "pipx already installed"
-  fi
-  sudo PIPX_BIN_DIR=/usr/local/bin pipx ensurepath
+	info "Installing pipx..."
+	# Install pipx
+	if ! command -v pipx &>/dev/null; then
+		sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
+		sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-venv pipx
+		completed "pipx installation of $i done"
+	else
+		completed "pipx already installed"
+	fi
+	sudo PIPX_BIN_DIR=/usr/local/bin pipx ensurepath
 }
 
 install_ansible_pull() {
-  info "Installing ansible-pull..."
-  # Install ansible
-  if ! sudo test -f "/usr/local/bin/ansible-pull"; then
-    sudo PIPX_BIN_DIR=/usr/local/bin pipx install --force --include-deps ansible
-    sudo PIPX_BIN_DIR=/usr/local/bin pipx inject ansible jmespath
-    completed "ansible-pull installation done"
-  else
-    completed "ansible-pull already installed"
-  fi
+	info "Installing ansible-pull..."
+	# Install ansible
+	if ! sudo test -f "/usr/local/bin/ansible-pull"; then
+		sudo PIPX_BIN_DIR=/usr/local/bin pipx install --force --include-deps ansible
+		sudo PIPX_BIN_DIR=/usr/local/bin pipx inject ansible jmespath
+		completed "ansible-pull installation done"
+	else
+		completed "ansible-pull already installed"
+	fi
 }
 
 function install_git() {
-  info "Installing git..."
-  if git --version > /dev/null 2>&1; then
-    completed "Git is already installed"
-  else
-    sudo apt update
-    sudo apt install -y git
-    completed "git installation done"
-  fi
+	info "Installing git..."
+	if git --version >/dev/null 2>&1; then
+		completed "Git is already installed"
+	else
+		sudo apt update
+		sudo apt install -y git
+		completed "git installation done"
+	fi
 }
 
 run_setup_playbook() {
-  info "Running setup playbook..."
+	info "Running setup playbook..."
 
-  ANSIBLE_USER=${USER}
+	ANSIBLE_USER=${USER}
 
-  sudo ansible-pull \
-    --purge \
-    -U "$REPOSITORY_URL" \
-    -C "$REPOSITORY_BRANCH" \
-    -d "/tmp/ubuntu-config" -i "/tmp/ubuntu-config/ansible/inventory.yml" \
-    --extra-vars "ansible_user=${ANSIBLE_USER}" \
-    --limit "localhost" \
-    -v \
-    "/tmp/ubuntu-config/ansible/install-requirements.yml"
+	sudo ansible-pull \
+		--purge \
+		-U "$REPOSITORY_URL" \
+		-C "$REPOSITORY_BRANCH" \
+		-d "/tmp/ubuntu-config" -i "/tmp/ubuntu-config/ansible/inventory.yml" \
+		--extra-vars "ansible_user=${ANSIBLE_USER}" \
+		--limit "localhost" \
+		-v \
+		"/tmp/ubuntu-config/ansible/install-requirements.yml"
 
-  sudo ansible-pull \
-    --purge \
-    -U "$REPOSITORY_URL" \
-    -C "$REPOSITORY_BRANCH" \
-    -d "/tmp/ubuntu-config" -i "/tmp/ubuntu-config/ansible/inventory.yml" \
-    --extra-vars "ansible_user=${ANSIBLE_USER}" \
-    --extra-vars "BITWARDEN_EMAIL=${BITWARDEN_EMAIL}" \
-    --extra-vars "BITWARDEN_PASSWORD=${BITWARDEN_PASSWORD}" \
-    --limit "localhost" \
-    "/tmp/ubuntu-config/ansible/install-requirements.yml" \
-    "/tmp/ubuntu-config/ansible/setup.yml" \
-    "/tmp/ubuntu-config/ansible/cleanup.yml" \
-    --diff \
-    -v
+	sudo ansible-pull \
+		--purge \
+		-U "$REPOSITORY_URL" \
+		-C "$REPOSITORY_BRANCH" \
+		-d "/tmp/ubuntu-config" -i "/tmp/ubuntu-config/ansible/inventory.yml" \
+		--extra-vars "ansible_user=${ANSIBLE_USER}" \
+		--extra-vars "BITWARDEN_EMAIL=${BITWARDEN_EMAIL}" \
+		--extra-vars "BITWARDEN_PASSWORD=${BITWARDEN_PASSWORD}" \
+		--limit "localhost" \
+		"/tmp/ubuntu-config/ansible/install-requirements.yml" \
+		"/tmp/ubuntu-config/ansible/setup.yml" \
+		"/tmp/ubuntu-config/ansible/cleanup.yml" \
+		--diff \
+		-v
 }
 
 #######################################
@@ -153,7 +153,6 @@ run_setup_playbook() {
 printf "\n%s\n" "#######################################"
 printf "#        %s        #\n" "${BOLD}Install ubuntu-config${NO_COLOR}"
 printf "%s\n\n" "#######################################"
-
 
 info "${BOLD}User${NO_COLOR}: ${GREEN}${USER}${NO_COLOR}"
 info "${BOLD}Repository url${NO_COLOR}: ${GREEN}${REPOSITORY_URL}${NO_COLOR}"
