@@ -8,7 +8,6 @@ lint: ## Execute linting
 
 lint-fix: ## Execute linting and fix
 	$(call run_linter, \
-		-e IGNORE_GITIGNORED_FILES=true \
 		-e FIX_ANSIBLE=true \
 		-e FIX_ENV=true \
 		-e FIX_JSON_PRETTIER=true \
@@ -28,14 +27,15 @@ setup: ## Setup the project stack
 down: ## Stop the project stack
 	@docker-compose down --rmi all --remove-orphans
 
+.PHONY: ansible
 ansible: ## Run ansible
-	@docker-compose exec ansible ansible $(filter-out $@,$(MAKECMDGOALS))
+	@docker-compose exec ansible /home/ubuntu/.local/bin/ansible $(filter-out $@,$(MAKECMDGOALS))
 
 ansible-playbook: ## Run ansible-playbook
-	@docker-compose exec ansible ansible-playbook $(filter-out $@,$(MAKECMDGOALS))
+	@docker-compose exec ansible /home/ubuntu/.local/bin/ansible-playbook $(filter-out $@,$(MAKECMDGOALS))
 
 ansible-galaxy: ## Run ansible-galaxy
-	@docker-compose exec ansible ansible-galaxy $(filter-out $@,$(MAKECMDGOALS))
+	@docker-compose exec ansible /home/ubuntu/.local/bin/ansible-galaxy $(filter-out $@,$(MAKECMDGOALS))
 
 setup-ssh-keys: ## Setup ssh keys for VM access
 	./cloud-init/setup-ssh-keys.sh
@@ -66,17 +66,16 @@ down-vm: ## Stop the VM
 	@multipass list | grep -q ubuntu-config-test && (multipass delete -v -p ubuntu-config-test) || echo "VM is already down"
 
 test-docker: ## Test playbook against test container
-	@docker-compose exec --user kasm-user ubuntu sh -c 'wget -qO- "http://git/?p=ubuntu-config/.git;a=blob_plain;f=install.sh;hb=refs/heads/main" | bash'
+	@docker-compose exec --user kasm-user ubuntu sh -c 'wget -qO- "http://git/?p=ubuntu-config.git;a=blob_plain;f=install.sh;hb=HEAD" | sh'
 
 test-vm: ## Test playbook against VM
-	docker-compose exec ansible sh -c '/root/.local/bin/ansible-playbook playbooks/setup.yml \
+	docker-compose exec ansible sh -c '/root/.local/bin/ansible-playbook setup.yml \
 		--limit ubuntu-config-test \
 		-e ANSIBLE_HOST=$(shell multipass info ubuntu-config-test | grep IPv4 | awk '{print $$2}') \
-		-e BITWARDEN_EMAIL="$$BITWARDEN_EMAIL" \
-		-e BITWARDEN_PASSWORD="$$BITWARDEN_PASSWORD" \
 		--diff \
 		$(filter-out $@,$(MAKECMDGOALS)) \
 	'
+
 define run_linter
 	DEFAULT_WORKSPACE="$(CURDIR)"; \
 	LINTER_IMAGE="linter:latest"; \
@@ -85,6 +84,7 @@ define run_linter
 	docker run \
 		-e DEFAULT_WORKSPACE="$$DEFAULT_WORKSPACE" \
 		-e FILTER_REGEX_INCLUDE="$(filter-out $@,$(MAKECMDGOALS))" \
+		-e IGNORE_GITIGNORED_FILES=true \
 		$(1) \
 		-v $$VOLUME \
 		--rm \

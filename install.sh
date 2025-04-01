@@ -1,6 +1,7 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
-set -e
+set -eu
+printf '\n'
 
 if [ -z "$REPOSITORY_URL" ]; then
 	export REPOSITORY_URL=https://github.com/neilime/ubuntu-config.git
@@ -34,15 +35,36 @@ completed() {
 }
 
 has() {
-	command -v "$1" 1>/dev/null 2>&1
+	if [ -z "$1" ]; then
+		error "No command provided to check"
+		return 1
+	fi
+
+	if [ -z "${2+x}" ]; then
+		with_sudo=false
+	else
+		with_sudo=true
+	fi
+
+	if $with_sudo; then
+		sudo -i command -v "$1" 1>/dev/null 2>&1
+	else
+		command -v "$1" 1>/dev/null 2>&1
+	fi
 }
 
 check_requirements() {
 	info "Checking requirements..."
-	if [ -z "${BASH_VERSION}" ] || [ -n "${ZSH_VERSION}" ]; then
-		# shellcheck disable=SC2016
-		utils_echo >&2 'Error: the install instructions explicitly say to pipe the install script to `bash`; please follow them'
+	if [ -n "${ZSH_VERSION+x}" ]; then
+		error "Running installation script with \`zsh\` is known to cause errors."
+		error "Please use \`sh\` instead."
 		exit 1
+	elif [ -n "${BASH_VERSION+x}" ] && [ -z "${POSIXLY_CORRECT+x}" ]; then
+		error "Running installation script with non-POSIX \`bash\` may cause errors."
+		error "Please use \`sh\` instead."
+		exit 1
+	else
+		true # No-op: no issues detected
 	fi
 
 	if ! has sudo; then
@@ -61,42 +83,85 @@ check_requirements() {
 }
 
 ask_for_bitwarden_credentials() {
-	if [ -n "$BITWARDEN_EMAIL" ] && [ -n "$BITWARDEN_PASSWORD" ]; then
+	info "Asking for Bitwarden credentials..."
+
+	if [ -n "${BITWARDEN_EMAIL+x}" ] && [ -n "${BITWARDEN_PASSWORD+x}" ]; then
+		completed "Bitwarden credentials already set"
 		return
 	fi
 
-	while [ -z "$BITWARDEN_EMAIL" ]; do
-		echo "Bitwarden email:"
-		IFS= read -r BITWARDEN_EMAIL
-	done
-	export BITWARDEN_EMAIL
+	if [ -z "${BITWARDEN_EMAIL+x}" ]; then
+		prompt_for_env_variable "BITWARDEN_EMAIL" "Enter your Bitwarden email: " false
+	fi
 
-	while [ -z "$BITWARDEN_PASSWORD" ]; do
-		echo "Bitwarden password:"
-		IFS= read -r -s BITWARDEN_PASSWORD
-	done
+	if [ -z "${BITWARDEN_PASSWORD+x}" ]; then
+		prompt_for_env_variable "BITWARDEN_PASSWORD" "Enter your Bitwarden password: " true
+	fi
 
-	export BITWARDEN_PASSWORD
+	completed "Bitwarden credentials set"
 }
 
-# Install APT softwares
+prompt_for_env_variable() {
+	var_name="$1"
+	prompt_text="$2"
+	secret="$3"
+	max_attempts=10
+	attempts=0
+
+	while true; do
+		# Evaluate variable value at runtime
+		eval current_value="\$$var_name"
+
+		if [ -n "$current_value" ]; then
+			break
+		fi
+
+		if [ "$attempts" -ge "$max_attempts" ]; then
+			error "Too many failed attempts to provide $var_name" >&2
+			exit 1
+		fi
+
+		if [ "$secret" = "true" ]; then
+			printf "%s" "$prompt_text"
+			stty -echo
+			read -r input_value
+			stty echo
+			printf "\n"
+		else
+			printf "%s" "$prompt_text"
+			read -r input_value
+		fi
+
+		if [ -z "$input_value" ]; then
+			warn "$var_name cannot be empty. Please try again." >&2
+			attempts=$((attempts + 1))
+		else
+			# Set and export the variable
+			eval "$var_name=\"$input_value\""
+			export var_name
+		fi
+	done
+}
+
 install_pipx() {
 	info "Installing pipx..."
+
 	# Install pipx
-	if ! command -v pipx &>/dev/null; then
+	if ! has pipx; then
 		sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
 		sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-venv pipx
 		completed "pipx installation done"
 	else
 		completed "pipx already installed"
 	fi
-	sudo PIPX_BIN_DIR=/usr/local/bin pipx ensurepath
+
+	sudo PIPX_BIN_DIR=/usr/local/bin pipx ensurepath --force
 }
 
 install_ansible_pull() {
 	info "Installing ansible-pull..."
-	# Install ansible
-	if ! sudo test -f "/usr/local/bin/ansible-pull"; then
+
+	if ! has ansible-pull true; then
 		sudo PIPX_BIN_DIR=/usr/local/bin pipx install --force --include-deps ansible
 		sudo PIPX_BIN_DIR=/usr/local/bin pipx inject ansible jmespath
 		completed "ansible-pull installation done"
@@ -105,22 +170,23 @@ install_ansible_pull() {
 	fi
 }
 
-function install_git() {
+install_git() {
 	info "Installing git..."
-	if git --version >/dev/null 2>&1; then
-		completed "Git is already installed"
-	else
+
+	if ! has git; then
 		sudo apt update
 		sudo apt install -y git
 		completed "git installation done"
+	else
+		completed "Git is already installed"
 	fi
 }
 
 run_setup_playbook() {
-	info "Running setup playbook..."
 
 	ANSIBLE_USER=${USER}
 
+	info "Running \"install-requirements\" playbook..."
 	sudo ansible-pull \
 		--purge \
 		-U "$REPOSITORY_URL" \
@@ -129,8 +195,14 @@ run_setup_playbook() {
 		--extra-vars "ansible_user=${ANSIBLE_USER}" \
 		--limit "localhost" \
 		-v \
-		"/tmp/ubuntu-config/ansible/playbooks/install-requirements.yml"
+		"/tmp/ubuntu-config/ansible/install-requirements.yml" || {
+		error "Playbook \"install-requirements\" failed"
+		exit 1
+	}
 
+	completed "Playbook \"install-requirements\" done"
+
+	info "Running \"setup\" and \"cleanup\" playbooks..."
 	sudo ansible-pull \
 		--purge \
 		-U "$REPOSITORY_URL" \
@@ -140,16 +212,21 @@ run_setup_playbook() {
 		--extra-vars "BITWARDEN_EMAIL=${BITWARDEN_EMAIL}" \
 		--extra-vars "BITWARDEN_PASSWORD=${BITWARDEN_PASSWORD}" \
 		--limit "localhost" \
-		"/tmp/ubuntu-config/ansible/playbooks/setup.yml" \
-		"/tmp/ubuntu-config/ansible/playbooks/cleanup.yml" \
+		"/tmp/ubuntu-config/ansible/setup.yml" \
+		"/tmp/ubuntu-config/ansible/cleanup.yml" \
 		--diff \
-		-v
+		-v || {
+		error "Playbook \"setup\" and \"cleanup\" failed"
+		exit 1
+	}
+
+	completed "Playbook \"setup\" and \"cleanup\" done"
 }
 
 #######################################
 
 printf "\n%s\n" "#######################################"
-printf "#        %s        #\n" "${BOLD}Install ubuntu-config${NO_COLOR}"
+printf "#        %s        #\n" "${GREEN}Install ${BOLD}ubuntu-config${NO_COLOR}"
 printf "%s\n\n" "#######################################"
 
 info "${BOLD}User${NO_COLOR}: ${GREEN}${USER}${NO_COLOR}"
@@ -160,11 +237,34 @@ printf "\n%s\n\n" "---------------------------------------"
 
 info "Start installation..."
 
-check_requirements
-ask_for_bitwarden_credentials
-install_pipx
-install_ansible_pull
-install_git
-run_setup_playbook
+check_requirements || {
+	error "Requirements check failed"
+	exit 1
+}
+
+ask_for_bitwarden_credentials || {
+	error "Bitwarden credentials check failed"
+	exit 1
+}
+
+install_pipx || {
+	error "pipx installation failed"
+	exit 1
+}
+
+install_ansible_pull || {
+	error "ansible-pull installation failed"
+	exit 1
+}
+
+install_git || {
+	error "git installation failed"
+	exit 1
+}
+
+run_setup_playbook || {
+	error "Playbook run failed"
+	exit 1
+}
 
 completed "Installation done"

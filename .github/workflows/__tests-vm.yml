@@ -11,25 +11,27 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      BITWARDEN_EMAIL: ${{ secrets.BITWARDEN_EMAIL }}
+      BITWARDEN_PASSWORD: ${{ secrets.BITWARDEN_PASSWORD }}
+      INSTALL_SCRIPT: https://raw.githubusercontent.com/neilime/ubuntu-config/${{ github.sha }}/install.sh
+      REPOSITORY_URL: ${{ github.event.repository.clone_url }}
+      REPOSITORY_BRANCH: ${{ github.sha }}
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Set up QEMU VM
+        id: setup-qemu-vm
         uses: ./.github/actions/setup-qemu-vm
         with:
           iso-url: https://releases.ubuntu.com/24.04.2/ubuntu-24.04.2-desktop-amd64.iso
 
-      - name: Run setup script
+      - name: Run install script
         run: |
-          if [ -f /mnt/ubuntu/e2e.success ]; then
-          echo "✅ Setup script completed successfully"
-          else
-          echo "❌ Setup script failed"
-          exit 1
-          fi
+          ssh-keyscan -p 2222 -H 127.0.0.1 >> ~/.ssh/known_hosts
+          ${{ steps.setup-qemu-vm.outputs.ssh-command }} "wget -qO- \"$INSTALL_SCRIPT\" | sudo bash && sudo touch /e2e.success"
 
-      - name: Unmount disk
+      - name: Validate Ansible changes in host - Snap packages
         run: |
-          sudo umount /mnt/ubuntu
-          sudo qemu-nbd --disconnect /dev/nbd0
+          ${{ steps.setup-qemu-vm.outputs.ssh-command }} '[ -f /e2e.success ] && echo "✅ Success" || { echo "❌ Setup failed"; exit 1; }'

@@ -20,6 +20,8 @@ RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 ENV USER=kasm-user
 
-HEALTHCHECK --interval=5s --timeout=3s --retries=3 CMD [ "whoiam" ]
+RUN chown -R kasm-user:kasm-user /home/kasm-user/
+
+HEALTHCHECK --interval=5s --timeout=3s --retries=3 CMD [ "id" ]
 
 USER 1000

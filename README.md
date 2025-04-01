@@ -9,7 +9,7 @@ My own Ubuntu setup &amp; config. This project uses Ansible to set up and config
 ## Execute installation
 
 ```sh
-wget -qO- "https://raw.githubusercontent.com/neilime/ubuntu-config/main/install.sh" | bash
+wget -qO- "https://raw.githubusercontent.com/neilime/ubuntu-config/main/install.sh" | sh
 ```
 
 ## Project Structure

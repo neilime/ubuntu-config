@@ -1,9 +1,10 @@
 ---
 - name: Install nvm
-  become: true
-  become_user: "{{ ansible_user }}"
   ansible.builtin.include_role:
     name: stephdewit.nvm
+    apply:
+      become: true
+      become_user: "{{ ansible_user }}"
   vars:
     nvm_version: "latest"
     nvm_node_version: "latest"

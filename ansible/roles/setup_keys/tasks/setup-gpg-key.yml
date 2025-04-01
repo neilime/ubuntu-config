@@ -8,6 +8,8 @@
   ansible.builtin.shell: |
     set -o pipefail
     echo '{{ private_key }}' | gpg --import
+  args:
+    executable: /bin/bash
   register: gpg_import_private_key
   become: true
   become_user: "{{ ansible_user }}"
@@ -22,6 +24,8 @@
   ansible.builtin.shell: |
     set -o pipefail
     echo '{{ public_key }}' | gpg --import
+  args:
+    executable: /bin/bash
   register: gpg_import_public_key
   become: true
   become_user: "{{ ansible_user }}"

@@ -1,15 +1,12 @@
 services:
-  ansible:
-    image: ${ANSIBLE_IMAGE}
-
   ubuntu:
     image: ${UBUNTU_IMAGE}
+    environment:
+      VNC_PW: password
+      REPOSITORY_URL:
+      REPOSITORY_BRANCH:
+      BITWARDEN_EMAIL:
+      BITWARDEN_PASSWORD:
     shm_size: 1024m
     cap_add:
       - SYS_PTRACE
-    environment:
-      REPOSITORY_URL: http://git/ubuntu-config.git
-      REPOSITORY_BRANCH: main
-
-  git:
-    image: ${GIT_IMAGE}

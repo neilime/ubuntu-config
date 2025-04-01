@@ -6,20 +6,22 @@ services:
       target: ci
     volumes:
       - ./ansible:/ansible
-      - ./multipass:/multipass
     env_file:
       - .env
+    stdin_open: true
+    tty: true
+    init: true
 
   ubuntu:
     build:
       context: docker/ubuntu
-    shm_size: 1024m
-    cap_add:
-      - SYS_PTRACE
     environment:
       REPOSITORY_URL: http://git/ubuntu-config.git
       REPOSITORY_BRANCH: main
       VNC_PW: password
+    shm_size: 1024m
+    cap_add:
+      - SYS_PTRACE
     ports:
       - 6901:6901
     env_file:
@@ -30,5 +32,7 @@ services:
       context: .
       dockerfile: docker/git/Dockerfile
     volumes:
-      - ./install.sh:/var/lib/git/ubuntu-config/install.sh:ro
-      - ./ansible:/var/lib/git/ubuntu-config/ansible:ro
+      - ./install.sh:/srv/source/ubuntu-config/install.sh:ro
+      - ./ansible:/srv/source/ubuntu-config/ansible:ro
+    ports:
+      - 8088:80

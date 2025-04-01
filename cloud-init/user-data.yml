@@ -1,15 +1,25 @@
-# cloud-init configuration
-
-# Install packages
-package_update: true
-packages:
-  - ubuntu-desktop
-  - xcb
-  - qt5dxcb-plugin
-  - xrdp
-
+#cloud-config
+hostname: ubuntu-config-test
 users:
-  - name: ubuntu
-    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
-    ssh-authorized-keys:
-      - "{{ ssh_public_key }}"
+  - name: "{{USERNAME}}" # dynamically injected by GitHub Actions
+    groups: sudo
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: false
+    passwd: "{{HASHED_PASSWORD}}" # dynamically injected by GitHub Actions
+    ssh_authorized_keys:
+      - "{{SSH_PUBLIC_KEY}}" # dynamically injected by GitHub Actions
+
+ssh_pwauth: true
+disable_root: false
+
+chpasswd:
+  expire: false
+
+packages:
+  - openssh-server
+
+runcmd:
+  - systemctl enable ssh
+  - systemctl start ssh
+  - echo "✅ SSH should now be active"

@@ -9,12 +9,20 @@
       - username: "{{ ansible_user }}"
 
 - name: Install Starship
-  ansible.builtin.shell:
-    cmd: |
-      set -o pipefail
-      curl -sS https://starship.rs/install.sh | sh -s -- --force"
+  ansible.builtin.shell: |
+    set -o pipefail
+    curl -sS https://starship.rs/install.sh | sh -s -- --force
+  args:
     creates: "/usr/local/bin/starship"
+    executable: /bin/bash
   register: starship_install
+
+- name: Configure starship in zsh
+  ansible.builtin.blockinfile:
+    path: "/home/{{ ansible_user }}/.zshrc"
+    insertafter: EOF
+    block: |
+      eval "$(starship init zsh)"
 
 - name: Define aliases
   ansible.builtin.include_role:
@@ -23,7 +31,7 @@
       become: true
       become_user: "{{ ansible_user }}"
   vars:
-    bashalias_aliases:
+    bash_aliases:
       - { alias: "cat", command: "batcat -pp" }
       # Enforce security for git aliases
       - {

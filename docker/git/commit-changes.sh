@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 commit_changes() {
-	cd /var/lib/git/ubuntu-config || exit 1
+	cd "$GIT_SOURCE" || exit 1
 	if [[ $(git status --porcelain) ]]; then
 		git add .
 		git commit -m "chore: update"
