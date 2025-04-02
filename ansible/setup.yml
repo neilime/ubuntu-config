@@ -39,7 +39,8 @@
       tags: shell
       become: true
       vars:
-        setup_shell_zsh_plugins: "{{ zsh_plugins }}"
+        setup_shell_zsh_plugins: "{{ zsh.plugins }}"
+        setup_shell_zsh_aliases: "{{ zsh.aliases }}"
 
     - name: Setup configuration
       ansible.builtin.import_role:

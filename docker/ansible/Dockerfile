@@ -35,7 +35,7 @@ USER ubuntu
 RUN --mount=type=cache,target=~/.cache/pipx,sharing=private \
     set -eu; \
     pipx install --include-deps ansible ansible-lint && \
-    pipx inject --include-apps ansible jmespath && \
+    pipx inject --include-apps ansible jmespath nbconvert && \
     pipx ensurepath
 
 COPY ./ansible/requirements.yml /ansible/requirements.yml

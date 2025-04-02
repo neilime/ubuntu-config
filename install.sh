@@ -1,4 +1,45 @@
 #!/usr/bin/env sh
+# -----------------------------------------------------------------------------
+# Script: install.sh
+# Description: This script automates the setup of an Ubuntu system by:
+#              - Checking system requirements
+#              - Installing necessary tools (pipx, ansible-pull, git)
+#              - Running Ansible playbooks for configuration
+#
+# Usage:
+#   Run this script using `sh install.sh`. Ensure you have the necessary
+#   permissions to execute the script and install software.
+#
+# Main Actions:
+#   1. Check system requirements (e.g., sudo availability, shell compatibility).
+#   2. Prompt for Bitwarden credentials if not already set.
+#   3. Install pipx, ansible-pull, and git if not already installed.
+#   4. Run Ansible playbooks to configure the system.
+#
+# Supported Environment Variables:
+#   - REPOSITORY_URL: URL of the Git repository containing the Ansible playbooks.
+#                     Default: https://github.com/neilime/ubuntu-config.git
+#   - REPOSITORY_BRANCH: Branch of the repository to use.
+#                        Default: main
+#   - BITWARDEN_EMAIL: Email address for Bitwarden login.
+#   - BITWARDEN_PASSWORD: Password for Bitwarden login.
+#   - SETUP_TAGS: Tags to filter tasks in the "setup" playbook.
+#                 Default: all
+#
+# Requirements:
+#   - A POSIX-compliant shell (e.g., `sh`).
+#   - `sudo` must be installed and configured.
+#   - Internet access to download dependencies and clone repositories.
+#
+# Notes:
+#   - Avoid running this script with `zsh` or non-POSIX `bash` as it may cause errors.
+#   - The script will prompt for missing environment variables if not set.
+#
+# Exit Codes:
+#   - 0: Success
+#   - Non-zero: An error occurred during execution.
+#
+# -----------------------------------------------------------------------------
 
 set -eu
 printf '\n'
@@ -163,7 +204,7 @@ install_ansible_pull() {
 
 	if ! has ansible-pull true; then
 		sudo PIPX_BIN_DIR=/usr/local/bin pipx install --force --include-deps ansible
-		sudo PIPX_BIN_DIR=/usr/local/bin pipx inject ansible jmespath
+		sudo PIPX_BIN_DIR=/usr/local/bin pipx inject ansible nbconvert jmespath
 		completed "ansible-pull installation done"
 	else
 		completed "ansible-pull already installed"
@@ -182,45 +223,50 @@ install_git() {
 	fi
 }
 
-run_setup_playbook() {
+run_playbooks() {
+	info "Running playbooks..."
 
-	ANSIBLE_USER=${USER}
+	run_playbook "install-requirements"
 
-	info "Running \"install-requirements\" playbook..."
+	if [ -z "${SETUP_TAGS+x}" ]; then
+		SETUP_TAGS="all"
+	fi
+
+	run_playbook "setup" \
+		--tags "$SETUP_TAGS" \
+		--extra-vars "BITWARDEN_EMAIL=$BITWARDEN_EMAIL" \
+		--extra-vars "BITWARDEN_PASSWORD=$BITWARDEN_PASSWORD"
+
+	run_playbook "cleanup"
+
+	completed "Playbooks run done"
+}
+
+run_playbook() {
+	if [ -z "$1" ]; then
+		error "No playbook name provided to run"
+		return 1
+	fi
+
+	playbook_name="$1"
+	shift
+
+	info "Running \"$playbook_name\" playbook..."
 	sudo ansible-pull \
 		--purge \
 		-U "$REPOSITORY_URL" \
 		-C "$REPOSITORY_BRANCH" \
 		-d "/tmp/ubuntu-config" -i "/tmp/ubuntu-config/ansible/inventory.yml" \
-		--extra-vars "ansible_user=${ANSIBLE_USER}" \
+		--extra-vars "ansible_user=${USER}" \
 		--limit "localhost" \
 		-v \
-		"/tmp/ubuntu-config/ansible/install-requirements.yml" || {
-		error "Playbook \"install-requirements\" failed"
+		"$@" \
+		"/tmp/ubuntu-config/ansible/$playbook_name.yml" || {
+		error "Playbook \"$playbook_name\" failed"
 		exit 1
 	}
 
-	completed "Playbook \"install-requirements\" done"
-
-	info "Running \"setup\" and \"cleanup\" playbooks..."
-	sudo ansible-pull \
-		--purge \
-		-U "$REPOSITORY_URL" \
-		-C "$REPOSITORY_BRANCH" \
-		-d "/tmp/ubuntu-config" -i "/tmp/ubuntu-config/ansible/inventory.yml" \
-		--extra-vars "ansible_user=${ANSIBLE_USER}" \
-		--extra-vars "BITWARDEN_EMAIL=${BITWARDEN_EMAIL}" \
-		--extra-vars "BITWARDEN_PASSWORD=${BITWARDEN_PASSWORD}" \
-		--limit "localhost" \
-		"/tmp/ubuntu-config/ansible/setup.yml" \
-		"/tmp/ubuntu-config/ansible/cleanup.yml" \
-		--diff \
-		-v || {
-		error "Playbook \"setup\" and \"cleanup\" failed"
-		exit 1
-	}
-
-	completed "Playbook \"setup\" and \"cleanup\" done"
+	completed "Playbook \"$playbook_name\" done"
 }
 
 #######################################
@@ -262,7 +308,7 @@ install_git || {
 	exit 1
 }
 
-run_setup_playbook || {
+run_playbooks || {
 	error "Playbook run failed"
 	exit 1
 }

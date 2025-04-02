@@ -19,11 +19,12 @@
   vars:
     default_web_browser: "{{ setup_configuration_web_browser }}"
 
-- name: Setup favorite applications
-  ansible.builtin.include_role:
-    name: gantsign.pin-to-launcher
-  vars:
-    pin_to_launcher_favorites: "{{ setup_configuration_favorites }}"
+# FIXME: does not work with latest version of Jinja2: https://github.com/gantsign/ansible-role-pin-to-launcher/pull/104
+# - name: Setup favorite applications
+#   ansible.builtin.include_role:
+#     name: gantsign.pin-to-launcher
+#   vars:
+#     pin_to_launcher_favorites: "{{ setup_configuration_favorites | map('regex_replace', '^(.*)$', '{\"application\": \"\\1\"}') | map('from_json') | list }}"
 
 - name: Set shell to prefer dark mode
   community.general.dconf:
@@ -52,11 +53,12 @@
   ignore_errors: true
 
 - name: Ensure CopyQ server is started
-  ansible.builtin.shell: copyq --start-server
+  ansible.builtin.shell: copyq
   register: copyq_start
-  when: copyq_status.rc != 0
-  failed_when: copyq_start.rc != 0
+  when: not ansible_module_running_in_container and copyq_status.rc != 0
+  failed_when: ansible_module_running_in_container and copyq_start.rc != 0
 
 - name: Configure CopyQ global shortcuts
+  when: not ansible_module_running_in_container
   ansible.builtin.shell: |
     copyq eval "var cmds = commands();var cmd = cmds.find(command => command.internalId === 'copyq_global_toggle'); if(cmd){cmd.globalShortcuts = ['ctrl+shift+v'];}setCommands(cmds)"

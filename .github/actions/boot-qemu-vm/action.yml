@@ -1,0 +1,49 @@
+name: "Setup QEMU VM"
+description: "Composite action to set up a QEMU virtual machine"
+
+inputs:
+  image-name:
+    description: "Name of the image to boot"
+    required: true
+  user:
+    description: "VM user"
+    required: true
+
+outputs:
+  ssh-command:
+    description: "SSH command to connect to the VM"
+    value: ${{ steps.set-ssh-command.outputs.ssh-command }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Boot image with QEMU
+      shell: bash
+      run: |
+        qemu-system-x86_64 \
+          -enable-kvm \
+          -m 4096 \
+          -smp 2 \
+          -cpu host \
+          -drive file=ubuntu-e2e.qcow2,format=qcow2 \
+          -netdev user,id=net0,hostfwd=tcp::2222-:22 \
+          -device e1000,netdev=net0 \
+          -nographic \
+          -daemonize
+
+    - name: Set ssh command
+      id: set-ssh-command
+      shell: bash
+      run: echo "ssh-command=ssh -p 2222 -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${{ inputs.user }}@127.0.0.1" >> "$GITHUB_OUTPUT"
+
+    - name: Wait for SSH to become available
+      shell: bash
+      run: |
+        echo "⏳ Waiting for SSH..."
+        for i in {1..60}; do
+          if ${{ steps.set-ssh-command.outputs.ssh-command }} "echo '✅ SSH ready'" 2>/dev/null; then
+            echo "✅ VM booted and SSH is up"
+            break
+          fi
+          sleep 5
+        done

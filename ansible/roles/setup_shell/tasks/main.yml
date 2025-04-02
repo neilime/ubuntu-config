@@ -1,12 +1,33 @@
 ---
 - name: Install oh-my-zsh
-  ansible.builtin.include_role:
-    name: gantsign.oh-my-zsh
-  vars:
-    oh_my_setup_shell_zsh_plugins: "{{ setup_shell_zsh_plugins }}"
-    oh_my_zsh_update_mode: auto
-    users:
-      - username: "{{ ansible_user }}"
+  ansible.builtin.shell: |
+    set -o pipefail
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+  args:
+    creates: "/home/{{ ansible_user }}/.zshrc"
+    executable: /bin/bash
+  register: oh_my_zsh_install
+  become: true
+  become_user: "{{ ansible_user }}"
+
+- name: Install zsh plugins
+  ansible.builtin.lineinfile:
+    path: "/home/{{ ansible_user }}/.zshrc"
+    regexp: "^plugins="
+    line: "plugins=({{ setup_shell_zsh_plugins | join(' ') }})"
+  when: setup_shell_zsh_plugins | length > 0
+
+- name: Setup zsh aliases
+  ansible.builtin.lineinfile:
+    dest: "/home/{{ ansible_user }}/.zsh_aliases"
+    create: true
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+    line: "alias {{ item.alias }}='{{ item.command }}'"
+    regexp: "^alias {{ item.alias }}="
+  with_items: "{{setup_shell_zsh_aliases}}"
+  when: setup_shell_zsh_aliases | length > 0
 
 - name: Install Starship
   ansible.builtin.shell: |
@@ -16,6 +37,8 @@
     creates: "/usr/local/bin/starship"
     executable: /bin/bash
   register: starship_install
+  become: true
+  become_user: "{{ ansible_user }}"
 
 - name: Configure starship in zsh
   ansible.builtin.blockinfile:
@@ -23,29 +46,6 @@
     insertafter: EOF
     block: |
       eval "$(starship init zsh)"
-
-- name: Define aliases
-  ansible.builtin.include_role:
-    name: IronicBadger.bash_aliases
-    apply:
-      become: true
-      become_user: "{{ ansible_user }}"
-  vars:
-    bash_aliases:
-      - { alias: "cat", command: "batcat -pp" }
-      # Enforce security for git aliases
-      - {
-          alias: "ggl",
-          command: 'echo \"\e[31mUse \e[1;31mggfl\e[0m!\" && return 1',
-        }
-      - {
-          alias: "gcam",
-          command: 'echo \"\e[31mUse \e[1;31mgcasm\e[0m!\" && return 1',
-        }
-      - {
-          alias: "gcan!",
-          command: 'echo \"\e[31mUse \e[1;31mgcans!\e[0m!\" && return 1',
-        }
 
 - name: Configure zsh NVM plugin
   ansible.builtin.lineinfile:

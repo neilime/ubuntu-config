@@ -22,6 +22,7 @@ apt_packages:
   - gnupg-agent
   - software-properties-common
   - dconf-cli
+  - util-linux-extra
   - curl
   - wget
   - curl
@@ -56,17 +57,33 @@ snap_packages:
   - remmina
   - helm
 
-zsh_plugins:
-  - thefuck
-  - git
-  - yarn
-  - nvm
-  - command-not-found
-  - docker
-  - docker-compose
-  - composer
-  - aws
-  - pre-commit
+zsh:
+  plugins:
+    - thefuck
+    - git
+    - yarn
+    - nvm
+    - command-not-found
+    - docker
+    - docker-compose
+    - composer
+    - aws
+    - pre-commit
+  aliases:
+    - { alias: "cat", command: "batcat -pp" }
+    # Enforce security for git aliases
+    - {
+        alias: "ggl",
+        command: 'echo \"\e[31mUse \e[1;31mggfl\e[0m!\" && return 1',
+      }
+    - {
+        alias: "gcam",
+        command: 'echo \"\e[31mUse \e[1;31mgcasm\e[0m!\" && return 1',
+      }
+    - {
+        alias: "gcan!",
+        command: 'echo \"\e[31mUse \e[1;31mgcans!\e[0m!\" && return 1',
+      }
 
 git:
   name: "Emilien Escalle"

@@ -1,3 +1,6 @@
 ---
 # Zsh Plugins to be installed
 setup_shell_zsh_plugins: []
+
+# Zsh Aliases to be installed
+setup_shell_zsh_aliases: []

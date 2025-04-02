@@ -10,8 +10,6 @@ roles:
     version: 7.4.7
   - src: stephdewit.nvm
     version: v3.4.5
-  - src: gantsign.oh-my-zsh
-    version: 2.7.0
   - src: gantsign.default-web-browser
     version: 4.0.0
   - src: gantsign.pin-to-launcher

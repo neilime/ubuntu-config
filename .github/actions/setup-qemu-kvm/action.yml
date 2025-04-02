@@ -1,0 +1,31 @@
+name: "Setup QEMU and KVM"
+description: "Composite action to set up"
+
+inputs: {}
+
+outputs: {}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install dependencies
+      shell: bash
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo apt-get -q update
+        sudo apt-get -yq install qemu-system-x86 genisoimage wget nbdkit qemu-utils
+
+    - name: Enable KVM group perms
+      shell: bash
+      run: |
+        echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+        sudo udevadm control --reload-rules
+        sudo udevadm trigger --name-match=kvm
+
+    - name: Ensure Qemu and KVM is installed and working
+      shell: bash
+      run: |
+        qemu-system-x86_64 --version
+        qemu-system-x86_64 -enable-kvm -hda /dev/null -m 1024 -nographic -monitor stdio -serial null -net nic,model=virtio -net user,hostfwd=tcp::2222-:22
+        echo "✅ QEMU and KVM are installed and working"
