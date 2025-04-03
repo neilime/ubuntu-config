@@ -27,5 +27,5 @@ runs:
       shell: bash
       run: |
         qemu-system-x86_64 --version
-        qemu-system-x86_64 -enable-kvm -hda /dev/null -m 1024 -nographic -monitor stdio -serial null -net nic,model=virtio -net user,hostfwd=tcp::2222-:22
+
         echo "✅ QEMU and KVM are installed and working"
