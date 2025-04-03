@@ -18,8 +18,17 @@ chpasswd:
 packages:
   - ubuntu-desktop
   - openssh-server
+
+bootcmd:
+  - mkdir -p /home/{{USERNAME}}/.ssh
+  - echo "{{SSH_PUBLIC_KEY}}" > /home/{{USERNAME}}/.ssh/authorized_keys
+  - chown -R {{USERNAME}}:{{USERNAME}} /home/{{USERNAME}}/.ssh
+  - chmod 700 /home/{{USERNAME}}/.ssh
+  - chmod 600 /home/{{USERNAME}}/.ssh/authorized_keys
+
 runcmd:
   - systemctl enable ssh
   - systemctl start ssh
-  - echo "✅ SSH should now be active"
+  - cloud-init status --wait
+  - echo "✅ SSH should now be active for user {{USERNAME}}"
   - touch /e2e.ready

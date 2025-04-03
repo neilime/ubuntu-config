@@ -28,7 +28,7 @@ runs:
           -drive file=ubuntu-e2e.qcow2,format=qcow2 \
           -netdev user,id=net0,hostfwd=tcp::2222-:22 \
           -device e1000,netdev=net0 \
-          -nographic \
+          -display none \
           -daemonize
 
     - name: Set ssh command

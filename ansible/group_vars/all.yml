@@ -23,6 +23,7 @@ apt_packages:
   - software-properties-common
   - dconf-cli
   - util-linux-extra
+  - systemd
   - cron
   - curl
   - wget

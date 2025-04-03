@@ -37,6 +37,7 @@
     mode: 0644
 
 - name: Enable and start git check service
+  when: not ansible_module_running_in_container
   ansible.builtin.systemd:
     name: git-check.service
     enabled: yes

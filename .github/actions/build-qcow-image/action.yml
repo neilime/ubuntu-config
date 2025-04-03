@@ -25,7 +25,10 @@ runs:
     - name: Download Ubuntu 24.04 Cloud Image
       shell: bash
       run: wget -q "${{ inputs.iso-url }}" -O "ubuntu-base.img"
-        qemu-img resize ubuntu-base.img 15G
+
+    - name: Resize image
+      shell: bash
+      run: qemu-img resize ubuntu-base.img 15G
 
     - name: Generate SSH key pair
       shell: bash
@@ -44,9 +47,9 @@ runs:
         SSH_KEY=$(cat ~/.ssh/id_rsa.pub)
 
         sed \
-          -e "s|{{USERNAME}}|$USERNAME|" \
-          -e "s|{{HASHED_PASSWORD}}|$HASHED_PASS|" \
-          -e "s|{{SSH_PUBLIC_KEY}}|$SSH_KEY|" \
+          -e "s|{{USERNAME}}|$USERNAME|g" \
+          -e "s|{{HASHED_PASSWORD}}|$HASHED_PASS|g" \
+          -e "s|{{SSH_PUBLIC_KEY}}|$SSH_KEY|g" \
           cloud-init/user-data.yml > cloud-init-gen/user-data.yml
 
         cp cloud-init/meta-data.yml cloud-init-gen/meta-data.yml
@@ -69,7 +72,7 @@ runs:
           -drive file=seed.iso,format=raw \
           -netdev user,id=net0,hostfwd=tcp::2222-:22 \
           -device e1000,netdev=net0 \
-          -nographic \
+          -display none \
           -daemonize
 
     - name: Wait for SSH to become available
@@ -78,14 +81,17 @@ runs:
         echo "⏳ Waiting for cloud-init and SSH"
 
         for i in {1..60}; do
-          if ssh -p 2222 -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${{ inputs.user }}@127.0.0.1 "echo '✅ SSH ready'" 2>/dev/null; then
+          if ssh -p 2222 -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${{ inputs.user }}@127.0.0.1 "echo '✅ SSH ready'"; then
             echo "✅ SSH is ready!"
             break
           fi
           sleep 5
         done
 
-        if ! ssh -p 2222 -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${{ inputs.user }}@127.0.0.1 "true" 2>/dev/null; then
+        echo "🔑 Trying password auth fallback..."
+        sshpass -p '${{ inputs.password }}' ssh -p 2222 -o StrictHostKeyChecking=no ${{ inputs.user }}@127.0.0.1 'echo "Password login OK"'
+
+        if ! ssh -p 2222 -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${{ inputs.user }}@127.0.0.1 "true"; then
           echo "::error ::❌ SSH never became ready"
           exit 1
         fi

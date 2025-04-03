@@ -1,10 +1,22 @@
 ---
+- name: Create profile file
+  ansible.builtin.file:
+    path: /home/{{ ansible_user }}/.profile
+    state: touch
+    modification_time: preserve
+    access_time: preserve
+    mode: 0644
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+
 - name: Install nvm
   ansible.builtin.include_role:
     name: stephdewit.nvm
     apply:
       become: true
       become_user: "{{ ansible_user }}"
+      environment:
+        NVM_DIR: /home/{{ ansible_user }}/.nvm
   vars:
     nvm_version: "latest"
     nvm_node_version: "latest"
