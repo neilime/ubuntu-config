@@ -40,6 +40,12 @@ ansible-galaxy: ## Run ansible-galaxy
 setup-ssh-keys: ## Setup ssh keys for VM access
 	./cloud-init/setup-ssh-keys.sh
 
+test-docker: ## Test playbook against test container
+	@docker compose exec \
+		$(filter-out $@,$(MAKECMDGOALS)) \
+		--user kasm-user ubuntu \
+		sh -c 'wget -qO- "http://git/?p=ubuntu-config.git;a=blob_plain;f=install.sh;hb=HEAD" | sh'
+
 setup-vm: ## Setup the VM
 	$(MAKE) setup-ssh-keys
 	@multipass list --format json | jq -e '.list[] | select(.name == "ubuntu-config-test" and .state == "Running")' && \
@@ -64,9 +70,6 @@ restore-vm: ## Restore the VM
 
 down-vm: ## Stop the VM
 	@multipass list | grep -q ubuntu-config-test && (multipass delete -v -p ubuntu-config-test) || echo "VM is already down"
-
-test-docker: ## Test playbook against test container
-	@docker-compose exec --user kasm-user ubuntu sh -c 'wget -qO- "http://git/?p=ubuntu-config.git;a=blob_plain;f=install.sh;hb=HEAD" | sh'
 
 test-vm: ## Test playbook against VM
 	docker-compose exec ansible sh -c '/root/.local/bin/ansible-playbook setup.yml \

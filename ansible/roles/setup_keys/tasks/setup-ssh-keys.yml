@@ -17,6 +17,7 @@
   ansible.builtin.command: bw list items --collectionid "{{ setup_keys_bitwarden_ssh_keys_collection_id }}" --session "{{ bw_session }}" --response
   register: bw_items
   changed_when: false
+  no_log: true
 
 - ansible.builtin.set_fact:
     ssh_keys: |
@@ -32,6 +33,7 @@
         public_key: fields[?name=='public_key'].value | [0],
         private_key: fields[?name=='private_key'].value | [0]
       }
+  no_log: true
 
 - name: Setup SSH keys from Bitwarden
   ansible.builtin.include_tasks: setup-ssh-key.yml

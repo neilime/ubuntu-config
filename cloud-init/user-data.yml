@@ -1,5 +1,7 @@
 #cloud-config
 hostname: ubuntu-config-test
+preserve_hostname: false
+
 users:
   - name: "{{USERNAME}}" # dynamically injected by GitHub Actions
     groups: sudo
@@ -10,6 +12,13 @@ users:
     ssh_authorized_keys:
       - "{{SSH_PUBLIC_KEY}}" # dynamically injected by GitHub Actions
 
+write_files:
+  - path: /home/{{USERNAME}}/.ssh/authorized_keys
+    content: |
+      {{SSH_PUBLIC_KEY}}
+    owner: "{{USERNAME}}:{{USERNAME}}"
+    permissions: "0600"
+
 ssh_pwauth: true
 
 chpasswd:
@@ -19,16 +28,15 @@ packages:
   - ubuntu-desktop
   - openssh-server
 
-bootcmd:
-  - mkdir -p /home/{{USERNAME}}/.ssh
-  - echo "{{SSH_PUBLIC_KEY}}" > /home/{{USERNAME}}/.ssh/authorized_keys
-  - chown -R {{USERNAME}}:{{USERNAME}} /home/{{USERNAME}}/.ssh
-  - chmod 700 /home/{{USERNAME}}/.ssh
-  - chmod 600 /home/{{USERNAME}}/.ssh/authorized_keys
-
 runcmd:
+  - mkdir -p /home/{{USERNAME}}/.ssh # dynamically injected by GitHub Actions
+  - chown -R {{USERNAME}}:{{USERNAME}} /home/{{USERNAME}}/.ssh # dynamically injected by GitHub Actions
+  - chmod 700 /home/{{USERNAME}}/.ssh # dynamically injected by GitHub Actions
+  - sed -i 's/^#*PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+  - sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+  - sed -i 's/^#*PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
   - systemctl enable ssh
   - systemctl start ssh
   - cloud-init status --wait
-  - echo "✅ SSH should now be active for user {{USERNAME}}"
+  - echo "✅ SSH should now be active for user {{USERNAME}}" # dynamically injected by GitHub Actions
   - touch /e2e.ready

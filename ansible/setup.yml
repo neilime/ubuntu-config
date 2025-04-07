@@ -6,6 +6,9 @@
     ansible_config_dir: "/home/ansible/config"
 
   tasks:
+    - name: Get facts on current container
+      community.docker.current_container_facts:
+
     - name: Setup APT
       ansible.builtin.import_role:
         name: setup_apt
@@ -21,17 +24,16 @@
       vars:
         setup_snap_packages: "{{ snap_packages }}"
 
-    # FIXME: This role MUST mask secrets and keys
-    # - name: Setup keys
-    #   ansible.builtin.import_role:
-    #     name: setup_keys
-    #   tags: keys
-    #   vars:
-    #     setup_keys_bitwarden_server: "{{ bitwarden.server }}"
-    #     setup_keys_bitwarden_email: "{{ bitwarden.email }}"
-    #     setup_keys_bitwarden_password: "{{ bitwarden.password }}"
-    #     setup_keys_bitwarden_ssh_keys_collection_id: "{{ bitwarden.sshKeysCollectionId }}"
-    #     setup_keys_bitwarden_gpg_keys_collection_id: "{{ bitwarden.gpgKeysCollectionId }}"
+    - name: Setup keys
+      ansible.builtin.import_role:
+        name: setup_keys
+      tags: keys
+      vars:
+        setup_keys_bitwarden_server: "{{ bitwarden.server }}"
+        setup_keys_bitwarden_email: "{{ bitwarden.email }}"
+        setup_keys_bitwarden_password: "{{ bitwarden.password }}"
+        setup_keys_bitwarden_ssh_keys_collection_id: "{{ bitwarden.sshKeysCollectionId }}"
+        setup_keys_bitwarden_gpg_keys_collection_id: "{{ bitwarden.gpgKeysCollectionId }}"
 
     - name: Setup shell
       ansible.builtin.import_role:

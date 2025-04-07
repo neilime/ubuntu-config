@@ -44,7 +44,7 @@ runs:
 
         USERNAME="${{ inputs.user }}"
         HASHED_PASS=$(openssl passwd -6 "${{ inputs.password }}")
-        SSH_KEY=$(cat ~/.ssh/id_rsa.pub)
+        SSH_KEY=$(cat ~/.ssh/id_rsa.pub | tr -d '\n')
 
         sed \
           -e "s|{{USERNAME}}|$USERNAME|g" \
@@ -88,10 +88,7 @@ runs:
           sleep 5
         done
 
-        echo "🔑 Trying password auth fallback..."
-        sshpass -p '${{ inputs.password }}' ssh -p 2222 -o StrictHostKeyChecking=no ${{ inputs.user }}@127.0.0.1 'echo "Password login OK"'
-
-        if ! ssh -p 2222 -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${{ inputs.user }}@127.0.0.1 "true"; then
+        if ! ssh -vvv -p 2222 -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${{ inputs.user }}@127.0.0.1 "true"; then
           echo "::error ::❌ SSH never became ready"
           exit 1
         fi

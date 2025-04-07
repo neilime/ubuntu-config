@@ -34,9 +34,11 @@
       delegate_to: localhost
       ansible.builtin.command: bw unlock --raw "{{ setup_keys_bitwarden_password }}"
       register: bw_session
+      no_log: true
 
     - ansible.builtin.set_fact:
         bw_session: "{{ bw_session.stdout }}"
+      no_log: true
 
     - name: Ensure bw is unlocked
       delegate_to: localhost

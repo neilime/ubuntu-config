@@ -23,8 +23,12 @@
 #                        Default: main
 #   - BITWARDEN_EMAIL: Email address for Bitwarden login.
 #   - BITWARDEN_PASSWORD: Password for Bitwarden login.
-#   - SETUP_TAGS: Tags to filter tasks in the "setup" playbook.
-#                 Default: all
+#   - SKIP_INSTALL_REQUIREMENTS: If set to "true", the install-requirements playbook will be skipped.
+#   - INSTALL_REQUIREMENTS_TAGS: Tags to filter tasks in the "install-requirements" playbook. Default: all
+#   - SKIP_SETUP: If set to "true", the setup playbook will be run.
+#   - SETUP_TAGS: Tags to filter tasks in the "setup" playbook. Default: all
+#   - SKIP_CLEANUP: If set to "true", the cleanup playbook will be skipped.
+#   - CLEANUP_TAGS: Tags to filter tasks in the "cleanup" playbook. Default: all
 #
 # Requirements:
 #   - A POSIX-compliant shell (e.g., `sh`).
@@ -223,10 +227,24 @@ install_git() {
 	fi
 }
 
-run_playbooks() {
-	info "Running playbooks..."
+run_install_requirements_playbook() {
+	if [ -n "${SKIP_INSTALL_REQUIREMENTS+x}" ] && [ "$SKIP_INSTALL_REQUIREMENTS" = "true" ]; then
+		completed "Skipping install-requirements playbook"
+		return
+	fi
 
-	run_playbook "install-requirements"
+	if [ -z "${INSTALL_REQUIREMENTS_TAGS+x}" ]; then
+		INSTALL_REQUIREMENTS_TAGS="all"
+	fi
+
+	run_playbook "install-requirements" --tags "$INSTALL_REQUIREMENTS_TAGS"
+}
+
+run_setup_playbook() {
+	if [ -n "${SKIP_SETUP+x}" ] && [ "$SKIP_SETUP" = "true" ]; then
+		completed "Skipping setup playbook"
+		return
+	fi
 
 	if [ -z "${SETUP_TAGS+x}" ]; then
 		SETUP_TAGS="all"
@@ -236,10 +254,19 @@ run_playbooks() {
 		--tags "$SETUP_TAGS" \
 		--extra-vars "BITWARDEN_EMAIL=$BITWARDEN_EMAIL" \
 		--extra-vars "BITWARDEN_PASSWORD=$BITWARDEN_PASSWORD"
+}
 
-	run_playbook "cleanup"
+run_cleanup_playbook() {
+	if [ -n "${SKIP_CLEANUP+x}" ] && [ "$SKIP_CLEANUP" = "true" ]; then
+		completed "Skipping cleanup playbook"
+		return
+	fi
 
-	completed "Playbooks run done"
+	if [ -z "${CLEANUP_TAGS+x}" ]; then
+		CLEANUP_TAGS="all"
+	fi
+
+	run_playbook "cleanup" --tags "$CLEANUP_TAGS"
 }
 
 run_playbook() {
@@ -252,6 +279,7 @@ run_playbook() {
 	shift
 
 	info "Running \"$playbook_name\" playbook..."
+
 	sudo ansible-pull \
 		--purge \
 		-U "$REPOSITORY_URL" \
@@ -278,6 +306,12 @@ printf "%s\n\n" "#######################################"
 info "${BOLD}User${NO_COLOR}: ${GREEN}${USER}${NO_COLOR}"
 info "${BOLD}Repository url${NO_COLOR}: ${GREEN}${REPOSITORY_URL}${NO_COLOR}"
 info "${BOLD}Repository branch${NO_COLOR}: ${GREEN}${REPOSITORY_BRANCH}${NO_COLOR}"
+info "${BOLD}Bitwarden email${NO_COLOR}: ${GREEN}${BITWARDEN_EMAIL:-not set}${NO_COLOR}"
+info "${BOLD}Bitwarden password${NO_COLOR}: ${GREEN}$([ -n "${BITWARDEN_PASSWORD:-}" ] && echo '********' || echo 'not set')${NO_COLOR}"
+
+info "${BOLD}Skip install-requirements${NO_COLOR}: ${GREEN}${SKIP_INSTALL_REQUIREMENTS:-not set}${NO_COLOR}"
+info "${BOLD}Skip setup${NO_COLOR}: ${GREEN}${SKIP_SETUP:-not set}${NO_COLOR}"
+info "${BOLD}Skip cleanup${NO_COLOR}: ${GREEN}${SKIP_CLEANUP:-not set}${NO_COLOR}"
 
 printf "\n%s\n\n" "---------------------------------------"
 
@@ -308,8 +342,18 @@ install_git || {
 	exit 1
 }
 
-run_playbooks || {
-	error "Playbook run failed"
+run_install_requirements_playbook || {
+	error "Install-requirements playbook failed"
+	exit 1
+}
+
+run_setup_playbook || {
+	error "Setup playbook failed"
+	exit 1
+}
+
+run_cleanup_playbook || {
+	error "Cleanup playbook failed"
 	exit 1
 }
 

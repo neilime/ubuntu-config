@@ -40,10 +40,18 @@ cd ubuntu-config
 make setup
 ```
 
-3. Run the Ansible playbook:
+3. Test the install script:
 
 ```bash
-make test
+
+# On docker container
+make test-docker
+
+# Pass env variables to the script
+make test-docker -- "--env SKIP_INSTALL_REQUIREMENTS=true --env SETUP_TAGS=keys --env SKIP_CLEANUP=true"
+
+# On virtual machine
+make test-vm
 ```
 
 This will run the setup role on your Ubuntu machine.

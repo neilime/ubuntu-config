@@ -19,7 +19,7 @@
         NVM_DIR: /home/{{ ansible_user }}/.nvm
   vars:
     nvm_version: "latest"
-    nvm_node_version: "latest"
+    nvm_node_version: "node"
 
 - name: Install yarn
   ansible.builtin.include_role:

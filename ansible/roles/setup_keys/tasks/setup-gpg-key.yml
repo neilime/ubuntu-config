@@ -1,24 +1,8 @@
 ---
 - name: Ensure mandatory variables are set
   ansible.builtin.fail:
-    msg: "key_name, private_key, public_key are required"
-  when: not key_name or not private_key or not public_key
-
-- name: Import private key for '{{ key_name }}'
-  ansible.builtin.shell: |
-    set -o pipefail
-    echo '{{ private_key }}' | gpg --import
-  args:
-    executable: /bin/bash
-  register: gpg_import_private_key
-  become: true
-  become_user: "{{ ansible_user }}"
-  failed_when:
-    - '"secret key imported" not in gpg_import_private_key.stderr'
-    - '"gpg: Total number processed: 1" not in gpg_import_private_key.stderr'
-    - '"gpg:       secret keys read: 1" not in gpg_import_private_key.stderr'
-    - gpg_import_private_key.rc != 0
-  changed_when: '"gpg:  secret keys unchanged: 1" not in gpg_import_private_key.stderr'
+    msg: "key_name, public_key, private_key, sub_private_key, and ownertrust are required"
+  when: not key_name or not public_key or not private_key or not sub_private_key or not ownertrust
 
 - name: Import public key for '{{ key_name }}'
   ansible.builtin.shell: |
@@ -35,3 +19,73 @@
     - '"gpg:       secret keys read: 1" not in gpg_import_public_key.stderr'
     - gpg_import_public_key.rc != 0
   changed_when: '"gpg:  secret keys unchanged: 1" not in gpg_import_public_key.stderr'
+  no_log: true
+
+- name: Import private key for '{{ key_name }}'
+  ansible.builtin.shell: |
+    set -o pipefail
+    echo '{{ private_key }}' | gpg --import
+  args:
+    executable: /bin/bash
+  register: gpg_import_private_key
+  become: true
+  become_user: "{{ ansible_user }}"
+  failed_when:
+    - '"secret key imported" not in gpg_import_private_key.stderr'
+    - '"gpg: Total number processed: 1" not in gpg_import_private_key.stderr'
+    - '"gpg:       secret keys read: 1" not in gpg_import_private_key.stderr'
+    - gpg_import_private_key.rc != 0
+  changed_when: '"gpg:  secret keys unchanged: 1" not in gpg_import_private_key.stderr'
+  no_log: true
+
+- name: Import sub private key for '{{ key_name }}'
+  ansible.builtin.shell: |
+    set -o pipefail
+    echo '{{ sub_private_key }}' | gpg --import
+  args:
+    executable: /bin/bash
+  register: gpg_import_sub_private_key
+  become: true
+  become_user: "{{ ansible_user }}"
+  failed_when:
+    - '"secret key imported" not in gpg_import_sub_private_key.stderr'
+    - '"gpg: Total number processed: 1" not in gpg_import_sub_private_key.stderr'
+    - '"gpg:       secret keys read: 1" not in gpg_import_sub_private_key.stderr'
+    - gpg_import_sub_private_key.rc != 0
+  changed_when: '"gpg:  secret keys unchanged: 1" not in gpg_import_sub_private_key.stderr'
+  no_log: true
+
+- name: Set ownertrust for '{{ key_name }}'
+  ansible.builtin.shell: |
+    set -o pipefail
+    echo '{{ ownertrust }}' | gpg --import-ownertrust
+  args:
+    executable: /bin/bash
+  register: gpg_import_ownertrust
+  become: true
+  become_user: "{{ ansible_user }}"
+  failed_when:
+    - '"gpg: ownertrust changed" not in gpg_import_ownertrust.stderr'
+    - '"gpg: Total number processed: 1" not in gpg_import_ownertrust.stderr'
+    - '"gpg:       secret keys read: 1" not in gpg_import_ownertrust.stderr'
+    - gpg_import_ownertrust.rc != 0
+  changed_when: '"gpg: ownertrust unchanged" not in gpg_import_ownertrust.stderr'
+  no_log: true
+
+- name: Ultimately trust the imported key
+  ansible.builtin.shell: |
+    set -o pipefail
+    gpg --command-fd 0 --edit-key '{{ key_name }}' trust quit << EOF
+    5
+    y
+    EOF
+  args:
+    executable: /bin/bash
+  register: gpg_trust_key
+  become: true
+  become_user: "{{ ansible_user }}"
+  failed_when:
+    - '"gpg> trust" not in gpg_trust_key.stderr'
+    - '"gpg> quit" not in gpg_trust_key.stderr'
+    - gpg_trust_key.rc != 0
+  changed_when: false
