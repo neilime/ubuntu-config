@@ -1,2 +1,6 @@
 .env
 ansible/.ansible
+
+# Lima test results and runtime files
+/tmp/lima-test-results/
+.lima/
