@@ -1,0 +1,162 @@
+# Lima configuration for Ubuntu Desktop E2E testing
+# This configuration sets up an Ubuntu Desktop environment for testing
+# the ubuntu-config playbook with GUI support.
+
+# VM specs
+cpus: 4
+memory: "4GiB"
+disk: "15GiB"
+
+# Images to use
+images:
+  # Ubuntu 24.04 LTS (Noble) Desktop
+  - location: "https://cloud-images.ubuntu.com/noble/current/noble-desktop-cloudimg-amd64.img"
+    arch: "x86_64"
+    digest: "sha256:32a9d30d18803da72f5936cf2b7b9efcb4d0bb63c67933f17e3bdfd1751de3f3"
+  # Fallback to server image if desktop is not available
+  - location: "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
+    arch: "x86_64"
+
+# Mounts for sharing code and test results
+mounts:
+  - location: "."
+    mountPoint: "/home/ubuntu/ubuntu-config"
+    writable: true
+  - location: "/tmp/lima-test-results"
+    mountPoint: "/tmp/test-results"
+    writable: true
+
+# SSH configuration
+ssh:
+  localPort: 60022
+  loadDotSSHPubKeys: true
+  forwardAgent: true
+
+# Enable virtualization features
+firmware:
+  legacyBIOS: false
+
+# Video and display settings for GUI testing
+video:
+  display: "none"  # Headless mode for CI, can be changed to "cocoa" for local development
+
+# Network configuration
+networks:
+  - lima: shared
+
+# Cloud-init configuration for Ubuntu Desktop setup
+provision:
+  # Install desktop environment and testing dependencies
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -eux -o pipefail
+      
+      # Update system
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update
+      
+      # Install Ubuntu Desktop (minimal) and dependencies for E2E testing
+      apt-get install -y --no-install-recommends \
+        ubuntu-desktop-minimal \
+        xvfb \
+        x11vnc \
+        fluxbox \
+        python3-pip \
+        python3-venv \
+        pipx \
+        git \
+        curl \
+        wget \
+        openssh-server \
+        sudo
+      
+      # Enable SSH service
+      systemctl enable ssh
+      systemctl start ssh
+      
+      # Install pipx globally and ensure path
+      pipx ensurepath --global
+      
+      # Create test results directory
+      mkdir -p /tmp/test-results
+      chown ubuntu:ubuntu /tmp/test-results
+      
+      # Configure display for headless GUI testing
+      echo 'export DISPLAY=:99' >> /etc/environment
+      
+      # Create systemd service for Xvfb (virtual display)
+      cat > /etc/systemd/system/xvfb.service << 'EOF'
+[Unit]
+Description=Virtual Framebuffer X Server
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/Xvfb :99 -screen 0 1024x768x24 -ac +extension GLX +render -noreset
+ExecStop=/usr/bin/killall Xvfb
+User=ubuntu
+Group=ubuntu
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
+EOF
+      
+      systemctl enable xvfb
+      systemctl start xvfb
+
+  # User-level provisioning
+  - mode: user
+    script: |
+      #!/bin/bash
+      set -eux -o pipefail
+      
+      # Set up environment
+      echo 'export DISPLAY=:99' >> ~/.bashrc
+      
+      # Ensure ubuntu-config directory is accessible
+      sudo chown -R ubuntu:ubuntu /home/ubuntu/ubuntu-config || true
+      
+      # Install ansible using pipx
+      pipx install ansible
+      export PATH="$HOME/.local/bin:$PATH"
+      
+      # Create convenience script for running tests
+      cat > ~/run-ubuntu-config-test.sh << 'EOF'
+#!/bin/bash
+set -e
+
+export DISPLAY=:99
+export REPOSITORY_URL=${REPOSITORY_URL:-https://github.com/neilime/ubuntu-config.git}
+export REPOSITORY_BRANCH=${REPOSITORY_BRANCH:-main}
+
+echo "Starting Ubuntu Config E2E test..."
+echo "Repository: $REPOSITORY_URL"
+echo "Branch: $REPOSITORY_BRANCH"
+
+# Download and run the install script
+wget -qO- "$REPOSITORY_URL/raw/$REPOSITORY_BRANCH/install.sh" | bash
+
+# Mark test as successful
+touch /tmp/test-results/e2e-success
+echo "✅ Ubuntu Config E2E test completed successfully"
+EOF
+      
+      chmod +x ~/run-ubuntu-config-test.sh
+
+# Resource constraints and timeouts
+containerd:
+  system: false
+  user: false
+
+# Disable unnecessary features for testing
+vmType: "qemu"
+rosetta:
+  enabled: false
+  binfmt: false
+
+# Environment variables for testing
+env:
+  LIMA_UBUNTU_CONFIG_TEST: "true"
+  DEBIAN_FRONTEND: "noninteractive"

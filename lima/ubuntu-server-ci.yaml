@@ -1,0 +1,122 @@
+# Lima configuration for Ubuntu Server E2E testing (CI optimized)
+# This is a lightweight configuration for CI environments
+
+# VM specs (smaller for CI)
+cpus: 2
+memory: "2GiB"
+disk: "10GiB"
+
+# Images to use
+images:
+  # Ubuntu 24.04 LTS (Noble) Server - more suitable for CI
+  - location: "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
+    arch: "x86_64"
+
+# Mounts for sharing code and test results
+mounts:
+  - location: "."
+    mountPoint: "/home/ubuntu/ubuntu-config"
+    writable: true
+  - location: "/tmp/lima-test-results"
+    mountPoint: "/tmp/test-results"
+    writable: true
+
+# SSH configuration
+ssh:
+  localPort: 60023
+  loadDotSSHPubKeys: true
+  forwardAgent: true
+
+# Network configuration
+networks:
+  - lima: shared
+
+# Cloud-init configuration for Ubuntu Server setup
+provision:
+  # System-level provisioning
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -eux -o pipefail
+      
+      # Update system
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update
+      
+      # Install essential packages for testing
+      apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-venv \
+        pipx \
+        git \
+        curl \
+        wget \
+        openssh-server \
+        sudo \
+        build-essential
+      
+      # Enable SSH service
+      systemctl enable ssh
+      systemctl start ssh
+      
+      # Install pipx globally and ensure path
+      pipx ensurepath --global
+      
+      # Create test results directory
+      mkdir -p /tmp/test-results
+      chown ubuntu:ubuntu /tmp/test-results
+
+  # User-level provisioning
+  - mode: user
+    script: |
+      #!/bin/bash
+      set -eux -o pipefail
+      
+      # Ensure ubuntu-config directory is accessible
+      sudo chown -R ubuntu:ubuntu /home/ubuntu/ubuntu-config || true
+      
+      # Install ansible using pipx
+      pipx install ansible
+      export PATH="$HOME/.local/bin:$PATH"
+      
+      # Create convenience script for running tests
+      cat > ~/run-ubuntu-config-test.sh << 'EOF'
+#!/bin/bash
+set -e
+
+export REPOSITORY_URL=${REPOSITORY_URL:-https://github.com/neilime/ubuntu-config.git}
+export REPOSITORY_BRANCH=${REPOSITORY_BRANCH:-main}
+
+echo "Starting Ubuntu Config E2E test (Server)..."
+echo "Repository: $REPOSITORY_URL"
+echo "Branch: $REPOSITORY_BRANCH"
+
+# Download and run the install script
+wget -qO- "$REPOSITORY_URL/raw/$REPOSITORY_BRANCH/install.sh" | bash
+
+# Mark test as successful
+touch /tmp/test-results/e2e-success
+echo "✅ Ubuntu Config E2E test completed successfully"
+EOF
+      
+      chmod +x ~/run-ubuntu-config-test.sh
+
+# Disable unnecessary features for CI
+containerd:
+  system: false
+  user: false
+
+vmType: "qemu"
+rosetta:
+  enabled: false
+  binfmt: false
+
+# Firmware settings
+firmware:
+  legacyBIOS: false
+
+# Environment variables for testing
+env:
+  LIMA_UBUNTU_CONFIG_TEST: "true"
+  DEBIAN_FRONTEND: "noninteractive"
+  CI: "true"

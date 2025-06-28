@@ -50,15 +50,48 @@ make test-docker
 # Pass env variables to the script
 make test-docker -- "--env SKIP_INSTALL_REQUIREMENTS=true --env SETUP_TAGS=keys --env SKIP_CLEANUP=true"
 
-# On virtual machine
+# On virtual machine (Multipass)
 make test-vm
+
+# On Lima VM (cross-platform, recommended)
+make test-lima
+
+# On Lima VM with desktop environment
+make test-lima-desktop
 ```
 
 This will run the setup role on your Ubuntu machine.
 
+### Lima VM Testing
+
+This project supports Lima VMs for cross-platform E2E testing. Lima provides consistent virtualization across macOS, Linux, and Windows.
+
+#### Prerequisites
+
+- Install Lima: `brew install lima` (macOS) or see [Lima installation guide](https://lima-vm.io/docs/installation/)
+
+#### Quick Start
+
+```bash
+# Setup Lima environment
+make setup-lima
+
+# Run lightweight server tests
+make test-lima
+
+# Run comprehensive desktop tests (requires more resources)
+make test-lima-desktop
+```
+
+For detailed Lima testing documentation, see [docs/lima-testing.md](docs/lima-testing.md).
+
 ## Continuous Integration
 
-This project uses GitHub Actions to test the Ansible playbook. The workflow is defined in `.github/workflows/main-ci.yml`. It checks out the code and runs the Ansible playbook on a Ubuntu machine.
+This project uses GitHub Actions to test the Ansible playbook. The workflow is defined in `.github/workflows/main-ci.yml`. It checks out the code and runs the Ansible playbook on Ubuntu machines using multiple approaches:
+
+- **Docker containers**: Fast, lightweight testing
+- **QEMU/KVM VMs**: Full virtualization testing
+- **Lima VMs**: Cross-platform VM testing
 
 The workflow is triggered on every push to the repository.
 

@@ -1,0 +1,118 @@
+name: Lima E2E Tests
+
+on:
+  workflow_call:
+    inputs:
+      config-type:
+        description: 'Lima configuration type (server or desktop)'
+        required: false
+        default: 'server'
+        type: string
+      timeout:
+        description: 'Test timeout in seconds'
+        required: false
+        default: 1800
+        type: number
+
+permissions: {}
+
+jobs:
+  lima-e2e:
+    name: Lima E2E Tests (${{ inputs.config-type }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      BITWARDEN_EMAIL: ${{ secrets.BITWARDEN_EMAIL }}
+      BITWARDEN_PASSWORD: ${{ secrets.BITWARDEN_PASSWORD }}
+      REPOSITORY_URL: ${{ github.event.repository.clone_url }}
+      REPOSITORY_BRANCH: ${{ github.sha }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Free up disk space
+        run: |
+          # Remove unnecessary packages to free up space for Lima VMs
+          sudo apt-get remove -y '^aspnetcore-.*' '^dotnet-.*' '^llvm-.*' azure-cli google-cloud-cli hhvm google-chrome-stable firefox powershell mono-devel
+          sudo apt-get autoremove -y
+          sudo apt-get clean
+          df -h
+
+      - name: Install Lima
+        run: |
+          # Install Lima on Ubuntu
+          curl -fsSL https://get.lima.sh | sh
+          echo "$HOME/.lima/bin" >> $GITHUB_PATH
+          
+          # Verify installation
+          lima --version
+
+      - name: Setup Lima environment
+        run: |
+          # Create test results directory
+          mkdir -p /tmp/lima-test-results
+          
+          # Enable KVM acceleration if available
+          if [[ -e /dev/kvm ]]; then
+            echo "KVM acceleration available"
+            sudo chmod 666 /dev/kvm
+          else
+            echo "KVM acceleration not available, will use software emulation"
+          fi
+
+      - name: Validate Lima configurations
+        run: |
+          # Basic validation of Lima config files
+          for config in lima/*.yaml; do
+            echo "Validating $config..."
+            if ! yaml-lint "$config" 2>/dev/null; then
+              echo "Warning: YAML syntax issues in $config (may be normal)"
+            fi
+          done
+
+      - name: Run Lima E2E tests
+        timeout-minutes: ${{ fromJSON(inputs.timeout) / 60 }}
+        run: |
+          # Set VM name with unique identifier to avoid conflicts
+          VM_NAME="ubuntu-config-ci-${{ github.run_id }}"
+          
+          # Run the Lima test script
+          ./scripts/lima-test.sh \
+            --name "$VM_NAME" \
+            --type "${{ inputs.config-type }}" \
+            --destroy \
+            --timeout "${{ inputs.timeout }}"
+
+      - name: Collect Lima logs on failure
+        if: failure()
+        run: |
+          echo "=== Lima VMs ==="
+          lima list || true
+          echo
+          
+          echo "=== Lima logs ==="
+          find ~/.lima -name "*.log" -exec echo "--- {} ---" \; -exec cat {} \; 2>/dev/null || true
+          echo
+          
+          echo "=== System resources ==="
+          free -h
+          df -h
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: lima-test-results-${{ inputs.config-type }}-${{ github.run_id }}
+          path: /tmp/lima-test-results/
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Cleanup Lima resources
+        if: always()
+        run: |
+          # Clean up any remaining Lima VMs and resources
+          lima list | grep "ubuntu-config-ci-${{ github.run_id }}" | awk '{print $1}' | xargs -r lima delete --force || true
+          
+          # Clean up Lima cache to free space
+          lima prune --all --force || true

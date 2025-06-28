@@ -31,3 +31,13 @@ jobs:
     permissions:
       contents: read
     secrets: inherit
+
+  tests-lima:
+    needs: lint
+    uses: ./.github/workflows/__tests-lima.yml
+    permissions:
+      contents: read
+    with:
+      config-type: 'server'
+      timeout: 1800
+    secrets: inherit
