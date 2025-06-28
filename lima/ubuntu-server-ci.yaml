@@ -81,23 +81,23 @@ provision:
       
       # Create convenience script for running tests
       cat > ~/run-ubuntu-config-test.sh << 'EOF'
-#!/bin/bash
-set -e
-
-export REPOSITORY_URL=${REPOSITORY_URL:-https://github.com/neilime/ubuntu-config.git}
-export REPOSITORY_BRANCH=${REPOSITORY_BRANCH:-main}
-
-echo "Starting Ubuntu Config E2E test (Server)..."
-echo "Repository: $REPOSITORY_URL"
-echo "Branch: $REPOSITORY_BRANCH"
-
-# Download and run the install script
-wget -qO- "$REPOSITORY_URL/raw/$REPOSITORY_BRANCH/install.sh" | bash
-
-# Mark test as successful
-touch /tmp/test-results/e2e-success
-echo "✅ Ubuntu Config E2E test completed successfully"
-EOF
+      #!/bin/bash
+      set -e
+      
+      export REPOSITORY_URL=${REPOSITORY_URL:-https://github.com/neilime/ubuntu-config.git}
+      export REPOSITORY_BRANCH=${REPOSITORY_BRANCH:-main}
+      
+      echo "Starting Ubuntu Config E2E test (Server)..."
+      echo "Repository: $REPOSITORY_URL"
+      echo "Branch: $REPOSITORY_BRANCH"
+      
+      # Download and run the install script
+      wget -qO- "$REPOSITORY_URL/raw/$REPOSITORY_BRANCH/install.sh" | bash
+      
+      # Mark test as successful
+      touch /tmp/test-results/e2e-success
+      echo "✅ Ubuntu Config E2E test completed successfully"
+      EOF
       
       chmod +x ~/run-ubuntu-config-test.sh
 

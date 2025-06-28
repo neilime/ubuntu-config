@@ -66,9 +66,7 @@ jobs:
           # Basic validation of Lima config files
           for config in lima/*.yaml; do
             echo "Validating $config..."
-            if ! yaml-lint "$config" 2>/dev/null; then
-              echo "Warning: YAML syntax issues in $config (may be normal)"
-            fi
+            python3 -c "import yaml; yaml.safe_load(open('$config').read()); print('✅ Valid YAML')" || echo "⚠️ YAML validation warning for $config"
           done
 
       - name: Run Lima E2E tests

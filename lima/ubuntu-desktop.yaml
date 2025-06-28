@@ -87,21 +87,21 @@ provision:
       
       # Create systemd service for Xvfb (virtual display)
       cat > /etc/systemd/system/xvfb.service << 'EOF'
-[Unit]
-Description=Virtual Framebuffer X Server
-After=network.target
-
-[Service]
-ExecStart=/usr/bin/Xvfb :99 -screen 0 1024x768x24 -ac +extension GLX +render -noreset
-ExecStop=/usr/bin/killall Xvfb
-User=ubuntu
-Group=ubuntu
-Restart=on-failure
-RestartSec=2
-
-[Install]
-WantedBy=multi-user.target
-EOF
+      [Unit]
+      Description=Virtual Framebuffer X Server
+      After=network.target
+      
+      [Service]
+      ExecStart=/usr/bin/Xvfb :99 -screen 0 1024x768x24 -ac +extension GLX +render -noreset
+      ExecStop=/usr/bin/killall Xvfb
+      User=ubuntu
+      Group=ubuntu
+      Restart=on-failure
+      RestartSec=2
+      
+      [Install]
+      WantedBy=multi-user.target
+      EOF
       
       systemctl enable xvfb
       systemctl start xvfb
@@ -124,24 +124,24 @@ EOF
       
       # Create convenience script for running tests
       cat > ~/run-ubuntu-config-test.sh << 'EOF'
-#!/bin/bash
-set -e
-
-export DISPLAY=:99
-export REPOSITORY_URL=${REPOSITORY_URL:-https://github.com/neilime/ubuntu-config.git}
-export REPOSITORY_BRANCH=${REPOSITORY_BRANCH:-main}
-
-echo "Starting Ubuntu Config E2E test..."
-echo "Repository: $REPOSITORY_URL"
-echo "Branch: $REPOSITORY_BRANCH"
-
-# Download and run the install script
-wget -qO- "$REPOSITORY_URL/raw/$REPOSITORY_BRANCH/install.sh" | bash
-
-# Mark test as successful
-touch /tmp/test-results/e2e-success
-echo "✅ Ubuntu Config E2E test completed successfully"
-EOF
+      #!/bin/bash
+      set -e
+      
+      export DISPLAY=:99
+      export REPOSITORY_URL=${REPOSITORY_URL:-https://github.com/neilime/ubuntu-config.git}
+      export REPOSITORY_BRANCH=${REPOSITORY_BRANCH:-main}
+      
+      echo "Starting Ubuntu Config E2E test..."
+      echo "Repository: $REPOSITORY_URL"
+      echo "Branch: $REPOSITORY_BRANCH"
+      
+      # Download and run the install script
+      wget -qO- "$REPOSITORY_URL/raw/$REPOSITORY_BRANCH/install.sh" | bash
+      
+      # Mark test as successful
+      touch /tmp/test-results/e2e-success
+      echo "✅ Ubuntu Config E2E test completed successfully"
+      EOF
       
       chmod +x ~/run-ubuntu-config-test.sh
 
