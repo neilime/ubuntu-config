@@ -36,7 +36,7 @@ error() {
 check_lima_installation() {
     info "Checking Lima installation..."
     
-    if ! command -v lima &> /dev/null; then
+    if ! command -v limactl &> /dev/null; then
         error "Lima is not installed. Please install Lima first."
         echo
         echo "Installation instructions:"
@@ -46,7 +46,7 @@ check_lima_installation() {
         exit 1
     fi
     
-    success "Lima is installed: $(lima --version)"
+    success "Lima is installed: $(limactl --version)"
 }
 
 # Check system requirements
@@ -141,13 +141,13 @@ show_configurations() {
     
     echo "Usage examples:"
     echo "  # Start Ubuntu Desktop VM for GUI testing:"
-    echo "  lima --create --name=ubuntu-config-desktop $LIMA_CONFIG_DIR/ubuntu-desktop.yaml"
+    echo "  limactl start --name=ubuntu-config-desktop $LIMA_CONFIG_DIR/ubuntu-desktop.yaml"
     echo
     echo "  # Start Ubuntu Server VM for CI-like testing:"
-    echo "  lima --create --name=ubuntu-config-server $LIMA_CONFIG_DIR/ubuntu-server-ci.yaml"
+    echo "  limactl start --name=ubuntu-config-server $LIMA_CONFIG_DIR/ubuntu-server-ci.yaml"
     echo
     echo "  # Run tests in the VM:"
-    echo "  lima ubuntu-config-desktop ~/run-ubuntu-config-test.sh"
+    echo "  limactl shell ubuntu-config-desktop ~/run-ubuntu-config-test.sh"
     echo
 }
 

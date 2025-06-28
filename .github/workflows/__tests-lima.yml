@@ -39,14 +39,20 @@ jobs:
           sudo apt-get clean
           df -h
 
-      - name: Install Lima
+      - name: Set up Lima
+        uses: lima-vm/lima-actions/setup@v1
+        id: lima-actions-setup
+
+      - name: Cache ~/.cache/lima
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/lima
+          key: lima-${{ steps.lima-actions-setup.outputs.version }}
+
+      - name: Verify Lima installation
         run: |
-          # Install Lima on Ubuntu
-          curl -fsSL https://get.lima.sh | sh
-          echo "$HOME/.lima/bin" >> $GITHUB_PATH
-          
           # Verify installation
-          lima --version
+          limactl --version
 
       - name: Setup Lima environment
         run: |
@@ -86,7 +92,7 @@ jobs:
         if: failure()
         run: |
           echo "=== Lima VMs ==="
-          lima list || true
+          limactl list || true
           echo
           
           echo "=== Lima logs ==="
@@ -110,7 +116,7 @@ jobs:
         if: always()
         run: |
           # Clean up any remaining Lima VMs and resources
-          lima list | grep "ubuntu-config-ci-${{ github.run_id }}" | awk '{print $1}' | xargs -r lima delete --force || true
+          limactl list | grep "ubuntu-config-ci-${{ github.run_id }}" | awk '{print $1}' | xargs -r limactl delete --force || true
           
           # Clean up Lima cache to free space
-          lima prune --all --force || true
+          limactl prune --all --force || true

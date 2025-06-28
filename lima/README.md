@@ -8,19 +8,19 @@ Create a simple Lima VM and test ubuntu-config:
 
 ```bash
 # 1. Start a Lima VM with ubuntu-config
-lima start --name=my-test lima/ubuntu-server-ci.yaml
+limactl start --name=my-test lima/ubuntu-server-ci.yaml
 
 # 2. Wait for VM to be ready
-lima my-test echo "VM is ready"
+limactl shell my-test echo "VM is ready"
 
 # 3. Run ubuntu-config test
-lima my-test ~/run-ubuntu-config-test.sh
+limactl shell my-test ~/run-ubuntu-config-test.sh
 
 # 4. Check results
-lima my-test cat /tmp/test-results/e2e-success
+limactl shell my-test cat /tmp/test-results/e2e-success
 
 # 5. Cleanup
-lima delete my-test
+limactl delete my-test
 ```
 
 ## Custom Configuration Example
@@ -55,7 +55,7 @@ provision:
 Then use it:
 
 ```bash
-lima start --name=custom custom-config.yaml
+limactl start --name=custom custom-config.yaml
 ```
 
 ## Environment Variables
@@ -81,30 +81,30 @@ make test-lima
 
 ```bash
 # Start multiple VMs for parallel testing
-lima start --name=test1 lima/ubuntu-server-ci.yaml
-lima start --name=test2 lima/ubuntu-server-ci.yaml
+limactl start --name=test1 lima/ubuntu-server-ci.yaml
+limactl start --name=test2 lima/ubuntu-server-ci.yaml
 
 # Run tests in parallel
-lima test1 ~/run-ubuntu-config-test.sh &
-lima test2 ~/run-ubuntu-config-test.sh &
+limactl shell test1 ~/run-ubuntu-config-test.sh &
+limactl shell test2 ~/run-ubuntu-config-test.sh &
 wait
 
 # Cleanup
-lima delete test1 test2
+limactl delete test1 test2
 ```
 
 ### Development Workflow
 
 ```bash
 # Create a long-running development VM
-lima start --name=dev lima/ubuntu-desktop.yaml
+limactl start --name=dev lima/ubuntu-desktop.yaml
 
 # Make changes to ubuntu-config locally
 # Test changes in the VM
-lima dev ~/run-ubuntu-config-test.sh
+limactl shell dev ~/run-ubuntu-config-test.sh
 
 # Get a shell for debugging
-lima dev
+limactl shell dev
 
 # Keep VM running for iterative development
 ```

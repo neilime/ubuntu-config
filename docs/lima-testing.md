@@ -52,23 +52,23 @@ make test-lima-ci
 
 ```bash
 # Start a server VM
-lima start --name=ubuntu-config-server lima/ubuntu-server-ci.yaml
+limactl start --name=ubuntu-config-server lima/ubuntu-server-ci.yaml
 
 # Start a desktop VM
-lima start --name=ubuntu-config-desktop lima/ubuntu-desktop.yaml
+limactl start --name=ubuntu-config-desktop lima/ubuntu-desktop.yaml
 
 # Run commands in the VM
-lima ubuntu-config-server uname -a
+limactl shell ubuntu-config-server uname -a
 
 # Get a shell in the VM
-lima ubuntu-config-server
+limactl shell ubuntu-config-server
 
 # Run the ubuntu-config test
-lima ubuntu-config-server ~/run-ubuntu-config-test.sh
+limactl shell ubuntu-config-server ~/run-ubuntu-config-test.sh
 
 # Stop and delete the VM
-lima stop ubuntu-config-server
-lima delete ubuntu-config-server
+limactl stop ubuntu-config-server
+limactl delete ubuntu-config-server
 ```
 
 ## Configuration Files
@@ -170,10 +170,10 @@ The following environment variables can be used to customize testing:
 
 ```bash
 # Check Lima status
-lima list
+limactl list
 
 # Check system logs
-lima logs <vm-name>
+limactl info <vm-name>
 
 # Verify system requirements
 ./scripts/lima-setup.sh
@@ -183,14 +183,14 @@ lima logs <vm-name>
 
 ```bash
 # Clean up failed VMs
-lima delete --force <vm-name>
+limactl delete --force <vm-name>
 
 # Check available resources
 free -h
 df -h
 
 # Try with smaller configuration
-lima start lima/ubuntu-server-ci.yaml
+limactl start lima/ubuntu-server-ci.yaml
 ```
 
 #### Tests Timeout
@@ -200,18 +200,18 @@ lima start lima/ubuntu-server-ci.yaml
 ./scripts/lima-test.sh --timeout 3600
 
 # Check VM status during test
-lima list
-lima <vm-name> top
+limactl list
+limactl shell <vm-name> top
 ```
 
 #### Network Issues
 
 ```bash
 # Check Lima network status
-lima info <vm-name>
+limactl info <vm-name>
 
 # Test network connectivity
-lima <vm-name> ping google.com
+limactl shell <vm-name> ping google.com
 ```
 
 ### Performance Optimization
@@ -237,10 +237,10 @@ sudo usermod -a -G kvm $USER
 
 ```bash
 # Limit parallel VMs
-lima prune --all
+limactl prune --all
 
 # Monitor resource usage
-lima list
+limactl list
 htop
 ```
 

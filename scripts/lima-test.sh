@@ -112,7 +112,7 @@ parse_args() {
 
 # Check if Lima is available
 check_lima() {
-    if ! command -v lima &> /dev/null; then
+    if ! command -v limactl &> /dev/null; then
         error "Lima is not installed. Run scripts/lima-setup.sh first."
         exit 1
     fi
@@ -132,12 +132,12 @@ get_config_file() {
 
 # Check if VM exists
 vm_exists() {
-    lima list | grep -q "^$VM_NAME " || false
+    limactl list | grep -q "^$VM_NAME " || false
 }
 
 # Check if VM is running
 vm_running() {
-    lima list | grep "^$VM_NAME " | grep -q "Running" || false
+    limactl list | grep "^$VM_NAME " | grep -q "Running" || false
 }
 
 # Create and start VM
@@ -155,7 +155,7 @@ create_vm() {
     
     if vm_exists && ! $SKIP_PROVISIONING; then
         warn "VM '$VM_NAME' already exists. Deleting and recreating..."
-        lima delete --force "$VM_NAME" || true
+        limactl delete --force "$VM_NAME" || true
     fi
     
     if ! vm_exists; then
@@ -165,7 +165,7 @@ create_vm() {
         
         info "Creating VM with repository: $REPOSITORY_URL (branch: $REPOSITORY_BRANCH)"
         
-        if ! lima start --name="$VM_NAME" "$config_file"; then
+        if ! limactl start --name="$VM_NAME" "$config_file"; then
             error "Failed to create VM"
             exit 1
         fi
@@ -174,7 +174,7 @@ create_vm() {
     else
         info "VM '$VM_NAME' already exists, starting if not running..."
         if ! vm_running; then
-            lima start "$VM_NAME"
+            limactl start "$VM_NAME"
         fi
         success "VM is running: $VM_NAME"
     fi
@@ -188,7 +188,7 @@ wait_for_vm() {
     local attempt=0
     
     while [[ $attempt -lt $max_attempts ]]; do
-        if lima "$VM_NAME" test -f /home/ubuntu/run-ubuntu-config-test.sh; then
+        if limactl shell "$VM_NAME" test -f /home/ubuntu/run-ubuntu-config-test.sh; then
             success "VM is ready for testing"
             return 0
         fi
@@ -207,7 +207,7 @@ run_tests() {
     info "Running ubuntu-config tests in VM: $VM_NAME"
     
     # Clear previous test results
-    lima "$VM_NAME" rm -f /tmp/test-results/e2e-success || true
+    limactl shell "$VM_NAME" rm -f /tmp/test-results/e2e-success || true
     
     # Set environment variables for the test
     export REPOSITORY_URL=${REPOSITORY_URL:-https://github.com/neilime/ubuntu-config.git}
@@ -218,13 +218,13 @@ run_tests() {
     info "Repository: $REPOSITORY_URL"
     info "Branch: $REPOSITORY_BRANCH"
     
-    if timeout "$TEST_TIMEOUT" lima "$VM_NAME" env \
+    if timeout "$TEST_TIMEOUT" limactl shell "$VM_NAME" env \
         REPOSITORY_URL="$REPOSITORY_URL" \
         REPOSITORY_BRANCH="$REPOSITORY_BRANCH" \
         ~/run-ubuntu-config-test.sh; then
         
         # Check if test actually succeeded
-        if lima "$VM_NAME" test -f /tmp/test-results/e2e-success; then
+        if limactl shell "$VM_NAME" test -f /tmp/test-results/e2e-success; then
             success "Ubuntu-config tests passed!"
             return 0
         else
@@ -245,21 +245,21 @@ collect_results() {
     mkdir -p "$results_dir"
     
     # Copy test results from VM
-    lima "$VM_NAME" cp /tmp/test-results/* "$results_dir/" 2>/dev/null || warn "No test results to collect"
+    limactl copy "$VM_NAME":/tmp/test-results/* "$results_dir/" 2>/dev/null || warn "No test results to collect"
     
     # Collect system information
     {
         echo "=== VM Information ==="
-        lima list | grep "^$VM_NAME "
+        limactl list | grep "^$VM_NAME "
         echo
         echo "=== System Information ==="
-        lima "$VM_NAME" uname -a
+        limactl shell "$VM_NAME" uname -a
         echo
         echo "=== Memory Usage ==="
-        lima "$VM_NAME" free -h
+        limactl shell "$VM_NAME" free -h
         echo
         echo "=== Disk Usage ==="
-        lima "$VM_NAME" df -h
+        limactl shell "$VM_NAME" df -h
     } > "$results_dir/system-info.txt"
     
     success "Test results collected in: $results_dir"
@@ -269,10 +269,10 @@ collect_results() {
 cleanup_vm() {
     if $DESTROY_AFTER_TEST; then
         info "Cleaning up VM: $VM_NAME"
-        lima delete --force "$VM_NAME" || warn "Failed to delete VM"
+        limactl delete --force "$VM_NAME" || warn "Failed to delete VM"
         success "VM cleanup completed"
     else
-        info "VM '$VM_NAME' is still running. Use 'lima delete $VM_NAME' to remove it."
+        info "VM '$VM_NAME' is still running. Use 'limactl delete $VM_NAME' to remove it."
     fi
 }
 
