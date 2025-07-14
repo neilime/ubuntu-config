@@ -75,6 +75,21 @@ test-vm: ## Test playbook against VM
 		$(filter-out $@,$(MAKECMDGOALS)) \
 	'
 
+setup-lima: ## Setup Lima for E2E testing
+	@./scripts/lima-setup.sh
+
+test-lima: ## Test playbook against Lima VM (server)
+	@REPOSITORY_URL=file://$(CURDIR) REPOSITORY_BRANCH=$(shell git rev-parse --abbrev-ref HEAD) \
+		./scripts/lima-test.sh --type server $(filter-out $@,$(MAKECMDGOALS))
+
+test-lima-desktop: ## Test playbook against Lima VM (desktop)
+	@REPOSITORY_URL=file://$(CURDIR) REPOSITORY_BRANCH=$(shell git rev-parse --abbrev-ref HEAD) \
+		./scripts/lima-test.sh --type desktop $(filter-out $@,$(MAKECMDGOALS))
+
+test-lima-ci: ## Test playbook against Lima VM (CI mode with cleanup)
+	@REPOSITORY_URL=file://$(CURDIR) REPOSITORY_BRANCH=$(shell git rev-parse --abbrev-ref HEAD) \
+		./scripts/lima-test.sh --type server --destroy $(filter-out $@,$(MAKECMDGOALS))
+
 define run_linter
 	DEFAULT_WORKSPACE="$(CURDIR)"; \
 	LINTER_IMAGE="linter:latest"; \

@@ -1,0 +1,89 @@
+name: Lima E2E Testing
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  # Manual trigger for testing Lima integration
+  workflow_dispatch:
+    inputs:
+      test-desktop:
+        description: 'Also run desktop tests (slower)'
+        required: false
+        default: false
+        type: boolean
+      test-timeout:
+        description: 'Test timeout in seconds'
+        required: false
+        default: '1800'
+        type: string
+
+  # Scheduled daily tests
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+
+permissions: {}
+
+jobs:
+  # Server-based testing (default, faster)
+  lima-server:
+    name: Lima Server Tests
+    uses: ./.github/workflows/__tests-lima.yml
+    permissions:
+      contents: read
+    with:
+      config-type: 'server'
+      timeout: ${{ fromJSON(github.event.inputs.test-timeout || '1800') }}
+    secrets: inherit
+
+  # Desktop-based testing (optional, slower)
+  lima-desktop:
+    name: Lima Desktop Tests
+    if: github.event.inputs.test-desktop == 'true' || github.event_name == 'schedule'
+    uses: ./.github/workflows/__tests-lima.yml
+    permissions:
+      contents: read
+    with:
+      config-type: 'desktop'
+      timeout: ${{ fromJSON(github.event.inputs.test-timeout || '2400') }}
+    secrets: inherit
+
+  # Summary job
+  summary:
+    name: Lima Tests Summary
+    runs-on: ubuntu-latest
+    needs: [lima-server, lima-desktop]
+    if: always()
+    permissions:
+      contents: read
+    steps:
+      - name: Check test results
+        run: |
+          echo "Lima E2E Test Results:"
+          echo "====================="
+          echo
+          
+          if [[ "${{ needs.lima-server.result }}" == "success" ]]; then
+            echo "✅ Server tests: PASSED"
+          else
+            echo "❌ Server tests: ${{ needs.lima-server.result }}"
+          fi
+          
+          if [[ "${{ needs.lima-desktop.result }}" == "skipped" ]]; then
+            echo "⏭️  Desktop tests: SKIPPED"
+          elif [[ "${{ needs.lima-desktop.result }}" == "success" ]]; then
+            echo "✅ Desktop tests: PASSED"
+          else
+            echo "❌ Desktop tests: ${{ needs.lima-desktop.result }}"
+          fi
+          
+          echo
+          
+          # Fail if any non-skipped test failed
+          if [[ "${{ needs.lima-server.result }}" == "failure" ]] || [[ "${{ needs.lima-desktop.result }}" == "failure" ]]; then
+            echo "❌ Lima E2E tests failed"
+            exit 1
+          else
+            echo "✅ Lima E2E tests completed successfully"
+          fi
