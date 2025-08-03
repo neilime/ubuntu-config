@@ -1,0 +1,67 @@
+# Lima configuration for Ubuntu Desktop VM
+# https://github.com/lima-vm/lima
+
+# VM details
+cpus: 2
+memory: "4GiB"
+disk: "15GiB"
+
+# Ubuntu Desktop image
+images:
+  - location: "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
+    arch: "x86_64"
+
+# Network configuration
+networks:
+  - lima: shared
+
+# SSH configuration  
+ssh:
+  localPort: 2222
+  loadDotSSHPubKeys: true
+
+# Provision Ubuntu Desktop
+provision:
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -eux -o pipefail
+      
+      # Update package list
+      apt-get update
+      
+      # Install Ubuntu Desktop (minimal to save time and resources)
+      DEBIAN_FRONTEND=noninteractive apt-get install -y ubuntu-desktop-minimal
+      
+      # Ensure SSH is enabled and configured
+      systemctl enable ssh
+      systemctl start ssh
+      
+      # Configure SSH for testing
+      sed -i 's/^#*PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+      sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+      sed -i 's/^#*PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+      systemctl restart ssh
+      
+      # Create e2e ready marker
+      touch /e2e.ready
+
+  - mode: user
+    script: |
+      #!/bin/bash
+      set -eux -o pipefail
+      
+      # Ensure proper SSH directory permissions
+      mkdir -p ~/.ssh
+      chmod 700 ~/.ssh
+      
+      echo "✅ Ubuntu Desktop VM setup complete"
+
+# Enable systemd (required for desktop)
+systemd: true
+
+# Mount type for better performance
+mountType: "virtiofs"
+
+# Arch
+arch: "x86_64"

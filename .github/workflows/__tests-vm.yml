@@ -21,29 +21,30 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Set up QEMU and KVM
-        uses: ./.github/actions/setup-qemu-kvm
-
-      - name: Build VM image to boot
-        id: build-qcow-image
-        uses: ./.github/actions/build-qcow-image
+      - name: Start Lima Ubuntu Desktop VM
+        uses: lima-vm/lima-action@f2b3e3c9e6da5bfe607c4cf2c8a66b9064d8e3ea # v0.2.0
         with:
-          iso-url: https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
-          user: ubuntu
-          password: ubuntu-pass
+          config: lima-ubuntu-desktop.yml
+          name: ubuntu-desktop
 
-      - name: Boot QEMU VM
-        id: boot-qemu-vm
-        uses: ./.github/actions/boot-qemu-vm
-        with:
-          image-name: ${{ steps.build-qcow-image.outputs.image-name }}
-          user: ubuntu
+      - name: Wait for VM to be ready
+        run: |
+          echo "⏳ Waiting for VM to be ready..."
+          
+          # Wait for SSH to be accessible
+          for i in {1..120}; do
+            if limactl shell ubuntu-desktop echo "✅ SSH ready" 2>/dev/null; then
+              echo "✅ VM is ready and SSH is up"
+              break
+            fi
+            echo "Attempt $i/120: Waiting for VM..."
+            sleep 10
+          done
 
       - name: Run install script
         run: |
-          ssh-keyscan -p 2222 -H 127.0.0.1 >> ~/.ssh/known_hosts
-          ${{ steps.boot-qemu-vm.outputs.ssh-command }} "wget -qO- \"$INSTALL_SCRIPT\" | sudo bash && sudo touch /e2e.success"
+          limactl shell ubuntu-desktop "wget -qO- \"$INSTALL_SCRIPT\" | sudo bash && sudo touch /e2e.success"
 
       - name: Validate Ansible changes in host - Snap packages
         run: |
-          ${{ steps.boot-qemu-vm.outputs.ssh-command }} '[ -f /e2e.success ] && echo "✅ Success" || { echo "❌ Setup failed"; exit 1; }'
+          limactl shell ubuntu-desktop '[ -f /e2e.success ] && echo "✅ Success" || { echo "❌ Setup failed"; exit 1; }'
