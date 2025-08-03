@@ -26,7 +26,7 @@ jobs:
           actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
       - name: Set up LXD
-        uses: canonical/setup-lxd@main
+        uses: canonical/setup-lxd@v0.1.1
 
       - name: Create and setup Ubuntu Desktop LXC container
         run: |
@@ -36,11 +36,12 @@ jobs:
           # Wait for container to be ready
           lxc exec ubuntu-desktop -- cloud-init status --wait
 
-          # Install ubuntu-desktop and SSH server
+          # Update package list
+          lxc exec ubuntu-desktop -- apt-get update
+
+          # Install SSH server first for early access
           lxc exec ubuntu-desktop -- bash -c "
-            apt-get update
-            DEBIAN_FRONTEND=noninteractive apt-get install -y \
-              ubuntu-desktop openssh-server
+            DEBIAN_FRONTEND=noninteractive apt-get install -y openssh-server
             systemctl enable ssh
             systemctl start ssh
           "
@@ -75,6 +76,12 @@ jobs:
           lxc exec ubuntu-desktop -- bash -c "
             chmod 600 /home/ubuntu/.ssh/authorized_keys
             chown ubuntu:ubuntu /home/ubuntu/.ssh/authorized_keys
+          "
+
+          # Install ubuntu-desktop (this will take several minutes)
+          echo "Installing ubuntu-desktop package..."
+          lxc exec ubuntu-desktop -- bash -c "
+            DEBIAN_FRONTEND=noninteractive apt-get install -y ubuntu-desktop
           "
 
       - name: Get container IP and setup SSH access
