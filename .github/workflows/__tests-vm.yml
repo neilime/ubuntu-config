@@ -24,13 +24,13 @@ jobs:
       - name: Start Lima Ubuntu Desktop VM
         uses: lima-vm/lima-action@f2b3e3c9e6da5bfe607c4cf2c8a66b9064d8e3ea # v0.2.0
         with:
-          config: lima-ubuntu-desktop.yml
+          config: vm/lima-ubuntu-desktop.yml
           name: ubuntu-desktop
 
       - name: Wait for VM to be ready
         run: |
           echo "⏳ Waiting for VM to be ready..."
-          
+
           # Wait for SSH to be accessible
           for i in {1..120}; do
             if limactl shell ubuntu-desktop echo "✅ SSH ready" 2>/dev/null; then
