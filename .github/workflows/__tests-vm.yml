@@ -56,7 +56,14 @@ jobs:
 
       - name: Run install script
         run: |
-          ssh lima-ubuntu-desktop 'wget -qO- "'"$INSTALL_SCRIPT"'" | sudo bash && sudo touch /e2e.success'
+          # shellcheck disable=SC2029
+          ssh lima-ubuntu-desktop \
+            "BITWARDEN_EMAIL='$BITWARDEN_EMAIL' \
+             BITWARDEN_PASSWORD='$BITWARDEN_PASSWORD' \
+             REPOSITORY_URL='$REPOSITORY_URL' \
+             REPOSITORY_BRANCH='$REPOSITORY_BRANCH' \
+             wget -qO- '$INSTALL_SCRIPT' | sudo -E bash && \
+             sudo touch /e2e.success"
 
       - name: Validate Ansible changes in host - Snap packages
         run: |
