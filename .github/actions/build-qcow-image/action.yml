@@ -1,0 +1,101 @@
+name: "Build Qcow Image"
+description: "Build Qcow2 image with QEMU"
+
+inputs:
+  iso-url:
+    description: "URL to the Ubuntu Desktop ISO"
+    required: true
+
+  user:
+    description: "Username created VM user"
+    required: true
+
+  password:
+    description: "Password for created user"
+    required: true
+
+outputs:
+  image-name:
+    description: "Name of the generated image"
+    value: ubuntu-e2e.qcow2
+
+runs:
+  using: "composite"
+  steps:
+    - name: Download Ubuntu 24.04 Cloud Image
+      shell: bash
+      run: wget -q "${{ inputs.iso-url }}" -O "ubuntu-base.img"
+
+    - name: Resize image
+      shell: bash
+      run: qemu-img resize ubuntu-base.img 15G
+
+    - name: Generate SSH key pair
+      shell: bash
+      run: |
+        ssh-keygen -t rsa -b 2048 -f ~/.ssh/id_rsa -N ""
+        echo "SSH public key:"
+        cat ~/.ssh/id_rsa.pub
+
+    - name: Prepare cloud-init ISO
+      shell: bash
+      run: |
+        mkdir -p cloud-init-gen
+
+        USERNAME="${{ inputs.user }}"
+        HASHED_PASS=$(openssl passwd -6 "${{ inputs.password }}")
+        SSH_KEY=$(cat ~/.ssh/id_rsa.pub | tr -d '\n')
+
+        sed \
+          -e "s|{{USERNAME}}|$USERNAME|g" \
+          -e "s|{{HASHED_PASSWORD}}|$HASHED_PASS|g" \
+          -e "s|{{SSH_PUBLIC_KEY}}|$SSH_KEY|g" \
+          cloud-init/user-data.yml > cloud-init-gen/user-data.yml
+
+        cp cloud-init/meta-data.yml cloud-init-gen/meta-data.yml
+
+        echo "::debug ::$(cat cloud-init-gen/user-data.yml)"
+        echo "::debug ::$(cat cloud-init-gen/meta-data.yml)"
+
+        genisoimage -output seed.iso -volid cidata -joliet -rock \
+          cloud-init-gen/user-data.yml cloud-init-gen/meta-data.yml
+
+    - name: Launch cloud image VM to install Desktop
+      shell: bash
+      run: |
+        qemu-system-x86_64 \
+          -enable-kvm \
+          -m 4096 \
+          -smp 2 \
+          -cpu host \
+          -drive file=ubuntu-base.img,format=qcow2 \
+          -drive file=seed.iso,format=raw \
+          -netdev user,id=net0,hostfwd=tcp::2222-:22 \
+          -device e1000,netdev=net0 \
+          -display none \
+          -daemonize
+
+    - name: Wait for SSH to become available
+      shell: bash
+      run: |
+        echo "⏳ Waiting for cloud-init and SSH"
+
+        for i in {1..60}; do
+          if ssh -p 2222 -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${{ inputs.user }}@127.0.0.1 "echo '✅ SSH ready'"; then
+            echo "✅ SSH is ready!"
+            break
+          fi
+          sleep 5
+        done
+
+        if ! ssh -vvv -p 2222 -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${{ inputs.user }}@127.0.0.1 "true"; then
+          echo "::error ::❌ SSH never became ready"
+          exit 1
+        fi
+
+    - name: Shutdown VM
+      shell: bash
+      run: |
+        echo "⏳ Shutting down VM..."
+        ssh -p 2222 -o StrictHostKeyChecking=no ${{ inputs.user }}@127.0.0.1 'sudo poweroff'
+        sleep 30

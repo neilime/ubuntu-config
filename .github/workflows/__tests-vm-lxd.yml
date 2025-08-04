@@ -1,0 +1,120 @@
+name: Shared - Tests - VM - LXD
+
+on:
+  workflow_call:
+
+permissions: {}
+
+jobs:
+  tests-vm-lxd:
+    name: Tests - VM - LXD
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      BITWARDEN_EMAIL: ${{ secrets.BITWARDEN_EMAIL }}
+      BITWARDEN_PASSWORD: ${{ secrets.BITWARDEN_PASSWORD }}
+      INSTALL_SCRIPT: >-
+        https://raw.githubusercontent.com/neilime/ubuntu-config/
+        ${{ github.sha }}/install.sh
+      REPOSITORY_URL: ${{ github.event.repository.clone_url }}
+      REPOSITORY_BRANCH: ${{ github.sha }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up LXD
+        uses: canonical/setup-lxd@4e959f8e0d9c5feb27d44c5e4d9a330a782edee0 # v0.1.1
+
+      - name: Create and setup Ubuntu Desktop LXC container
+        run: |
+          # Launch Ubuntu Desktop container
+          sudo lxc launch ubuntu:24.04 ubuntu-desktop
+
+          # Wait for container to be ready
+          sudo lxc exec ubuntu-desktop -- cloud-init status --wait
+
+          # Update package list
+          sudo lxc exec ubuntu-desktop -- apt-get update
+
+          # Install SSH server first for early access
+          sudo lxc exec ubuntu-desktop -- bash -c "
+            DEBIAN_FRONTEND=noninteractive apt-get install -y openssh-server
+            systemctl enable ssh
+            systemctl start ssh
+          "
+
+          # Create user with sudo privileges
+          sudo lxc exec ubuntu-desktop -- bash -c "
+            useradd -m -s /bin/bash -G sudo ubuntu
+            echo 'ubuntu:ubuntu-pass' | chpasswd
+            echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+          "
+
+          # Configure SSH
+          sudo lxc exec ubuntu-desktop -- bash -c "
+            sed -i 's/^#*PubkeyAuthentication.*/PubkeyAuthentication yes/' \
+              /etc/ssh/sshd_config
+            sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication yes/' \
+              /etc/ssh/sshd_config
+            sed -i 's/^#*PermitRootLogin.*/PermitRootLogin no/' \
+              /etc/ssh/sshd_config
+            systemctl restart ssh
+          "
+
+          # Set up SSH key authentication
+          ssh-keygen -t rsa -b 2048 -f ~/.ssh/id_rsa -N ""
+          sudo lxc exec ubuntu-desktop -- bash -c "
+            mkdir -p /home/ubuntu/.ssh
+            chmod 700 /home/ubuntu/.ssh
+            chown ubuntu:ubuntu /home/ubuntu/.ssh
+          "
+          sudo lxc file push ~/.ssh/id_rsa.pub \
+            ubuntu-desktop/home/ubuntu/.ssh/authorized_keys
+          sudo lxc exec ubuntu-desktop -- bash -c "
+            chmod 600 /home/ubuntu/.ssh/authorized_keys
+            chown ubuntu:ubuntu /home/ubuntu/.ssh/authorized_keys
+          "
+
+          # Install ubuntu-desktop (this will take several minutes)
+          echo "Installing ubuntu-desktop package..."
+          sudo lxc exec ubuntu-desktop -- bash -c "
+            DEBIAN_FRONTEND=noninteractive apt-get install -y ubuntu-desktop
+          "
+
+      - name: Get container IP and setup SSH access
+        id: setup-ssh
+        run: |
+          # Get container IP address
+          CONTAINER_IP=$(sudo lxc list ubuntu-desktop -c 4 -f csv | cut -d' ' -f1)
+          echo "Container IP: $CONTAINER_IP"
+
+          # Add to known_hosts
+          ssh-keyscan -H "$CONTAINER_IP" >> ~/.ssh/known_hosts
+
+          # Test SSH connection
+          for i in {1..30}; do
+            echo "Attempt $i/30"
+            if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 \
+              ubuntu@"$CONTAINER_IP" "echo '✅ SSH ready'"; then
+              echo "✅ SSH is ready!"
+              break
+            fi
+            sleep 5
+          done
+
+          # Set output for subsequent steps
+          echo "ssh-command=ssh -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=5 ubuntu@$CONTAINER_IP" >> "$GITHUB_OUTPUT"
+
+      - name: Run install script
+        run: |
+          ${{ steps.setup-ssh.outputs.ssh-command }} \
+            "wget -qO- \"$INSTALL_SCRIPT\" | \
+            sudo bash && sudo touch /e2e.success"
+
+      - name: Validate Ansible changes in host - Snap packages
+        run: |
+          ${{ steps.setup-ssh.outputs.ssh-command }} \
+            '[ -f /e2e.success ] && echo "✅ Success" || \
+            { echo "❌ Setup failed"; exit 1; }'
