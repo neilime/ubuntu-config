@@ -30,30 +30,30 @@ jobs:
       - name: Create and setup Ubuntu Desktop LXC container
         run: |
           # Launch Ubuntu Desktop container
-          lxc launch ubuntu:24.04 ubuntu-desktop
+          sudo lxc launch ubuntu:24.04 ubuntu-desktop
 
           # Wait for container to be ready
-          lxc exec ubuntu-desktop -- cloud-init status --wait
+          sudo lxc exec ubuntu-desktop -- cloud-init status --wait
 
           # Update package list
-          lxc exec ubuntu-desktop -- apt-get update
+          sudo lxc exec ubuntu-desktop -- apt-get update
 
           # Install SSH server first for early access
-          lxc exec ubuntu-desktop -- bash -c "
+          sudo lxc exec ubuntu-desktop -- bash -c "
             DEBIAN_FRONTEND=noninteractive apt-get install -y openssh-server
             systemctl enable ssh
             systemctl start ssh
           "
 
           # Create user with sudo privileges
-          lxc exec ubuntu-desktop -- bash -c "
+          sudo lxc exec ubuntu-desktop -- bash -c "
             useradd -m -s /bin/bash -G sudo ubuntu
             echo 'ubuntu:ubuntu-pass' | chpasswd
             echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
           "
 
           # Configure SSH
-          lxc exec ubuntu-desktop -- bash -c "
+          sudo lxc exec ubuntu-desktop -- bash -c "
             sed -i 's/^#*PubkeyAuthentication.*/PubkeyAuthentication yes/' \
               /etc/ssh/sshd_config
             sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication yes/' \
@@ -65,21 +65,21 @@ jobs:
 
           # Set up SSH key authentication
           ssh-keygen -t rsa -b 2048 -f ~/.ssh/id_rsa -N ""
-          lxc exec ubuntu-desktop -- bash -c "
+          sudo lxc exec ubuntu-desktop -- bash -c "
             mkdir -p /home/ubuntu/.ssh
             chmod 700 /home/ubuntu/.ssh
             chown ubuntu:ubuntu /home/ubuntu/.ssh
           "
-          lxc file push ~/.ssh/id_rsa.pub \
+          sudo lxc file push ~/.ssh/id_rsa.pub \
             ubuntu-desktop/home/ubuntu/.ssh/authorized_keys
-          lxc exec ubuntu-desktop -- bash -c "
+          sudo lxc exec ubuntu-desktop -- bash -c "
             chmod 600 /home/ubuntu/.ssh/authorized_keys
             chown ubuntu:ubuntu /home/ubuntu/.ssh/authorized_keys
           "
 
           # Install ubuntu-desktop (this will take several minutes)
           echo "Installing ubuntu-desktop package..."
-          lxc exec ubuntu-desktop -- bash -c "
+          sudo lxc exec ubuntu-desktop -- bash -c "
             DEBIAN_FRONTEND=noninteractive apt-get install -y ubuntu-desktop
           "
 
@@ -87,7 +87,7 @@ jobs:
         id: setup-ssh
         run: |
           # Get container IP address
-          CONTAINER_IP=$(lxc list ubuntu-desktop -c 4 -f csv | cut -d' ' -f1)
+          CONTAINER_IP=$(sudo lxc list ubuntu-desktop -c 4 -f csv | cut -d' ' -f1)
           echo "Container IP: $CONTAINER_IP"
 
           # Add to known_hosts
