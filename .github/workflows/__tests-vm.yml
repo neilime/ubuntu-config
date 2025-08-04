@@ -56,14 +56,38 @@ jobs:
 
       - name: Run install script
         run: |
+          # Create and upload a script to properly set environment variables and run the install script
+          cat > /tmp/run_install.sh << 'EOF'
+          #!/bin/bash
+          set -eu
+
+          # Export environment variables
+          export BITWARDEN_EMAIL="$1"
+          export BITWARDEN_PASSWORD="$2"
+          export REPOSITORY_URL="$3"
+          export REPOSITORY_BRANCH="$4"
+
+          # Download and run the install script
+          wget -qO- "$5" | sudo -E bash
+
+          # Create success marker
+          sudo touch /e2e.success
+          EOF
+
+          # Make the script executable
+          chmod +x /tmp/run_install.sh
+
+          # Copy the script to the VM
+          scp /tmp/run_install.sh lima-ubuntu-desktop:/tmp/run_install.sh
+
+          # Execute the script on the VM with proper argument passing
           # shellcheck disable=SC2029
-          ssh lima-ubuntu-desktop \
-            "BITWARDEN_EMAIL='$BITWARDEN_EMAIL' \
-             BITWARDEN_PASSWORD='$BITWARDEN_PASSWORD' \
-             REPOSITORY_URL='$REPOSITORY_URL' \
-             REPOSITORY_BRANCH='$REPOSITORY_BRANCH' \
-             wget -qO- '$INSTALL_SCRIPT' | sudo -E bash && \
-             sudo touch /e2e.success"
+          ssh lima-ubuntu-desktop "bash /tmp/run_install.sh \
+            '$BITWARDEN_EMAIL' \
+            '$BITWARDEN_PASSWORD' \
+            '$REPOSITORY_URL' \
+            '$REPOSITORY_BRANCH' \
+            '$INSTALL_SCRIPT'"
 
       - name: Validate Ansible changes in host - Snap packages
         run: |
