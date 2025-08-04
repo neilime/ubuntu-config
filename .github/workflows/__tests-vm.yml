@@ -16,7 +16,7 @@ jobs:
       BITWARDEN_PASSWORD: ${{ secrets.BITWARDEN_PASSWORD }}
       INSTALL_SCRIPT: https://raw.githubusercontent.com/neilime/ubuntu-config/${{ github.sha }}/install.sh
       REPOSITORY_URL: ${{ github.event.repository.clone_url }}
-      REPOSITORY_BRANCH: ${{ github.sha }}
+      REPOSITORY_BRANCH: ${{ github.head_ref || github.ref_name }}
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
