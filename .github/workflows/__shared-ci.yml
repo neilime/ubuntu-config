@@ -27,7 +27,7 @@ jobs:
 
   tests-vm:
     needs: lint
-    uses: ./.github/workflows/__tests-vm-lima.yml
+    uses: ./.github/workflows/__tests-vm.yml
     permissions:
       contents: read
     secrets: inherit
