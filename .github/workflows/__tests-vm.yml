@@ -37,6 +37,8 @@ jobs:
 
       - name: Set up SSH for Lima
         uses: lima-vm/lima-actions/ssh@03b96d61959e83b2c737e44162c3088e81de0886 # v1.0.1
+        with:
+          name: ubuntu-desktop
 
       - name: Wait for VM to be ready
         run: |
