@@ -11,9 +11,7 @@ images:
   - location: "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
     arch: "x86_64"
 
-# Network configuration
-networks:
-  - lima: shared
+# Network configuration (use default for Linux compatibility)
 
 # SSH configuration
 ssh:
