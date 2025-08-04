@@ -6,19 +6,16 @@ cpus: 2
 memory: "4GiB"
 disk: "15GiB"
 
-# Ubuntu Desktop image
+# Ubuntu image
 images:
   - location: "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
     arch: "x86_64"
 
-# Network configuration (use default for Linux compatibility)
-
-# SSH configuration
+# SSH configuration (let Lima handle automatically)
 ssh:
-  localPort: 2222
   loadDotSSHPubKeys: true
 
-# Provision Ubuntu Desktop
+# Basic provisioning (minimal setup)
 provision:
   - mode: system
     script: |
@@ -28,38 +25,18 @@ provision:
       # Update package list
       apt-get update
 
-      # Install Ubuntu Desktop (minimal to save time and resources)
-      DEBIAN_FRONTEND=noninteractive apt-get install -y ubuntu-desktop-minimal
+      # Install basic packages needed for the install script
+      DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        curl \
+        wget \
+        sudo \
+        systemd
 
-      # Ensure SSH is enabled and configured
+      # Ensure SSH is properly configured
       systemctl enable ssh
       systemctl start ssh
 
-      # Configure SSH for testing
-      sed -i 's/^#*PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
-      sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
-      sed -i 's/^#*PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
-      systemctl restart ssh
+      echo "✅ Basic Ubuntu VM setup complete"
 
-      # Create e2e ready marker
-      touch /e2e.ready
-
-  - mode: user
-    script: |
-      #!/bin/bash
-      set -eux -o pipefail
-
-      # Ensure proper SSH directory permissions
-      mkdir -p ~/.ssh
-      chmod 700 ~/.ssh
-
-      echo "✅ Ubuntu Desktop VM setup complete"
-
-# Enable systemd (required for desktop)
+# Enable systemd
 systemd: true
-
-# Mount type for better performance
-mountType: "virtiofs"
-
-# Arch
-arch: "x86_64"
