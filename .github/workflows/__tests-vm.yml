@@ -68,7 +68,7 @@ jobs:
           export REPOSITORY_BRANCH="$4"
 
           # Download and run the install script
-          wget -qO- "$5" | sudo -E bash
+          wget -qO- "$5" | sudo -E sh
 
           # Create success marker
           sudo touch /e2e.success
