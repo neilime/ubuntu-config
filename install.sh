@@ -150,12 +150,12 @@ ask_for_bitwarden_credentials() {
 	fi
 
 	# If email is provided but password is not, prompt for password
-	if [ -n "${BITWARDEN_EMAIL}" ] && [ -z "${BITWARDEN_PASSWORD+x}" ]; then
+	if [ -n "${BITWARDEN_EMAIL:-}" ] && [ -z "${BITWARDEN_PASSWORD+x}" ]; then
 		prompt_for_env_variable "BITWARDEN_PASSWORD" "Enter your Bitwarden password: " true
 	fi
 
 	# If email is empty, prompt for API key credentials
-	if [ -z "${BITWARDEN_EMAIL}" ]; then
+	if [ -z "${BITWARDEN_EMAIL:-}" ]; then
 		if [ -z "${BITWARDEN_CLIENT_ID+x}" ]; then
 			prompt_for_env_variable "BITWARDEN_CLIENT_ID" "Enter your Bitwarden API Client ID: " false
 		fi
@@ -177,7 +177,7 @@ prompt_for_env_variable() {
 
 	while true; do
 		# Evaluate variable value at runtime
-		eval current_value="\$$var_name"
+		eval current_value="\${$var_name:-}"
 
 		if [ -n "$current_value" ]; then
 			break
