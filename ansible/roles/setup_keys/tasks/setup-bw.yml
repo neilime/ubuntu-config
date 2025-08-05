@@ -1,11 +1,14 @@
 ---
 - name: Ensure bitwarden credentials are set
   ansible.builtin.fail:
-    msg: "setup_keys_bitwarden_server is required, and either (setup_keys_bitwarden_email and setup_keys_bitwarden_password) or (setup_keys_bitwarden_client_id and setup_keys_bitwarden_client_secret) are required"
+    msg: >
+      setup_keys_bitwarden_server and setup_keys_bitwarden_password are required,
+      and either (setup_keys_bitwarden_email) or (setup_keys_bitwarden_client_id and setup_keys_bitwarden_client_secret) are required
   when: >
     not setup_keys_bitwarden_server or
+    not setup_keys_bitwarden_password or
     (
-      (not setup_keys_bitwarden_email or not setup_keys_bitwarden_password) and
+      not setup_keys_bitwarden_email and
       (not setup_keys_bitwarden_client_id or not setup_keys_bitwarden_client_secret)
     )
 
@@ -48,37 +51,29 @@
       ansible.builtin.command: bw login "{{ setup_keys_bitwarden_email }}" "{{ setup_keys_bitwarden_password }}" --raw
       any_errors_fatal: true
 
-    - name: Unlock Bitwarden with password
-      when:
-        - bw_status.stdout | from_json | community.general.json_query('status') != "unlocked"
-        - setup_keys_bitwarden_password
-        - not (setup_keys_bitwarden_client_id and setup_keys_bitwarden_client_secret)
-      delegate_to: localhost
-      ansible.builtin.command: bw unlock --raw "{{ setup_keys_bitwarden_password }}"
-      register: bw_session_password
-      no_log: true
-
-    - name: Check if unlock is needed for API key auth
-      when:
-        - setup_keys_bitwarden_client_id and setup_keys_bitwarden_client_secret
+    - name: Get bw status after login
       delegate_to: localhost
       ansible.builtin.command: bw status
-      register: bw_status_after_login
       changed_when: false
+      register: bw_status_after_login
 
-    - name: Set session token for password auth
-      ansible.builtin.set_fact:
-        bw_session: "{{ bw_session_password.stdout }}"
+    - name: Unlock Bitwarden vault with master password
+      when: bw_status_after_login.stdout | from_json | community.general.json_query('status') != "unlocked"
+      delegate_to: localhost
+      ansible.builtin.command: bw unlock --raw "{{ setup_keys_bitwarden_password }}"
+      register: bw_session_unlock
       no_log: true
-      when: bw_session_password is defined and bw_session_password.stdout is defined
 
-    - name: Set empty session for API key auth (if already unlocked)
+    - name: Set session token from unlock
+      ansible.builtin.set_fact:
+        bw_session: "{{ bw_session_unlock.stdout }}"
+      no_log: true
+      when: bw_session_unlock is defined and bw_session_unlock.stdout is defined
+
+    - name: Set empty session if already unlocked
       ansible.builtin.set_fact:
         bw_session: ""
-      when:
-        - setup_keys_bitwarden_client_id and setup_keys_bitwarden_client_secret
-        - bw_status_after_login is defined
-        - bw_status_after_login.stdout | from_json | community.general.json_query('status') == "unlocked"
+      when: bw_status_after_login.stdout | from_json | community.general.json_query('status') == "unlocked"
 
     - name: Ensure bw is unlocked
       delegate_to: localhost

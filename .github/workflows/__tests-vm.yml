@@ -14,6 +14,7 @@ jobs:
     env:
       BITWARDEN_CLIENT_ID: ${{ secrets.BITWARDEN_CLIENT_ID }}
       BITWARDEN_CLIENT_SECRET: ${{ secrets.BITWARDEN_CLIENT_SECRET }}
+      BITWARDEN_PASSWORD: ${{ secrets.BITWARDEN_PASSWORD }}
       INSTALL_SCRIPT: https://raw.githubusercontent.com/neilime/ubuntu-config/${{ github.head_ref || github.ref_name }}/install.sh
       REPOSITORY_URL: ${{ github.event.repository.clone_url }}
       REPOSITORY_BRANCH: ${{ github.head_ref || github.ref_name }}
@@ -64,11 +65,12 @@ jobs:
           # Export environment variables
           export BITWARDEN_CLIENT_ID="$1"
           export BITWARDEN_CLIENT_SECRET="$2"
-          export REPOSITORY_URL="$3"
-          export REPOSITORY_BRANCH="$4"
+          export BITWARDEN_PASSWORD="$3"
+          export REPOSITORY_URL="$4"
+          export REPOSITORY_BRANCH="$5"
 
           # Download and run the install script
-          wget -qO- "$5" | sudo -E sh
+          wget -qO- "$6" | sudo -E sh
 
           # Create success marker
           sudo touch /e2e.success
@@ -85,6 +87,7 @@ jobs:
           ssh lima-ubuntu-desktop "bash /tmp/run_install.sh \
             '$BITWARDEN_CLIENT_ID' \
             '$BITWARDEN_CLIENT_SECRET' \
+            '$BITWARDEN_PASSWORD' \
             '$REPOSITORY_URL' \
             '$REPOSITORY_BRANCH' \
             '$INSTALL_SCRIPT'"

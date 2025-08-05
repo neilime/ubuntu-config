@@ -14,6 +14,7 @@ jobs:
     env:
       BITWARDEN_CLIENT_ID: ${{ secrets.BITWARDEN_CLIENT_ID }}
       BITWARDEN_CLIENT_SECRET: ${{ secrets.BITWARDEN_CLIENT_SECRET }}
+      BITWARDEN_PASSWORD: ${{ secrets.BITWARDEN_PASSWORD }}
       INSTALL_SCRIPT: >-
         https://raw.githubusercontent.com/neilime/ubuntu-config/
         ${{ github.sha }}/install.sh

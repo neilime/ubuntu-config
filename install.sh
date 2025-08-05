@@ -135,6 +135,10 @@ ask_for_bitwarden_credentials() {
 	# Check if API key credentials are provided
 	if [ -n "${BITWARDEN_CLIENT_ID+x}" ] && [ -n "${BITWARDEN_CLIENT_SECRET+x}" ]; then
 		completed "Bitwarden API key credentials already set"
+		# Even with API key, we still need the master password to unlock the vault
+		if [ -z "${BITWARDEN_PASSWORD+x}" ]; then
+			prompt_for_env_variable "BITWARDEN_PASSWORD" "Enter your Bitwarden master password (required to unlock vault): " true
+		fi
 		return
 	fi
 
@@ -162,6 +166,11 @@ ask_for_bitwarden_credentials() {
 
 		if [ -z "${BITWARDEN_CLIENT_SECRET+x}" ]; then
 			prompt_for_env_variable "BITWARDEN_CLIENT_SECRET" "Enter your Bitwarden API Client Secret: " true
+		fi
+
+		# Even with API key, we still need the master password to unlock the vault
+		if [ -z "${BITWARDEN_PASSWORD+x}" ]; then
+			prompt_for_env_variable "BITWARDEN_PASSWORD" "Enter your Bitwarden master password (required to unlock vault): " true
 		fi
 	fi
 
