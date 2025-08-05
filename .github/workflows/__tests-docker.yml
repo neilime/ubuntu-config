@@ -76,11 +76,23 @@ jobs:
 
       - name: Validate Ansible changes in host - GPG keys
         run: |
-          if $DOCKER_COMPOSE_EXEC 'gpg --list-keys | grep -q "/home/ubuntu/.gnupg/pubring.kbx"' ; then
-            echo 'GPG keys installed: pass' && exit 0
-          else
-            echo '::error ::GPG keys installed: fail' && exit 1
+          # Check if GPG keyring exists
+          if ! $DOCKER_COMPOSE_EXEC 'gpg --list-keys | grep -q "/home/ubuntu/.gnupg/pubring.kbx"' ; then
+            echo '::error ::GPG keyring not found' && exit 1
           fi
+          
+          # Check if any GPG keys are actually imported (not just empty keyring)
+          if ! $DOCKER_COMPOSE_EXEC 'gpg --list-keys --with-colons | grep -q "^pub:"' ; then
+            echo '::warning ::No GPG public keys found in keyring'
+          fi
+          
+          # Check if any secret keys are imported
+          if ! $DOCKER_COMPOSE_EXEC 'gpg --list-secret-keys --with-colons | grep -q "^sec:"' ; then
+            echo '::warning ::No GPG secret keys found in keyring'
+          fi
+          
+          # Final validation - at least keyring exists
+          echo 'GPG keys setup: pass'
 
       - name: Validate Ansible changes in host - docker
         run: |
