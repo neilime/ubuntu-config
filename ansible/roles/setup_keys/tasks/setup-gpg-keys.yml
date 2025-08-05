@@ -1,10 +1,25 @@
 # GPG keys setup
-# Generated keys with: gpg --expert --full-generate-key
-# Exported with:
-# gpg --export --armor your@id.here > your@id.here.pub.asc
-# gpg --export-secret-keys --armor your@id.here > your@id.here.priv.asc
-# gpg --export-secret-subkeys --armor your@id.here > your@id.here.sub_priv.asc
+# This playbook imports GPG keys from Bitwarden and sets them up for use.
+# 
+# Required Bitwarden item structure:
+# - Item name: Email or identifier for the GPG key
+# - Custom fields:
+#   - public_key: ASCII-armored public key (optional if private_key provided)
+#   - private_key: ASCII-armored private key (optional if public_key provided)  
+#   - sub_private_key: ASCII-armored sub-private keys (optional)
+#   - ownertrust: Trust database export (optional but recommended)
+#
+# Export commands for generating the required formats:
+# gpg --export --armor your@email.com > public.asc
+# gpg --export-secret-keys --armor your@email.com > private.asc
+# gpg --export-secret-subkeys --armor your@email.com > subkeys.asc (if needed)
 # gpg --export-ownertrust > ownertrust.txt
+#
+# The import process supports:
+# - All GPG key types (RSA, DSA, ECDSA, EdDSA)
+# - Keys with or without subkeys
+# - Key renewal and updates
+# - Preservation of trust relationships
 ---
 # FIXME: should use community.general.bitwarden
 # "{{ lookup('community.general.bitwarden', collection_id=setup_keys_bitwarden_gpg_keys_collection_id, bw_session=bw_session) }}"
@@ -21,14 +36,17 @@
         bw_items.stdout 
         | from_json 
         | community.general.json_query(gpg_keys_query)
+        | selectattr('name', 'defined')
+        | selectattr('name', 'ne', '')
+        | list
       }}
   vars:
     gpg_keys_query: |
       data.data[].{
         name: name,
-        public_key: fields[?name=='public_key'].value | [0]
-        private_key: fields[?name=='private_key'].value | [0]
-        sub_private_key: fields[?name=='sub_private_key'].value | [0]
+        public_key: fields[?name=='public_key'].value | [0],
+        private_key: fields[?name=='private_key'].value | [0],
+        sub_private_key: fields[?name=='sub_private_key'].value | [0],
         ownertrust: fields[?name=='ownertrust'].value | [0]
       }
   no_log: true
