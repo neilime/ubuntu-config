@@ -1,44 +1,67 @@
 ---
 - name: Ensure bitwarden vars are set
   ansible.builtin.fail:
-    msg: "setup_keys_bitwarden_server, setup_keys_bitwarden_email and setup_keys_bitwarden_password are required"
-  when: not setup_keys_bitwarden_server or not setup_keys_bitwarden_email or not setup_keys_bitwarden_password
+    msg: "setup_keys_bitwarden_server is required, and either (setup_keys_bitwarden_email + setup_keys_bitwarden_password) or setup_keys_bitwarden_access_token must be provided"
+  when: not setup_keys_bitwarden_server or (not setup_keys_bitwarden_access_token and (not setup_keys_bitwarden_email or not setup_keys_bitwarden_password))
 
 - name: Login and unlock Bitwarden
   block:
-    - name: Get bw server
-      delegate_to: localhost
-      ansible.builtin.command: bw config server
-      changed_when: false
-      register: bw_server
+    - name: Login and unlock Bitwarden with access token
+      when: setup_keys_bitwarden_access_token | length > 0
+      block:
+        - name: Get bw server
+          delegate_to: localhost
+          ansible.builtin.command: bw config server
+          changed_when: false
+          register: bw_server
 
-    - name: Set bw server
-      when: bw_server.stdout != setup_keys_bitwarden_server
-      delegate_to: localhost
-      ansible.builtin.command: bw config server "{{ setup_keys_bitwarden_server }}"
+        - name: Set bw server
+          when: bw_server.stdout != setup_keys_bitwarden_server
+          delegate_to: localhost
+          ansible.builtin.command: bw config server "{{ setup_keys_bitwarden_server }}"
 
-    - name: Get bw status
-      delegate_to: localhost
-      ansible.builtin.command: bw status
-      changed_when: false
-      register: bw_status
+        - name: Set session with access token
+          delegate_to: localhost
+          ansible.builtin.set_fact:
+            bw_session: "{{ setup_keys_bitwarden_access_token }}"
+          no_log: true
 
-    - name: Login to Bitwarden
-      when: bw_status.stdout | from_json | community.general.json_query('status') == "unauthenticated"
-      delegate_to: localhost
-      ansible.builtin.command: bw login "{{ setup_keys_bitwarden_email }}" "{{ setup_keys_bitwarden_password }}" --raw
-      any_errors_fatal: true
+    - name: Login and unlock Bitwarden with email/password
+      when: setup_keys_bitwarden_access_token | length == 0
+      block:
+        - name: Get bw server
+          delegate_to: localhost
+          ansible.builtin.command: bw config server
+          changed_when: false
+          register: bw_server
 
-    - name: Unlock Bitwarden
-      when: bw_status.stdout | from_json | community.general.json_query('status') != "unlocked"
-      delegate_to: localhost
-      ansible.builtin.command: bw unlock --raw "{{ setup_keys_bitwarden_password }}"
-      register: bw_session
-      no_log: true
+        - name: Set bw server
+          when: bw_server.stdout != setup_keys_bitwarden_server
+          delegate_to: localhost
+          ansible.builtin.command: bw config server "{{ setup_keys_bitwarden_server }}"
 
-    - ansible.builtin.set_fact:
-        bw_session: "{{ bw_session.stdout }}"
-      no_log: true
+        - name: Get bw status
+          delegate_to: localhost
+          ansible.builtin.command: bw status
+          changed_when: false
+          register: bw_status
+
+        - name: Login to Bitwarden
+          when: bw_status.stdout | from_json | community.general.json_query('status') == "unauthenticated"
+          delegate_to: localhost
+          ansible.builtin.command: bw login "{{ setup_keys_bitwarden_email }}" "{{ setup_keys_bitwarden_password }}" --raw
+          any_errors_fatal: true
+
+        - name: Unlock Bitwarden
+          when: bw_status.stdout | from_json | community.general.json_query('status') != "unlocked"
+          delegate_to: localhost
+          ansible.builtin.command: bw unlock --raw "{{ setup_keys_bitwarden_password }}"
+          register: bw_session
+          no_log: true
+
+        - ansible.builtin.set_fact:
+            bw_session: "{{ bw_session.stdout }}"
+          no_log: true
 
     - name: Ensure bw is unlocked
       delegate_to: localhost
@@ -53,5 +76,6 @@
     - name: Logout to Bitwarden
       delegate_to: localhost
       ansible.builtin.command: bw logout
+      when: setup_keys_bitwarden_access_token | length == 0
     - ansible.builtin.fail:
         msg: "{{ ansible_failed_result }}"

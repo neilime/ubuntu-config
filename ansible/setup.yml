@@ -32,6 +32,7 @@
         setup_keys_bitwarden_server: "{{ bitwarden.server }}"
         setup_keys_bitwarden_email: "{{ bitwarden.email }}"
         setup_keys_bitwarden_password: "{{ bitwarden.password }}"
+        setup_keys_bitwarden_access_token: "{{ bitwarden.access_token }}"
         setup_keys_bitwarden_ssh_keys_collection_id: "{{ bitwarden.sshKeysCollectionId }}"
         setup_keys_bitwarden_gpg_keys_collection_id: "{{ bitwarden.gpgKeysCollectionId }}"
 

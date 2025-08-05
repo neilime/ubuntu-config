@@ -23,6 +23,7 @@
 #                        Default: main
 #   - BITWARDEN_EMAIL: Email address for Bitwarden login.
 #   - BITWARDEN_PASSWORD: Password for Bitwarden login.
+#   - BITWARDEN_ACCESS_TOKEN: Access token for Bitwarden (alternative to email/password).
 #   - SKIP_INSTALL_REQUIREMENTS: If set to "true", the install-requirements playbook will be skipped.
 #   - INSTALL_REQUIREMENTS_TAGS: Tags to filter tasks in the "install-requirements" playbook. Default: all
 #   - SKIP_SETUP: If set to "true", the setup playbook will be run.
@@ -130,11 +131,34 @@ check_requirements() {
 ask_for_bitwarden_credentials() {
 	info "Asking for Bitwarden credentials..."
 
+	# Check if token is already set
+	if [ -n "${BITWARDEN_ACCESS_TOKEN+x}" ]; then
+		completed "Bitwarden access token already set"
+		return
+	fi
+
+	# Check if email/password is already set
 	if [ -n "${BITWARDEN_EMAIL+x}" ] && [ -n "${BITWARDEN_PASSWORD+x}" ]; then
 		completed "Bitwarden credentials already set"
 		return
 	fi
 
+	# Prompt for authentication method if nothing is set
+	if [ -z "${BITWARDEN_ACCESS_TOKEN+x}" ] && [ -z "${BITWARDEN_EMAIL+x}" ] && [ -z "${BITWARDEN_PASSWORD+x}" ]; then
+		info "Choose Bitwarden authentication method:"
+		info "1. Email and password (interactive)"
+		info "2. Access token (for CI/programmatic usage)"
+		printf "Enter choice (1 or 2): "
+		read -r auth_choice
+		
+		if [ "$auth_choice" = "2" ]; then
+			prompt_for_env_variable "BITWARDEN_ACCESS_TOKEN" "Enter your Bitwarden access token: " true
+			completed "Bitwarden access token set"
+			return
+		fi
+	fi
+
+	# Default to email/password if not using token
 	if [ -z "${BITWARDEN_EMAIL+x}" ]; then
 		prompt_for_env_variable "BITWARDEN_EMAIL" "Enter your Bitwarden email: " false
 	fi
@@ -253,7 +277,8 @@ run_setup_playbook() {
 	run_playbook "setup" \
 		--tags "$SETUP_TAGS" \
 		--extra-vars "BITWARDEN_EMAIL=$BITWARDEN_EMAIL" \
-		--extra-vars "BITWARDEN_PASSWORD=$BITWARDEN_PASSWORD"
+		--extra-vars "BITWARDEN_PASSWORD=$BITWARDEN_PASSWORD" \
+		--extra-vars "BITWARDEN_ACCESS_TOKEN=$BITWARDEN_ACCESS_TOKEN"
 }
 
 run_cleanup_playbook() {
@@ -308,6 +333,7 @@ info "${BOLD}Repository url${NO_COLOR}: ${GREEN}${REPOSITORY_URL}${NO_COLOR}"
 info "${BOLD}Repository branch${NO_COLOR}: ${GREEN}${REPOSITORY_BRANCH}${NO_COLOR}"
 info "${BOLD}Bitwarden email${NO_COLOR}: ${GREEN}${BITWARDEN_EMAIL:-not set}${NO_COLOR}"
 info "${BOLD}Bitwarden password${NO_COLOR}: ${GREEN}$([ -n "${BITWARDEN_PASSWORD:-}" ] && echo '********' || echo 'not set')${NO_COLOR}"
+info "${BOLD}Bitwarden access token${NO_COLOR}: ${GREEN}$([ -n "${BITWARDEN_ACCESS_TOKEN:-}" ] && echo '********' || echo 'not set')${NO_COLOR}"
 
 info "${BOLD}Skip install-requirements${NO_COLOR}: ${GREEN}${SKIP_INSTALL_REQUIREMENTS:-not set}${NO_COLOR}"
 info "${BOLD}Skip setup${NO_COLOR}: ${GREEN}${SKIP_SETUP:-not set}${NO_COLOR}"
