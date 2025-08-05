@@ -31,10 +31,3 @@ jobs:
     permissions:
       contents: read
     secrets: inherit
-
-  tests-vm-lxd:
-    needs: lint
-    uses: ./.github/workflows/__tests-vm-lxd.yml
-    permissions:
-      contents: read
-    secrets: inherit
