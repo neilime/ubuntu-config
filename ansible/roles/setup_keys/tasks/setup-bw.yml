@@ -87,7 +87,7 @@
       changed_when: false
       failed_when: bw_status.stdout | from_json | community.general.json_query('status') != "unlocked"
       environment:
-        BW_SESSION: "{{ bw_session }}"
+        BW_SESSION: "{{ bw_session | default('') }}"
 
   rescue:
     - name: Logout from Bitwarden
