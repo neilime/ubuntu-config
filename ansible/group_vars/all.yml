@@ -102,9 +102,9 @@ composer:
 
 bitwarden:
   server: "https://vault.bitwarden.eu"
-  email: "{{ BITWARDEN_EMAIL }}"
-  password: "{{ BITWARDEN_PASSWORD }}"
-  client_id: "{{ BITWARDEN_CLIENT_ID }}"
-  client_secret: "{{ BITWARDEN_CLIENT_SECRET }}"
+  email: "{{ BITWARDEN_EMAIL | default('') }}"
+  password: "{{ BITWARDEN_PASSWORD | default('') }}"
+  client_id: "{{ BITWARDEN_CLIENT_ID | default('') }}"
+  client_secret: "{{ BITWARDEN_CLIENT_SECRET | default('') }}"
   sshKeysCollectionId: "7ac0c067-9d61-49c0-b01e-b10d0135372a" # gitleaks:allow - it is an ID
   gpgKeysCollectionId: "9ff2a152-3c88-44cd-a04b-b11d00c8b267" # gitleaks:allow - it is an ID
