@@ -7,6 +7,8 @@ services:
       REPOSITORY_BRANCH:
       BITWARDEN_EMAIL:
       BITWARDEN_PASSWORD:
+      BITWARDEN_CLIENT_ID:
+      BITWARDEN_CLIENT_SECRET:
     shm_size: 1024m
     cap_add:
       - SYS_PTRACE
