@@ -272,15 +272,27 @@ run_setup_playbook() {
 		SETUP_TAGS="all"
 	fi
 
-	# Build extra-vars for Bitwarden credentials
-	extra_vars="--extra-vars BITWARDEN_EMAIL=${BITWARDEN_EMAIL:-}"
-	extra_vars="$extra_vars --extra-vars BITWARDEN_PASSWORD=${BITWARDEN_PASSWORD:-}"
-	extra_vars="$extra_vars --extra-vars BITWARDEN_CLIENT_ID=${BITWARDEN_CLIENT_ID:-}"
-	extra_vars="$extra_vars --extra-vars BITWARDEN_CLIENT_SECRET=${BITWARDEN_CLIENT_SECRET:-}"
+	# Build extra-vars for Bitwarden credentials, only if defined
+	extra_vars=""
+	if [ -n "${BITWARDEN_EMAIL:-}" ]; then
+		extra_vars="$extra_vars --extra-vars BITWARDEN_EMAIL=$BITWARDEN_EMAIL"
+	fi
+	if [ -n "${BITWARDEN_PASSWORD:-}" ]; then
+		extra_vars="$extra_vars --extra-vars BITWARDEN_PASSWORD=$BITWARDEN_PASSWORD"
+	fi
+	if [ -n "${BITWARDEN_CLIENT_ID:-}" ]; then
+		extra_vars="$extra_vars --extra-vars BITWARDEN_CLIENT_ID=$BITWARDEN_CLIENT_ID"
+	fi
+	if [ -n "${BITWARDEN_CLIENT_SECRET:-}" ]; then
+		extra_vars="$extra_vars --extra-vars BITWARDEN_CLIENT_SECRET=$BITWARDEN_CLIENT_SECRET"
+	fi
 
-	run_playbook "setup" \
-		--tags "$SETUP_TAGS" \
-		"$extra_vars"
+	# Use eval to properly expand the extra_vars
+	if [ -n "$extra_vars" ]; then
+		eval "run_playbook \"setup\" --tags \"$SETUP_TAGS\" $extra_vars"
+	else
+		run_playbook "setup" --tags "$SETUP_TAGS"
+	fi
 }
 
 run_cleanup_playbook() {
