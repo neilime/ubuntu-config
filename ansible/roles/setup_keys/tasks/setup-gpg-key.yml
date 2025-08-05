@@ -21,28 +21,28 @@
     set -o pipefail
     # Create temporary files for import
     TEMP_DIR=$(mktemp -d)
-    
+
     # Import public key if provided
     {% if public_key is defined and public_key %}
     echo '{{ public_key }}' > "$TEMP_DIR/public.asc"
     gpg --import "$TEMP_DIR/public.asc" 2>&1
     {% endif %}
-    
+
     # Import private key if provided (this usually includes the public key)
     {% if private_key is defined and private_key %}
     echo '{{ private_key }}' > "$TEMP_DIR/private.asc"
     gpg --import "$TEMP_DIR/private.asc" 2>&1
     {% endif %}
-    
+
     # Import sub-private keys if provided
     {% if sub_private_key is defined and sub_private_key %}
     echo '{{ sub_private_key }}' > "$TEMP_DIR/subkeys.asc"
     gpg --import "$TEMP_DIR/subkeys.asc" 2>&1
     {% endif %}
-    
+
     # Clean up temporary files
     rm -rf "$TEMP_DIR"
-    
+
     # Verify the key was imported successfully
     gpg --list-keys '{{ key_name }}' >/dev/null 2>&1
   args:
@@ -64,7 +64,7 @@
   become: true
   become_user: "{{ ansible_user }}"
   when: ownertrust is defined and ownertrust
-  failed_when: 
+  failed_when:
     - gpg_import_ownertrust.rc != 0
     - '"no valid user IDs" in gpg_import_ownertrust.stderr'
   changed_when: '"ownertrust changed" in gpg_import_ownertrust.stderr'
@@ -86,7 +86,7 @@
   register: gpg_trust_result
   become: true
   become_user: "{{ ansible_user }}"
-  failed_when: 
+  failed_when:
     - gpg_trust_result.rc != 0
     - '"Key already has trust settings" not in gpg_trust_result.stdout'
   changed_when: '"Key already has trust settings" not in gpg_trust_result.stdout'

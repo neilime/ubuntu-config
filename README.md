@@ -11,16 +11,19 @@ This project can automatically import your GPG keys from Bitwarden during setup.
 To export your existing GPG keys in the correct format for this setup:
 
 1. **Export the public key:**
+
    ```bash
    gpg --export --armor your@email.com > your_email_public.asc
    ```
 
 2. **Export the private key:**
+
    ```bash
    gpg --export-secret-keys --armor your@email.com > your_email_private.asc
    ```
 
 3. **Export the sub-private keys (if your key has subkeys):**
+
    ```bash
    gpg --export-secret-subkeys --armor your@email.com > your_email_subkeys.asc
    ```
@@ -54,6 +57,7 @@ For each GPG key you want to import, create a new item in your Bitwarden vault w
 ### Supported Key Types
 
 This setup supports all standard GPG key types:
+
 - RSA keys (any size)
 - DSA keys
 - ECDSA keys
@@ -64,6 +68,7 @@ This setup supports all standard GPG key types:
 ### Key Renewal and Updates
 
 The import process is idempotent and supports key renewal:
+
 - If a key already exists, it will be updated with any new information
 - Trust settings will be preserved or updated as needed
 - The process can handle both new key imports and key renewals
@@ -78,6 +83,7 @@ If GPG key import fails:
 4. **Review collection access:** Ensure the Bitwarden item is in the correct collection
 
 Example manual test:
+
 ```bash
 # Test if your exported key is valid
 gpg --import your_email_private.asc
