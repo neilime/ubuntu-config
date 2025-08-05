@@ -12,7 +12,7 @@
 #
 # Main Actions:
 #   1. Check system requirements (e.g., sudo availability, shell compatibility).
-#   2. Prompt for Bitwarden credentials if not already set.
+#   2. Prompt for Bitwarden credentials (email/password or API key) if not already set.
 #   3. Install pipx, ansible-pull, and git if not already installed.
 #   4. Run Ansible playbooks to configure the system.
 #
@@ -23,6 +23,8 @@
 #                        Default: main
 #   - BITWARDEN_EMAIL: Email address for Bitwarden login.
 #   - BITWARDEN_PASSWORD: Password for Bitwarden login.
+#   - BITWARDEN_CLIENT_ID: Client ID for Bitwarden API key authentication (alternative to email/password).
+#   - BITWARDEN_CLIENT_SECRET: Client Secret for Bitwarden API key authentication (alternative to email/password).
 #   - SKIP_INSTALL_REQUIREMENTS: If set to "true", the install-requirements playbook will be skipped.
 #   - INSTALL_REQUIREMENTS_TAGS: Tags to filter tasks in the "install-requirements" playbook. Default: all
 #   - SKIP_SETUP: If set to "true", the setup playbook will be run.
@@ -130,17 +132,37 @@ check_requirements() {
 ask_for_bitwarden_credentials() {
 	info "Asking for Bitwarden credentials..."
 
-	if [ -n "${BITWARDEN_EMAIL+x}" ] && [ -n "${BITWARDEN_PASSWORD+x}" ]; then
-		completed "Bitwarden credentials already set"
+	# Check if API key credentials are provided
+	if [ -n "${BITWARDEN_CLIENT_ID+x}" ] && [ -n "${BITWARDEN_CLIENT_SECRET+x}" ]; then
+		completed "Bitwarden API key credentials already set"
 		return
 	fi
 
-	if [ -z "${BITWARDEN_EMAIL+x}" ]; then
-		prompt_for_env_variable "BITWARDEN_EMAIL" "Enter your Bitwarden email: " false
+	# Check if email/password credentials are provided
+	if [ -n "${BITWARDEN_EMAIL+x}" ] && [ -n "${BITWARDEN_PASSWORD+x}" ]; then
+		completed "Bitwarden email/password credentials already set"
+		return
 	fi
 
-	if [ -z "${BITWARDEN_PASSWORD+x}" ]; then
+	# If neither set of credentials is complete, prompt for email/password (default)
+	if [ -z "${BITWARDEN_EMAIL+x}" ]; then
+		prompt_for_env_variable "BITWARDEN_EMAIL" "Enter your Bitwarden email (or leave empty to use API key): " false
+	fi
+
+	# If email is provided but password is not, prompt for password
+	if [ -n "${BITWARDEN_EMAIL}" ] && [ -z "${BITWARDEN_PASSWORD+x}" ]; then
 		prompt_for_env_variable "BITWARDEN_PASSWORD" "Enter your Bitwarden password: " true
+	fi
+
+	# If email is empty, prompt for API key credentials
+	if [ -z "${BITWARDEN_EMAIL}" ]; then
+		if [ -z "${BITWARDEN_CLIENT_ID+x}" ]; then
+			prompt_for_env_variable "BITWARDEN_CLIENT_ID" "Enter your Bitwarden API Client ID: " false
+		fi
+
+		if [ -z "${BITWARDEN_CLIENT_SECRET+x}" ]; then
+			prompt_for_env_variable "BITWARDEN_CLIENT_SECRET" "Enter your Bitwarden API Client Secret: " true
+		fi
 	fi
 
 	completed "Bitwarden credentials set"
@@ -250,10 +272,15 @@ run_setup_playbook() {
 		SETUP_TAGS="all"
 	fi
 
+	# Build extra-vars for Bitwarden credentials
+	extra_vars="--extra-vars BITWARDEN_EMAIL=${BITWARDEN_EMAIL:-}"
+	extra_vars="$extra_vars --extra-vars BITWARDEN_PASSWORD=${BITWARDEN_PASSWORD:-}"
+	extra_vars="$extra_vars --extra-vars BITWARDEN_CLIENT_ID=${BITWARDEN_CLIENT_ID:-}"
+	extra_vars="$extra_vars --extra-vars BITWARDEN_CLIENT_SECRET=${BITWARDEN_CLIENT_SECRET:-}"
+
 	run_playbook "setup" \
 		--tags "$SETUP_TAGS" \
-		--extra-vars "BITWARDEN_EMAIL=$BITWARDEN_EMAIL" \
-		--extra-vars "BITWARDEN_PASSWORD=$BITWARDEN_PASSWORD"
+		$extra_vars
 }
 
 run_cleanup_playbook() {
@@ -308,6 +335,8 @@ info "${BOLD}Repository url${NO_COLOR}: ${GREEN}${REPOSITORY_URL}${NO_COLOR}"
 info "${BOLD}Repository branch${NO_COLOR}: ${GREEN}${REPOSITORY_BRANCH}${NO_COLOR}"
 info "${BOLD}Bitwarden email${NO_COLOR}: ${GREEN}${BITWARDEN_EMAIL:-not set}${NO_COLOR}"
 info "${BOLD}Bitwarden password${NO_COLOR}: ${GREEN}$([ -n "${BITWARDEN_PASSWORD:-}" ] && echo '********' || echo 'not set')${NO_COLOR}"
+info "${BOLD}Bitwarden client ID${NO_COLOR}: ${GREEN}${BITWARDEN_CLIENT_ID:-not set}${NO_COLOR}"
+info "${BOLD}Bitwarden client secret${NO_COLOR}: ${GREEN}$([ -n "${BITWARDEN_CLIENT_SECRET:-}" ] && echo '********' || echo 'not set')${NO_COLOR}"
 
 info "${BOLD}Skip install-requirements${NO_COLOR}: ${GREEN}${SKIP_INSTALL_REQUIREMENTS:-not set}${NO_COLOR}"
 info "${BOLD}Skip setup${NO_COLOR}: ${GREEN}${SKIP_SETUP:-not set}${NO_COLOR}"

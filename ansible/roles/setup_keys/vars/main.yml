@@ -1,8 +1,12 @@
 ---
-# Bitwarden credentials
+# Bitwarden credentials (use either email/password OR client_id/client_secret)
 setup_keys_bitwarden_server: ""
 setup_keys_bitwarden_email: ""
 setup_keys_bitwarden_password: ""
+
+# Bitwarden API Key credentials (alternative to email/password)
+setup_keys_bitwarden_client_id: ""
+setup_keys_bitwarden_client_secret: ""
 
 # Bitwarden collection ID for SSH keys
 setup_keys_bitwarden_ssh_keys_collection_id: ""
