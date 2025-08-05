@@ -280,7 +280,7 @@ run_setup_playbook() {
 
 	run_playbook "setup" \
 		--tags "$SETUP_TAGS" \
-		$extra_vars
+		"$extra_vars"
 }
 
 run_cleanup_playbook() {
