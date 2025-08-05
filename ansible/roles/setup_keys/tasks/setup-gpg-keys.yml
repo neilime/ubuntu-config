@@ -1,11 +1,11 @@
 # GPG keys setup
 # This playbook imports GPG keys from Bitwarden and sets them up for use.
-# 
+#
 # Required Bitwarden item structure:
 # - Item name: Email or identifier for the GPG key
 # - Custom fields:
 #   - public_key: ASCII-armored public key (optional if private_key provided)
-#   - private_key: ASCII-armored private key (optional if public_key provided)  
+#   - private_key: ASCII-armored private key (optional if public_key provided)
 #   - sub_private_key: ASCII-armored sub-private keys (optional)
 #   - ownertrust: Trust database export (optional but recommended)
 #
