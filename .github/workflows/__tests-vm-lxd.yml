@@ -12,8 +12,8 @@ jobs:
     permissions:
       contents: read
     env:
-      BITWARDEN_EMAIL: ${{ secrets.BITWARDEN_EMAIL }}
-      BITWARDEN_PASSWORD: ${{ secrets.BITWARDEN_PASSWORD }}
+      BITWARDEN_CLIENT_ID: ${{ secrets.BITWARDEN_CLIENT_ID }}
+      BITWARDEN_CLIENT_SECRET: ${{ secrets.BITWARDEN_CLIENT_SECRET }}
       INSTALL_SCRIPT: >-
         https://raw.githubusercontent.com/neilime/ubuntu-config/
         ${{ github.sha }}/install.sh
