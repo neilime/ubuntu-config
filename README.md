@@ -35,26 +35,27 @@ To export your existing GPG keys in the correct format for this setup:
 
 1. **Export the public key:**
 
-   ```bash
-   gpg --export --armor your@email.com > your_email_public.asc
-   ```
+```bash
+gpg --export --armor your@email.com > your_email_public.asc
+```
 
 2. **Export the private key:**
 
-   ```bash
-   gpg --export-secret-keys --armor your@email.com > your_email_private.asc
-   ```
+```bash
+gpg --export-secret-keys --armor your@email.com > your_email_private.asc
+```
 
 3. **Export the sub-private keys (if your key has subkeys):**
 
-   ```bash
-   gpg --export-secret-subkeys --armor your@email.com > your_email_subkeys.asc
-   ```
+```bash
+gpg --export-secret-subkeys --armor your@email.com > your_email_subkeys.asc
+```
 
 4. **Export the ownertrust (recommended for preserving trust relationships):**
-   ```bash
-   gpg --export-ownertrust > your_email_ownertrust.txt
-   ```
+
+```bash
+gpg --export-ownertrust > your_email_ownertrust.txt
+```
 
 ### Storing GPG Keys in Bitwarden
 
@@ -63,10 +64,11 @@ For each GPG key you want to import, create a new item in your Bitwarden vault w
 1. **Item Name:** Use the email address or identifier associated with the GPG key (e.g., `your@email.com`)
 
 2. **Custom Fields:** Add the following custom fields with the content from the exported files:
-   - `public_key`: Content of the `.asc` file from step 1 (Required if private_key is not provided)
-   - `private_key`: Content of the `.asc` file from step 2 (Required if public_key is not provided)
-   - `sub_private_key`: Content of the `.asc` file from step 3 (Optional - only if your key has subkeys)
-   - `ownertrust`: Content of the `.txt` file from step 4 (Optional but recommended)
+
+- `public_key`: Content of the `.asc` file from step 1 (Required if private_key is not provided)
+- `private_key`: Content of the `.asc` file from step 2 (Required if public_key is not provided)
+- `sub_private_key`: Content of the `.asc` file from step 3 (Optional - only if your key has subkeys)
+- `ownertrust`: Content of the `.txt` file from step 4 (Optional but recommended)
 
 3. **Collection:** Make sure the item is in the collection specified by your `setup_keys_bitwarden_gpg_keys_collection_id` variable.
 
