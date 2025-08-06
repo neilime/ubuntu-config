@@ -1,6 +1,29 @@
 # ubuntu-config
 
-My own Ubuntu setup &amp; config. This project uses Ansible to set up and configure a personal computer running on Ubuntu.
+My own Ubuntu setup and config. This project uses Ansible to set up and configure a personal computer running on Ubuntu.
+
+## Prerequisites
+
+- Ubuntu machine for the setup
+
+## Execute installation
+
+```sh
+wget -qO- "https://raw.githubusercontent.com/neilime/ubuntu-config/main/install.sh" | sh
+```
+
+## Project Structure
+
+The project has the following structure:
+
+```txt
+ubuntu-config
+├── .github
+│   └── workflows: GitHub Actions workflows for CI
+├── docker: Dockerfiles to build dev/ci images
+├── ansible: Ansible roles and playbooks
+└── README.md
+```
 
 ## GPG Key Setup
 
@@ -88,29 +111,6 @@ Example manual test:
 # Test if your exported key is valid
 gpg --import your_email_private.asc
 gpg --list-keys your@email.com
-```
-
-## Prerequisites
-
-- Ubuntu machine for the setup
-
-## Execute installation
-
-```sh
-wget -qO- "https://raw.githubusercontent.com/neilime/ubuntu-config/main/install.sh" | sh
-```
-
-## Project Structure
-
-The project has the following structure:
-
-```txt
-ubuntu-config
-├── .github
-│   └── workflows: GitHub Actions workflows for CI
-├── docker: Dockerfiles to build dev/ci images
-├── ansible: Ansible roles and playbooks
-└── README.md
 ```
 
 ## Development
