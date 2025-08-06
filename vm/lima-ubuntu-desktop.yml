@@ -1,6 +1,7 @@
 # Lima configuration for Ubuntu Desktop VM
 # https://github.com/lima-vm/lima
 
+---
 # VM details
 cpus: 2
 memory: "4GiB"
@@ -8,6 +9,7 @@ disk: "15GiB"
 
 # Ubuntu image
 images:
+  # yamllint disable-line rule:line-length
   - location: "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
     arch: "x86_64"
 

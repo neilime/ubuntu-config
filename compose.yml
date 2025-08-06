@@ -1,3 +1,4 @@
+---
 services:
   ansible:
     build:
@@ -36,3 +37,17 @@ services:
       - ./ansible:/srv/source/ubuntu-config/ansible:ro
     ports:
       - 8088:80
+
+  test:
+    build:
+      context: ./docker/test
+      dockerfile: Dockerfile
+    volumes:
+      - ./tests:/workspace/tests:ro
+      - ./vm:/workspace/vm:ro
+    env_file:
+      - .env
+    stdin_open: true
+    tty: true
+    depends_on:
+      - ubuntu

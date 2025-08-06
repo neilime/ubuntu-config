@@ -1,12 +1,14 @@
+---
 name: Shared - Continuous Integration for common tasks
 
-on:
+"on":
   workflow_call:
 
 permissions: {}
 
 jobs:
   lint:
+    # yamllint disable-line rule:line-length
     uses: hoverkraft-tech/ci-github-common/.github/workflows/linter.yml@6857ef6d10f704e0998aa4955282f27d1b9be778 # 0.23.1
     permissions:
       actions: read
@@ -14,8 +16,33 @@ jobs:
       statuses: write
       security-events: write
 
+  build-test-image:
+    # yamllint disable-line rule:line-length
+    uses: hoverkraft-tech/ci-github-container/.github/workflows/docker-build-images.yml@f9e149b6cdfa8443994994f10085691a57b8cf0e # 0.27.1
+    permissions:
+      contents: read
+      packages: write
+      issues: read
+      pull-requests: read
+      # FIXME: This is a workaround for having workflow actions.
+      # See https://github.com/orgs/community/discussions/38659
+      id-token: write
+    with:
+      oci-registry: ${{ vars.OCI_REGISTRY }}
+      images: |
+        [
+          {
+            "name": "test-ci",
+            "context": "./docker/test",
+            "dockerfile": "Dockerfile",
+            "platforms": ["linux/amd64"]
+          }
+        ]
+    secrets:
+      oci-registry-password: ${{ secrets.GITHUB_TOKEN }}
+
   tests-docker:
-    needs: lint
+    needs: [lint, build-test-image]
     uses: ./.github/workflows/__tests-docker.yml
     permissions:
       id-token: write
@@ -26,8 +53,11 @@ jobs:
     secrets: inherit
 
   tests-vm:
-    needs: lint
+    needs: [lint, build-test-image]
     uses: ./.github/workflows/__tests-vm.yml
+    with:
+      # yamllint disable-line rule:line-length
+      test-image: ${{ fromJSON(needs.build-test-image.outputs.built-images).test-ci.images[0] }}
     permissions:
       contents: read
     secrets: inherit
