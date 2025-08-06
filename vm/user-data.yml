@@ -1,4 +1,5 @@
-#cloud-config
+# cloud-config
+---
 hostname: ubuntu-config-test
 preserve_hostname: false
 
@@ -30,13 +31,17 @@ packages:
 
 runcmd:
   - mkdir -p /home/{{USERNAME}}/.ssh # dynamically injected by GitHub Actions
+  # yamllint disable-line rule:line-length
   - chown -R {{USERNAME}}:{{USERNAME}} /home/{{USERNAME}}/.ssh # dynamically injected by GitHub Actions
   - chmod 700 /home/{{USERNAME}}/.ssh # dynamically injected by GitHub Actions
+  # yamllint disable-line rule:line-length
   - sed -i 's/^#*PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+  # yamllint disable-line rule:line-length
   - sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
   - sed -i 's/^#*PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
   - systemctl enable ssh
   - systemctl start ssh
   - cloud-init status --wait
+  # yamllint disable-line rule:line-length
   - echo "✅ SSH should now be active for user {{USERNAME}}" # dynamically injected by GitHub Actions
   - touch /e2e.ready

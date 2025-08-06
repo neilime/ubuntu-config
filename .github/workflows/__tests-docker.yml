@@ -1,19 +1,22 @@
+---
 name: Shared - Tests - Docker
 
-on:
+"on":
   workflow_call:
 
 permissions: {}
 
 jobs:
   build-images:
+    # yamllint disable-line rule:line-length
     uses: hoverkraft-tech/ci-github-container/.github/workflows/docker-build-images.yml@f9e149b6cdfa8443994994f10085691a57b8cf0e # 0.27.1
     permissions:
       contents: read
       packages: write
       issues: read
       pull-requests: read
-      # FIXME: This is a workaround for having workflow actions. See https://github.com/orgs/community/discussions/38659
+      # FIXME: This is a workaround for having workflow actions.
+      # See https://github.com/orgs/community/discussions/38659
       id-token: write
     with:
       oci-registry: ${{ vars.OCI_REGISTRY }}
@@ -22,6 +25,12 @@ jobs:
           {
             "name": "ubuntu-ci",
             "context": "./docker/ubuntu",
+            "dockerfile": "Dockerfile",
+            "platforms": ["linux/amd64"]
+          },
+          {
+            "name": "test-ci",
+            "context": "./docker/test",
             "dockerfile": "Dockerfile",
             "platforms": ["linux/amd64"]
           }
@@ -41,16 +50,23 @@ jobs:
       BITWARDEN_CLIENT_ID: ${{ secrets.BITWARDEN_CLIENT_ID }}
       BITWARDEN_CLIENT_SECRET: ${{ secrets.BITWARDEN_CLIENT_SECRET }}
       BITWARDEN_PASSWORD: ${{ secrets.BITWARDEN_PASSWORD }}
+      # yamllint disable-line rule:line-length
       INSTALL_SCRIPT: https://raw.githubusercontent.com/neilime/ubuntu-config/${{ github.head_ref || github.ref_name }}/install.sh
       REPOSITORY_URL: ${{ github.event.repository.clone_url }}
       REPOSITORY_BRANCH: ${{ github.head_ref || github.ref_name }}
+      # yamllint disable-line rule:line-length
       UBUNTU_IMAGE: ${{ fromJSON(needs.build-images.outputs.built-images).ubuntu-ci.images[0] }}
+      # yamllint disable-line rule:line-length
+      TEST_IMAGE: ${{ fromJSON(needs.build-images.outputs.built-images).test-ci.images[0] }}
+      # yamllint disable-line rule:line-length
       DOCKER_COMPOSE_EXEC: docker compose -f compose.ci.yml exec --user kasm-user -T ubuntu sh -c
     # jscpd:ignore-end
     steps:
       - name: Checkout code
+        # yamllint disable-line rule:line-length
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
+      # yamllint disable-line rule:line-length
       - uses: hoverkraft-tech/compose-action@40041ff1b97dbf152cd2361138c2b03fa29139df # v2.3.0
         with:
           compose-file: compose.ci.yml
@@ -58,97 +74,11 @@ jobs:
       - name: Run install script
         run: $DOCKER_COMPOSE_EXEC "wget -qO- '""$INSTALL_SCRIPT""' | sh"
 
-      - name: Validate Ansible changes in host - APT packages
+      - name: Run TestInfra tests using test service
         run: |
-          if $DOCKER_COMPOSE_EXEC 'dpkg -l | grep -q "ucaresystem-core"'; then
-            echo 'APT packages installed: pass' && exit 0
-          else
-            echo '::error ::APT packages installed: fail' && exit 1
-          fi
+          docker compose -f compose.ci.yml run --rm test \
+            python3 -m pytest tests/ --verbose
 
-      - name: Validate Ansible changes in host - SSH keys
-        run: |
-          if $DOCKER_COMPOSE_EXEC 'test -f ~/.ssh/id_rsa_escemi'; then
-            echo 'SSH keys installed: pass' && exit 0
-          else
-            echo '::error ::SSH keys installed: fail' && exit 1
-          fi
-
-      - name: Validate Ansible changes in host - GPG keys
-        run: |
-          # Check if GPG keyring exists
-          if ! $DOCKER_COMPOSE_EXEC 'gpg --list-keys | grep -q "/home/ubuntu/.gnupg/pubring.kbx"' ; then
-            echo '::error ::GPG keyring not found' && exit 1
-          fi
-
-          # Check if any GPG keys are actually imported (not just empty keyring)
-          if ! $DOCKER_COMPOSE_EXEC 'gpg --list-keys --with-colons | grep -q "^pub:"' ; then
-            echo '::warning ::No GPG public keys found in keyring'
-          fi
-
-          # Check if any secret keys are imported
-          if ! $DOCKER_COMPOSE_EXEC 'gpg --list-secret-keys --with-colons | grep -q "^sec:"' ; then
-            echo '::warning ::No GPG secret keys found in keyring'
-          fi
-
-          # Final validation - at least keyring exists
-          echo 'GPG keys setup: pass'
-
-      - name: Validate Ansible changes in host - docker
-        run: |
-          if $DOCKER_COMPOSE_EXEC 'docker --version | grep -q "Docker"'; then
-            echo 'Docker installed: pass' && exit 0
-          else
-            echo '::error ::Docker installed: fail' && exit 1
-          fi
-
-          if $DOCKER_COMPOSE_EXEC 'docker-compose --version | grep -q "Docker Compose"'; then
-            echo 'Docker compose installed: pass' && exit 0
-          else
-            echo '::error ::Docker compose installed: fail' && exit 1
-          fi
-
-      - name: Validate Ansible changes in host - zsh
-        run: |
-          if $DOCKER_COMPOSE_EXEC 'zsh --version | grep -q "zsh"'; then
-            echo 'Zsh installed: pass' && exit 0
-          else
-            echo '::error ::Zsh installed: fail' && exit 1
-          fi
-
-      - name: Validate Ansible changes in host - nodejs & nvm & Yarn
-        run: |
-          if $DOCKER_COMPOSE_EXEC 'node --version | grep -Eq "^v[0-9.]+$"'; then
-            echo 'Nodejs installed: pass' && exit 0
-          else
-            echo '::error ::Nodejs installed: fail' && exit 1
-          fi
-
-          if $DOCKER_COMPOSE_EXEC 'nvm --version | grep -Eq "^[0-9.]+$"'; then
-            echo 'Nvm installed: pass' && exit 0
-          else
-            echo '::error ::Nvm installed: fail' && exit 1
-          fi
-
-          if $DOCKER_COMPOSE_EXEC 'yarn --version | grep -Eq "^[0-9.]+$"'; then
-            echo 'Yarn installed: pass' && exit 0
-          else
-            echo '::error ::Yarn installed: fail' && exit 1
-          fi
-
-      - name: Validate Ansible changes in host - PHP & Composer
-        run: |
-          if $DOCKER_COMPOSE_EXEC 'php --version | grep -q "PHP"'; then
-            echo 'PHP installed: pass' && exit 0
-          else
-            echo '::error ::PHP installed: fail' && exit 1
-          fi
-
-          if $DOCKER_COMPOSE_EXEC 'composer --version | grep -q "Composer"'; then
-            echo 'Composer installed: pass' && exit 0
-          else
-            echo '::error ::Composer installed: fail' && exit 1
-          fi
-
-      - name: Test Ansible playbook idempotence issues
+      - name: Test Ansible playbook idempotence
+        # yamllint disable-line rule:line-length
         run: $DOCKER_COMPOSE_EXEC "wget -qO- '""$INSTALL_SCRIPT""' | sh"

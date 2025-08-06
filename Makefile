@@ -37,10 +37,15 @@ setup-ssh-keys: ## Setup ssh keys for VM access
 	./cloud-init/setup-ssh-keys.sh
 
 test-docker: ## Test playbook against test container
+	@echo "Running install script in Docker container..."
 	@docker compose exec \
 		$(filter-out $@,$(MAKECMDGOALS)) \
 		--user kasm-user ubuntu \
 		sh -c 'wget -qO- "http://git/?p=ubuntu-config.git;a=blob_plain;f=install.sh;hb=HEAD" | sh'
+	@echo "Running TestInfra tests against Docker container..."
+	@docker compose exec test \
+		python3 tests/run_tests.py --verbose --host="docker://ubuntu" --user="kasm-user"
+
 
 setup-vm: ## Setup the VM
 	$(MAKE) setup-ssh-keys
@@ -68,12 +73,16 @@ down-vm: ## Stop the VM
 	@multipass list | grep -q ubuntu-config-test && (multipass delete -v -p ubuntu-config-test) || echo "VM is already down"
 
 test-vm: ## Test playbook against VM
+	@echo "Running Ansible playbook on VM..."
 	docker-compose exec ansible sh -c '/root/.local/bin/ansible-playbook setup.yml \
 		--limit ubuntu-config-test \
 		-e ANSIBLE_HOST=$(shell multipass info ubuntu-config-test | grep IPv4 | awk '{print $$2}') \
 		--diff \
 		$(filter-out $@,$(MAKECMDGOALS)) \
 	'
+	@echo "Running TestInfra tests on VM..."
+	@VM_IP=$(shell multipass info ubuntu-config-test | grep IPv4 | awk '{print $$2}'); \
+	docker compose run --rm test python3 tests/run_tests.py --verbose --host="ssh://ubuntu@$$VM_IP" --user="ubuntu"
 
 define run_linter
 	DEFAULT_WORKSPACE="$(CURDIR)"; \
