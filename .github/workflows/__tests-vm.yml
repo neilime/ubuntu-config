@@ -98,12 +98,12 @@ jobs:
             '$REPOSITORY_BRANCH' \
             '$INSTALL_SCRIPT'"
 
+      - name: Validate setup success
+        run: |
+          ssh lima-ubuntu-desktop '[ -f /e2e.success ] && echo "✅ Success" || { echo "❌ Setup failed"; exit 1; }'
+
       - name: Run TestInfra tests on VM using test image
         run: |
           docker run --rm --network host -v "$PWD":/workspace -w /workspace \
             "$TEST_IMAGE" \
             python3 tests/run_tests.py --verbose --host="ssh://ubuntu@127.0.0.1:2222" --user="ubuntu"
-
-      - name: Validate setup success
-        run: |
-          ssh lima-ubuntu-desktop '[ -f /e2e.success ] && echo "✅ Success" || { echo "❌ Setup failed"; exit 1; }'
