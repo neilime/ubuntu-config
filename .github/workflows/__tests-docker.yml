@@ -64,7 +64,7 @@ jobs:
     steps:
       - name: Checkout code
         # yamllint disable-line rule:line-length
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       # yamllint disable-line rule:line-length
       - uses: hoverkraft-tech/compose-action@40041ff1b97dbf152cd2361138c2b03fa29139df # v2.3.0
