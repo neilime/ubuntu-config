@@ -45,7 +45,6 @@ apt_packages:
   # Apps
   - chromium-browser
   - simple-scan
-  - krita
   - deja-dup
   - vlc
 
@@ -58,6 +57,7 @@ snap_packages:
   - multipass
   - remmina
   - helm
+  - pixieditor
 
 zsh:
   plugins:
