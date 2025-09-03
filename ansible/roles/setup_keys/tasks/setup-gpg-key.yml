@@ -4,55 +4,193 @@
     msg: "key_name and at least one key (public_key or private_key) are required"
   when: not key_name or (not public_key and not private_key)
 
-- name: Check if GPG key already exists
-  ansible.builtin.shell: |
-    set -o pipefail
-    gpg --list-keys '{{ key_name }}' >/dev/null 2>&1
-  args:
-    executable: /bin/bash
-  register: gpg_key_exists
-  become: true
-  become_user: "{{ ansible_user }}"
-  failed_when: false
-  changed_when: false
-
 - name: Import GPG key material for '{{ key_name }}'
-  ansible.builtin.shell: |
-    set -o pipefail
-    # Create temporary files for import
-    TEMP_DIR=$(mktemp -d)
+  # Use proper Ansible modules to write key files (preserves multiline content)
+  # and then import them. This avoids shell quoting/escaping issues which
+  # previously produced "no valid OpenPGP data found".
+  block:
+    - name: Create temporary directory for GPG import
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: gpg-import
+      register: gpg_tempdir
+      become: true
+      become_user: "{{ ansible_user }}"
 
-    # Import public key if provided
-    {% if public_key is defined and public_key %}
-    echo '{{ public_key }}' > "$TEMP_DIR/public.asc"
-    gpg --import "$TEMP_DIR/public.asc" 2>&1
-    {% endif %}
+    - name: Write public key file
+      ansible.builtin.copy:
+        content: "{{ public_key }}"
+        dest: "{{ gpg_tempdir.path }}/public.asc"
+        mode: "0600"
+      when: public_key is defined and public_key
+      become: true
+      become_user: "{{ ansible_user }}"
 
-    # Import private key if provided (this usually includes the public key)
-    {% if private_key is defined and private_key %}
-    echo '{{ private_key }}' > "$TEMP_DIR/private.asc"
-    gpg --import "$TEMP_DIR/private.asc" 2>&1
-    {% endif %}
+    - name: Sanitize public.asc into public.sanitized.asc (normalize armor)
+      ansible.builtin.shell: |
+        set -o pipefail
+        infile="{{ gpg_tempdir.path }}/public.asc"
+        outfile="{{ gpg_tempdir.path }}/public.sanitized.asc"
+        perl -0777 -ne '
+          if(/(-----BEGIN PGP (PUBLIC|PRIVATE) KEY BLOCK-----)(.*?)(-----END PGP (PUBLIC|PRIVATE) KEY BLOCK-----)/s){
+            $a=$1; $b=$3; $c=$4;
+            $b=~s/\s+//g;
+            $b=join("\n", ($b =~ /.{1,64}/g));
+            print "$a\n\n$b\n$c\n";
+          } else { print $_ }
+        ' "$infile" > "$outfile" || cp -f "$infile" "$outfile"
+      args:
+        executable: /bin/bash
+      become: true
+      become_user: "{{ ansible_user }}"
+      when: public_key is defined and public_key
 
-    # Import sub-private keys if provided
-    {% if sub_private_key is defined and sub_private_key %}
-    echo '{{ sub_private_key }}' > "$TEMP_DIR/subkeys.asc"
-    gpg --import "$TEMP_DIR/subkeys.asc" 2>&1
-    {% endif %}
+    - name: Write private key file (sensitive)
+      ansible.builtin.copy:
+        content: "{{ private_key }}"
+        dest: "{{ gpg_tempdir.path }}/private.asc"
+        mode: "0600"
+      when: private_key is defined and private_key
+      become: true
+      become_user: "{{ ansible_user }}"
+      no_log: true
 
-    # Clean up temporary files
-    rm -rf "$TEMP_DIR"
+    - name: Sanitize private.asc into private.sanitized.asc (normalize armor)
+      ansible.builtin.shell: |
+        set -o pipefail
+        infile="{{ gpg_tempdir.path }}/private.asc"
+        outfile="{{ gpg_tempdir.path }}/private.sanitized.asc"
+        perl -0777 -ne '
+          if(/(-----BEGIN PGP (PUBLIC|PRIVATE) KEY BLOCK-----)(.*?)(-----END PGP (PUBLIC|PRIVATE) KEY BLOCK-----)/s){
+            $a=$1; $b=$3; $c=$4;
+            $b=~s/\s+//g;
+            $b=join("\n", ($b =~ /.{1,64}/g));
+            print "$a\n\n$b\n$c\n";
+          } else { print $_ }
+        ' "$infile" > "$outfile" || cp -f "$infile" "$outfile"
+      args:
+        executable: /bin/bash
+      become: true
+      become_user: "{{ ansible_user }}"
+      when: private_key is defined and private_key
+      no_log: true
 
-    # Verify the key was imported successfully
-    gpg --list-keys '{{ key_name }}' >/dev/null 2>&1
-  args:
-    executable: /bin/bash
-  register: gpg_import_result
-  become: true
-  become_user: "{{ ansible_user }}"
-  failed_when: gpg_import_result.rc != 0
-  changed_when: gpg_key_exists.rc != 0
-  no_log: true
+    - name: Write sub-private keys file (sensitive)
+      ansible.builtin.copy:
+        content: "{{ sub_private_key }}"
+        dest: "{{ gpg_tempdir.path }}/subkeys.asc"
+        mode: "0600"
+      when: sub_private_key is defined and sub_private_key
+      become: true
+      become_user: "{{ ansible_user }}"
+      no_log: true
+
+    - name: Sanitize and import public GPG key (secure)
+      ansible.builtin.shell: |
+        set -o pipefail
+        DIR="{{ gpg_tempdir.path }}"
+        src="$DIR/public.asc"
+        [ -f "$src" ] || exit 0
+        dst="$DIR/public.sanitized.asc"
+        # normalize armor
+        perl -0777 -ne '
+          if(/(-----BEGIN PGP (PUBLIC|PRIVATE) KEY BLOCK-----)(.*?)(-----END PGP (PUBLIC|PRIVATE) KEY BLOCK-----)/s){
+            $a=$1; $b=$3; $c=$4;
+            $b=~s/\s+//g;
+            $b=join("\n", ($b =~ /.{1,64}/g));
+            print "$a\n\n$b\n$c\n";
+          } else { print $_ }
+        ' "$src" > "$dst" || cp -f "$src" "$dst"
+
+        # try sanitized then original
+        if gpg --import "$dst" >/dev/null 2>/tmp/gpg.err; then rm -f /tmp/gpg.err; exit 0; fi
+        if gpg --import "$src" >/dev/null 2>/tmp/gpg.err; then rm -f /tmp/gpg.err; exit 0; fi
+
+        # try base64-decode then import
+        if base64 --decode "$dst" >/tmp/pub.decoded 2>/dev/null && gpg --import /tmp/pub.decoded >/dev/null 2>/tmp/gpg.err; then rm -f /tmp/pub.decoded /tmp/gpg.err; exit 0; fi
+
+        # final repair: strip stray '=' artifacts then rewrap
+        dst_fixed="$DIR/public.sanitized.fixed.asc"
+        perl -0777 -ne '
+          if(/(-----BEGIN PGP (PUBLIC|PRIVATE) KEY BLOCK-----)(.*?)(-----END PGP (PUBLIC|PRIVATE) KEY BLOCK-----)/s){
+            $a=$1; $b=$3; $c=$4;
+            $b=~s/\s+//g;
+            $b=~s/= (?=[A-Za-z0-9+\/])//g;
+            $b=~s/=(?=[A-Za-z0-9+\/])//g;
+            $b=join("\n", ($b =~ /.{1,64}/g));
+            print "$a\n\n$b\n$c\n";
+          } else { print $_ }
+        ' "$src" > "$dst_fixed" || cp -f "$src" "$dst_fixed"
+
+        if gpg --import "$dst_fixed" >/dev/null 2>/tmp/gpg.err; then rm -f /tmp/gpg.err; exit 0; fi
+
+        # capture minimal error and fail
+        err=$(head -n1 /tmp/gpg.err 2>/dev/null || echo "gpg import failed")
+        rm -f /tmp/gpg.err /tmp/pub.decoded || true
+        echo "$err"
+        exit 2
+      args:
+        executable: /bin/bash
+      become: true
+      become_user: "{{ ansible_user }}"
+    - name: Sanitize and import private/subkeys GPG material (sensitive)
+      ansible.builtin.shell: |
+        set -o pipefail
+        DIR="{{ gpg_tempdir.path }}"
+        rc=0
+        for f in private subkeys; do
+          src="$DIR/$f.asc"
+          if [ -f "$src" ]; then
+            dst="$DIR/$f.sanitized.asc"
+            perl -0777 -ne '
+              if(/(-----BEGIN PGP (PUBLIC|PRIVATE) KEY BLOCK-----)(.*?)(-----END PGP (PUBLIC|PRIVATE) KEY BLOCK-----)/s){
+                $a=$1; $b=$3; $c=$4;
+                $b=~s/\s+//g;
+                $b=join("\n", ($b =~ /.{1,64}/g));
+                print "$a\n\n$b\n$c\n";
+              } else { print $_ }
+            ' "$src" > "$dst" || cp -f "$src" "$dst"
+
+            if gpg --import "$dst" >/dev/null 2>&1; then
+              continue
+            fi
+
+            if gpg --import "$src" >/dev/null 2>&1; then
+              continue
+            fi
+
+            # try base64 decode
+            if base64 --decode "$dst" >/tmp/${f}.decoded 2>/dev/null && gpg --import /tmp/${f}.decoded >/dev/null 2>&1; then
+              continue
+            fi
+
+            rc=2
+          fi
+        done
+        exit $rc
+      args:
+        executable: /bin/bash
+      become: true
+      become_user: "{{ ansible_user }}"
+      no_log: true
+
+    - name: Remove temporary directory used for GPG import
+      ansible.builtin.file:
+        path: "{{ gpg_tempdir.path }}"
+        state: absent
+      become: true
+      become_user: "{{ ansible_user }}"
+  rescue:
+    - name: Clean up temporary directory on failure
+      ansible.builtin.file:
+        path: "{{ gpg_tempdir.path | default('/tmp') }}"
+        state: absent
+      become: true
+      become_user: "{{ ansible_user }}"
+
+    - name: Fail the task due to GPG import error
+      ansible.builtin.fail:
+        msg: "Failed to import GPG key material for '{{ key_name }}'. Please check the provided key data."
 
 - name: Import ownertrust for '{{ key_name }}'
   ansible.builtin.shell: |

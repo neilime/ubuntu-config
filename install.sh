@@ -102,11 +102,11 @@ has() {
 
 check_requirements() {
 	info "Checking requirements..."
-	if [ -n "${ZSH_VERSION+x}" ]; then
+	if env_var_is_not_empty "ZSH_VERSION"; then
 		error "Running installation script with \`zsh\` is known to cause errors."
 		error "Please use \`sh\` instead."
 		exit 1
-	elif [ -n "${BASH_VERSION+x}" ] && [ -z "${POSIXLY_CORRECT+x}" ]; then
+	elif env_var_is_not_empty "BASH_VERSION" && ! env_var_is_not_empty "POSIXLY_CORRECT"; then
 		error "Running installation script with non-POSIX \`bash\` may cause errors."
 		error "Please use \`sh\` instead."
 		exit 1
@@ -133,43 +133,44 @@ ask_for_bitwarden_credentials() {
 	info "Asking for Bitwarden credentials..."
 
 	# Check if API key credentials are provided
-	if [ -n "${BITWARDEN_CLIENT_ID+x}" ] && [ -n "${BITWARDEN_CLIENT_SECRET+x}" ]; then
+	if env_var_is_not_empty "BITWARDEN_CLIENT_ID" && env_var_is_not_empty "BITWARDEN_CLIENT_SECRET"; then
 		completed "Bitwarden API key credentials already set"
+
 		# Even with API key, we still need the master password to unlock the vault
-		if [ -z "${BITWARDEN_PASSWORD+x}" ]; then
+		if ! env_var_is_not_empty "BITWARDEN_PASSWORD"; then
 			prompt_for_env_variable "BITWARDEN_PASSWORD" "Enter your Bitwarden master password (required to unlock vault): " true
 		fi
 		return
 	fi
 
 	# Check if email/password credentials are provided
-	if [ -n "${BITWARDEN_EMAIL+x}" ] && [ -n "${BITWARDEN_PASSWORD+x}" ]; then
+	if env_var_is_not_empty "BITWARDEN_EMAIL" && env_var_is_not_empty "BITWARDEN_PASSWORD"; then
 		completed "Bitwarden email/password credentials already set"
 		return
 	fi
 
 	# If neither set of credentials is complete, prompt for email/password (default)
-	if [ -z "${BITWARDEN_EMAIL+x}" ]; then
+	if ! env_var_is_not_empty "BITWARDEN_EMAIL"; then
 		prompt_for_env_variable "BITWARDEN_EMAIL" "Enter your Bitwarden email (or leave empty to use API key): " false
 	fi
 
 	# If email is provided but password is not, prompt for password
-	if [ -n "${BITWARDEN_EMAIL:-}" ] && [ -z "${BITWARDEN_PASSWORD+x}" ]; then
+	if env_var_is_not_empty "BITWARDEN_EMAIL" && ! env_var_is_not_empty "BITWARDEN_PASSWORD"; then
 		prompt_for_env_variable "BITWARDEN_PASSWORD" "Enter your Bitwarden password: " true
 	fi
 
 	# If email is empty, prompt for API key credentials
-	if [ -z "${BITWARDEN_EMAIL:-}" ]; then
-		if [ -z "${BITWARDEN_CLIENT_ID+x}" ]; then
+	if ! env_var_is_not_empty "BITWARDEN_EMAIL"; then
+		if ! env_var_is_not_empty "BITWARDEN_CLIENT_ID"; then
 			prompt_for_env_variable "BITWARDEN_CLIENT_ID" "Enter your Bitwarden API Client ID: " false
 		fi
 
-		if [ -z "${BITWARDEN_CLIENT_SECRET+x}" ]; then
+		if ! env_var_is_not_empty "BITWARDEN_CLIENT_SECRET"; then
 			prompt_for_env_variable "BITWARDEN_CLIENT_SECRET" "Enter your Bitwarden API Client Secret: " true
 		fi
 
 		# Even with API key, we still need the master password to unlock the vault
-		if [ -z "${BITWARDEN_PASSWORD+x}" ]; then
+		if ! env_var_is_not_empty "BITWARDEN_PASSWORD"; then
 			prompt_for_env_variable "BITWARDEN_PASSWORD" "Enter your Bitwarden master password (required to unlock vault): " true
 		fi
 	fi
@@ -219,6 +220,21 @@ prompt_for_env_variable() {
 	done
 }
 
+env_var_is_not_empty() {
+	if [ -z "$1" ]; then
+		error "No variable name provided to check"
+		return 1
+	fi
+
+	eval var_value="\${$1:-}"
+
+	if [ -n "$var_value" ]; then
+		return 0
+	else
+		return 1
+	fi
+}
+
 install_pipx() {
 	info "Installing pipx..."
 
@@ -226,6 +242,13 @@ install_pipx() {
 	if ! has pipx; then
 		sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
 		sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-venv pipx
+
+		# Ensure pipx binaries are in PATH
+		if ! has pipx; then
+			error "pipx installation failed: pipx command not found after installation"
+			exit 1
+		fi
+
 		completed "pipx installation done"
 	else
 		completed "pipx already installed"
@@ -240,6 +263,12 @@ install_ansible_pull() {
 	if ! has ansible-pull true; then
 		sudo PIPX_BIN_DIR=/usr/local/bin pipx install --force --include-deps ansible
 		sudo PIPX_BIN_DIR=/usr/local/bin pipx inject ansible nbconvert jmespath
+
+		if ! has ansible-pull true; then
+			error "ansible-pull installation failed: ansible-pull command not found after installation"
+			exit 1
+		fi
+
 		completed "ansible-pull installation done"
 	else
 		completed "ansible-pull already installed"
@@ -252,6 +281,12 @@ install_git() {
 	if ! has git; then
 		sudo apt update
 		sudo apt install -y git
+
+		if ! has git; then
+			error "Git installation failed: git command not found after installation"
+			exit 1
+		fi
+
 		completed "git installation done"
 	else
 		completed "Git is already installed"
@@ -259,6 +294,7 @@ install_git() {
 }
 
 run_install_requirements_playbook() {
+
 	if [ -n "${SKIP_INSTALL_REQUIREMENTS+x}" ] && [ "$SKIP_INSTALL_REQUIREMENTS" = "true" ]; then
 		completed "Skipping install-requirements playbook"
 		return
@@ -362,6 +398,10 @@ info "${BOLD}Bitwarden client secret${NO_COLOR}: ${GREEN}$([ -n "${BITWARDEN_CLI
 info "${BOLD}Skip install-requirements${NO_COLOR}: ${GREEN}${SKIP_INSTALL_REQUIREMENTS:-not set}${NO_COLOR}"
 info "${BOLD}Skip setup${NO_COLOR}: ${GREEN}${SKIP_SETUP:-not set}${NO_COLOR}"
 info "${BOLD}Skip cleanup${NO_COLOR}: ${GREEN}${SKIP_CLEANUP:-not set}${NO_COLOR}"
+
+info "${BOLD}Install-requirements tags${NO_COLOR}: ${GREEN}${INSTALL_REQUIREMENTS_TAGS:-all}${NO_COLOR}"
+info "${BOLD}Setup tags${NO_COLOR}: ${GREEN}${SETUP_TAGS:-all}${NO_COLOR}"
+info "${BOLD}Cleanup tags${NO_COLOR}: ${GREEN}${CLEANUP_TAGS:-all}${NO_COLOR}"
 
 printf "\n%s\n\n" "---------------------------------------"
 

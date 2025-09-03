@@ -49,18 +49,28 @@ cd ubuntu-config
 make setup
 ```
 
-1. Test the install script:
+1. Run the install script:
 
 ```bash
 # On docker container
-make test-docker
+make docker-install-script
 
 # Pass env variables to the script
-make test-docker -- \
+make docker-install-script -- \
 "--env SKIP_INSTALL_REQUIREMENTS=true --env SETUP_TAGS=keys --env SKIP_CLEANUP=true"
 
 # On virtual machine
-make test-vm
+make vm-install-script
+```
+
+2. Run the tests:
+
+```bash
+# On docker container
+make docker-tests
+
+# On virtual machine
+make vm-tests
 ```
 
 ## Continuous Integration
