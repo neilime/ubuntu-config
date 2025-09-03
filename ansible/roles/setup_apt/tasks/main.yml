@@ -9,6 +9,8 @@
     repo: "{{ item }}"
     state: present
   loop: "{{ setup_apt_repositories }}"
+  retries: 3
+  delay: 10
 
 - name: Install apt packages
   ansible.builtin.apt:
