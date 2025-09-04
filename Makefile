@@ -38,17 +38,16 @@ ansible-galaxy: ## Run ansible-galaxy
 setup-ssh-keys: ## Setup ssh keys for VM access
 	./vm/setup-ssh-keys.sh
 
-check-lima: ## Check if Lima is installed
+define check_lima
 	@command -v limactl >/dev/null 2>&1 || { \
 		echo "❌ Lima is not installed. Please install Lima to use VM commands."; \
 		echo ""; \
-		echo "📖 Installation instructions:"; \
-		echo "  macOS: brew install lima"; \
-		echo "  Linux: https://github.com/lima-vm/lima#getting-started"; \
+		echo "📖 Installation instructions: https://lima-vm.io/docs/installation/"; \
 		echo ""; \
 		exit 1; \
 	}
 	@echo "✅ Lima is installed"
+endef
 
 docker-install-script: ## Run install script in Docker container
 	@echo "Running install script in Docker container..."
@@ -63,7 +62,7 @@ docker-test: ## Test install script result in Docker container
 		python3 tests/run_tests.py --verbose --host="docker://ubuntu" --user="kasm-user"
 
 vm-setup: ## Setup the VM
-	$(MAKE) check-lima
+	$(call check_lima)
 	$(MAKE) setup-ssh-keys
 	@limactl list ubuntu-config-test 2>/dev/null | grep -q "Running" && \
 	echo "VM is already up" || ( \
