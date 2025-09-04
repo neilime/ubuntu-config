@@ -8,7 +8,7 @@
   ansible.builtin.apt_repository:
     repo: "{{ item }}"
     state: present
-  loop: "{{ setup_apt_repositories }}"
+  loop: "{{ setup_apt_repositories | default([]) }}"
 
 - name: Install apt packages
   ansible.builtin.apt:

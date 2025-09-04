@@ -119,10 +119,15 @@
     # Development tools
     gh
     just
+    gnumake
+    
+    # Password management
+    bitwarden-cli
     
     # Python development
     python3
     python3Packages.pip
+    python3Packages.setuptools
     
     # Node.js development
     nodejs

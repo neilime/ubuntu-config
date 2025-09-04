@@ -1,13 +1,12 @@
 ---
 # Desktop environment specific packages and configuration
+- name: Add ucaresystem-core repository
+  ansible.builtin.apt_repository:
+    repo: "ppa:utappia/stable"
+    state: present
+
 - name: Install desktop applications via APT
   ansible.builtin.apt:
     name: "{{ item }}"
     state: latest # noqa package-latest
   loop: "{{ setup_desktop_packages }}"
-
-- name: Install desktop-specific repositories
-  ansible.builtin.apt_repository:
-    repo: "{{ item }}"
-    state: present
-  loop: "{{ setup_desktop_repositories | default([]) }}"

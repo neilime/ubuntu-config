@@ -1,9 +1,10 @@
+---
 locale: en_US.UTF-8
 timezone: Europe/Paris
 web_browser: org.chromium.Chromium.desktop
 
-# Flatpak-based favorites (new architecture)
-favorites_flatpak:
+# Desktop favorites
+favorites:
   - gnome-control-center.desktop
   - snap-store_ubuntu-software.desktop
   - org.gnome.Nautilus.desktop
@@ -13,24 +14,9 @@ favorites_flatpak:
   - com.slack.Slack.desktop
   - com.spotify.Client.desktop
 
-# Legacy favorites (backward compatibility)
-favorites:
-  - gnome-control-center.desktop
-  - snap-store_ubuntu-software.desktop
-  - org.gnome.Nautilus.desktop
-  - org.gnome.Terminal.desktop
-  - chromium_chromium.desktop
-  - code_code.desktop
-  - slack_slack.desktop
-  - spotify_spotify.desktop
-
-# HOST LAYER - Essential system repositories and packages
-apt_repositories:
-  - ppa:utappia/stable # ucaresystem-core
-
 # HOST LAYER - Core system packages only
 apt_packages:
-  # Core system essentials (moved from base role)
+  # Core system essentials
   - apt-transport-https
   - ca-certificates
   - gnupg-agent
@@ -45,17 +31,8 @@ apt_packages:
   - curl
   - wget
   - unzip
-  # Development basics (should eventually move to user layer)
-  - python3-dev
-  - python3-pip
-  - python3-setuptools
-  - make
-  - gh
 
-# DESKTOP LAYER - Desktop applications via APT (will be migrated to Flatpak)
-desktop_repositories:
-  - ppa:utappia/stable # ucaresystem-core
-
+# DESKTOP LAYER - Desktop applications via APT (migrating to Flatpak)
 desktop_packages:
   # Shell tools (moving to user layer)
   - bat
@@ -71,7 +48,7 @@ desktop_packages:
   # System maintenance
   - ucaresystem-core
 
-# DESKTOP LAYER - Applications via Flatpak (new approach)
+# DESKTOP LAYER - Applications via Flatpak
 flatpak_packages:
   # Development
   - com.visualstudio.code
@@ -83,16 +60,12 @@ flatpak_packages:
   - org.chromium.Chromium
   # Utilities
   - org.jdownloader.JDownloader
+  # Password Management
+  - com.bitwarden.desktop
 
-# LEGACY - Snap packages (for backward compatibility, will be phased out)
+# LEGACY - Snap packages (being phased out completely)
 snap_packages:
-  - bw
   - helm
-  # These are being migrated to Flatpak:
-  # - code -> com.visualstudio.code
-  # - spotify -> com.spotify.Client
-  # - slack -> com.slack.Slack
-  # - jdownloader2 -> org.jdownloader.JDownloader
 
 # USER LAYER - Shell configuration (will move to Home Manager)
 zsh:
@@ -145,5 +118,7 @@ bitwarden:
   password: "{{ BITWARDEN_PASSWORD | default('') }}"
   client_id: "{{ BITWARDEN_CLIENT_ID | default('') }}"
   client_secret: "{{ BITWARDEN_CLIENT_SECRET | default('') }}"
-  sshKeysCollectionId: "7ac0c067-9d61-49c0-b01e-b10d0135372a" # gitleaks:allow - it is an ID
-  gpgKeysCollectionId: "9ff2a152-3c88-44cd-a04b-b11d00c8b267" # gitleaks:allow - it is an ID
+  # gitleaks:allow - it is an ID
+  sshKeysCollectionId: "7ac0c067-9d61-49c0-b01e-b10d0135372a"
+  # gitleaks:allow - it is an ID
+  gpgKeysCollectionId: "9ff2a152-3c88-44cd-a04b-b11d00c8b267"

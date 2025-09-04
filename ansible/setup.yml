@@ -15,12 +15,11 @@
         name: setup_base
       tags: [base, host]
 
-    - name: Setup APT (legacy compatibility)
+    - name: Setup APT packages
       ansible.builtin.import_role:
         name: setup_apt
-      tags: [apt, legacy]
+      tags: [apt, host]
       vars:
-        setup_apt_repositories: "{{ apt_repositories }}"
         setup_apt_packages: "{{ apt_packages }}"
 
     # DESKTOP LAYER - GUI applications and desktop environment
@@ -37,14 +36,14 @@
       tags: [desktop, gnome]
       vars:
         setup_desktop_packages: "{{ desktop_packages | default([]) }}"
-        setup_desktop_repositories: "{{ desktop_repositories | default([]) }}"
 
-    - name: Setup Snap (legacy compatibility)
+    - name: Setup Snap packages
       ansible.builtin.import_role:
         name: setup_snap
       tags: [snap, legacy]
       vars:
         setup_snap_packages: "{{ snap_packages }}"
+      when: snap_packages | length > 0
 
     # PROJECT LAYER BOOTSTRAP - Nix for project environments
     - name: Setup Nix package manager
@@ -88,7 +87,7 @@
         setup_configuration_locale: "{{ locale }}"
         setup_configuration_timezone: "{{ timezone }}"
         setup_configuration_web_browser: "{{ web_browser }}"
-        setup_configuration_favorites: "{{ favorites_flatpak | default(favorites) }}"
+        setup_configuration_favorites: "{{ favorites }}"
       tags: [configuration, user]
 
     - name: Setup dev basics
