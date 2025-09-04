@@ -1,7 +1,22 @@
 ---
+- name: Check whether zsh is available
+  ansible.builtin.shell: |
+    command -v zsh >/dev/null 2>&1 && echo ok || echo missing
+  register: zsh_check
+  ignore_errors: true
+  changed_when: false
+
+- name: Stat user's .zshrc
+  ansible.builtin.stat:
+    path: "/home/{{ ansible_user }}/.zshrc"
+  register: zshrc_stat
+  become: false
+
 - name: Install oh-my-zsh
   ansible.builtin.shell: |
     set -o pipefail
+    export RUNZSH=no
+    export CHSH=no
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
   args:
     creates: "/home/{{ ansible_user }}/.zshrc"
@@ -9,13 +24,23 @@
   register: oh_my_zsh_install
   become: true
   become_user: "{{ ansible_user }}"
+  when: zsh_check.rc == 0
+
+- name: Ensure .zshrc ownership
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/.zshrc"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+  when: zshrc_stat.stat.exists
+  become: true
 
 - name: Install zsh plugins
   ansible.builtin.lineinfile:
     path: "/home/{{ ansible_user }}/.zshrc"
     regexp: "^plugins="
     line: "plugins=({{ setup_shell_zsh_plugins | join(' ') }})"
-  when: setup_shell_zsh_plugins | length > 0
+  when: setup_shell_zsh_plugins | length > 0 and zshrc_stat.stat.exists
 
 - name: Setup zsh aliases
   ansible.builtin.lineinfile:
@@ -46,6 +71,7 @@
     insertafter: EOF
     block: |
       eval "$(starship init zsh)"
+  when: zshrc_stat.stat.exists
 
 - name: Configure zsh NVM plugin
   ansible.builtin.lineinfile:
@@ -53,3 +79,4 @@
     search_string: "zstyle ':omz:plugins:nvm'"
     insertafter: "zstyle '"
     line: "zstyle ':omz:plugins:nvm' autoload yes"
+  when: zshrc_stat.stat.exists
