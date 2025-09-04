@@ -63,15 +63,6 @@
         setup_keys_bitwarden_ssh_keys_collection_id: "{{ bitwarden.sshKeysCollectionId }}"
         setup_keys_bitwarden_gpg_keys_collection_id: "{{ bitwarden.gpgKeysCollectionId }}"
 
-    - name: Setup shell
-      ansible.builtin.import_role:
-        name: setup_shell
-      tags: [shell, user]
-      become: true
-      vars:
-        setup_shell_zsh_plugins: "{{ zsh.plugins }}"
-        setup_shell_zsh_aliases: "{{ zsh.aliases }}"
-
     - name: Setup configuration
       ansible.builtin.import_role:
         name: setup_configuration
@@ -86,10 +77,6 @@
       ansible.builtin.import_role:
         name: setup_dev
       vars:
-        setup_dev_git_name: "{{ git.name }}"
-        setup_dev_git_email: "{{ git.email }}"
-        setup_dev_git_signing_key: "{{ git.signingKey }}"
-        setup_dev_git_includes: "{{ git.includes }}"
         setup_dev_yarn_packages: "{{ yarn.packages }}"
         setup_dev_composer_packages: "{{ composer.packages }}"
       tags: [dev-basics, user]

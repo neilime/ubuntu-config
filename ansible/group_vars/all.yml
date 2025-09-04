@@ -31,19 +31,8 @@ apt_packages:
   - wget
   - unzip
 
-# DESKTOP LAYER - Desktop applications via APT (migrating to Flatpak)
+# DESKTOP LAYER - Desktop applications via APT (minimal)
 desktop_packages:
-  # Shell tools (moving to user layer)
-  - bat
-  - zsh
-  - thefuck
-  - fonts-firacode
-  # Desktop applications (migrating to Flatpak)
-  - copyq
-  - chromium-browser
-  - simple-scan
-  - deja-dup
-  - vlc
   # System maintenance
   - ucaresystem-core
   # Development tools (moved from snap)
@@ -57,58 +46,25 @@ flatpak_packages:
   - com.slack.Slack
   # Media
   - com.spotify.Client
+  - org.videolan.VLC
   # Browsers
   - org.chromium.Chromium
   # Utilities
   - org.jdownloader.JDownloader
+  - com.github.hluk.copyq
+  - org.gnome.SimpleScan
+  - org.gnome.DejaDup
   # Password Management
   - com.bitwarden.desktop
 
-# USER LAYER - Shell configuration (will move to Home Manager)
-zsh:
-  plugins:
-    - thefuck
-    - git
-    - yarn
-    - nvm
-    - command-not-found
-    - docker
-    - docker-compose
-    - composer
-    - aws
-    - pre-commit
-  aliases:
-    - {alias: "cat", command: "batcat -pp"}
-    # Enforce security for git aliases
-    - {
-      alias: "ggl",
-      command: 'echo \"\e[31mUse \e[1;31mggfl\e[0m!\" && return 1',
-    }
-    - {
-      alias: "gcam",
-      command: 'echo \"\e[31mUse \e[1;31mgcasm\e[0m!\" && return 1',
-    }
-    - {
-      alias: "gcan!",
-      command: 'echo \"\e[31mUse \e[1;31mgcans!\e[0m!\" && return 1',
-    }
-
-# USER LAYER - Git configuration (will move to Home Manager)
-git:
-  name: "Emilien Escalle"
-  email: "emilien.escalle@escemi.com"
-  signingKey: ""
-  includes:
-    - clients/allopneus
-
-# PROJECT LAYER - Development dependencies (will use Nix flakes)
+# PROJECT LAYER - Development dependencies (managed via Nix flakes)
 yarn:
   packages: []
 
 composer:
   packages: []
 
-# USER LAYER - Secrets management
+# USER LAYER - Secrets management (Bitwarden CLI via Home Manager)
 bitwarden:
   server: "https://vault.bitwarden.eu"
   email: "{{ BITWARDEN_EMAIL | default('') }}"
