@@ -1,7 +1,19 @@
 locale: en_US.UTF-8
 timezone: Europe/Paris
-web_browser: chromium-browser.desktop
+web_browser: org.chromium.Chromium.desktop
 
+# Flatpak-based favorites (new architecture)
+favorites_flatpak:
+  - gnome-control-center.desktop
+  - snap-store_ubuntu-software.desktop
+  - org.gnome.Nautilus.desktop
+  - org.gnome.Terminal.desktop
+  - org.chromium.Chromium.desktop
+  - com.visualstudio.code.desktop
+  - com.slack.Slack.desktop
+  - com.spotify.Client.desktop
+
+# Legacy favorites (backward compatibility)
 favorites:
   - gnome-control-center.desktop
   - snap-store_ubuntu-software.desktop
@@ -12,11 +24,13 @@ favorites:
   - slack_slack.desktop
   - spotify_spotify.desktop
 
+# HOST LAYER - Essential system repositories and packages
 apt_repositories:
   - ppa:utappia/stable # ucaresystem-core
 
+# HOST LAYER - Core system packages only
 apt_packages:
-  # System
+  # Core system essentials (moved from base role)
   - apt-transport-https
   - ca-certificates
   - gnupg-agent
@@ -26,39 +40,61 @@ apt_packages:
   - systemd
   - hwclock
   - htop
-  # Tools
+  # Essential tools
   - cron
   - curl
   - wget
   - unzip
-  # Shell
-  - bat
-  - zsh
-  - thefuck
-  - fonts-firacode
-  # Development
+  # Development basics (should eventually move to user layer)
   - python3-dev
   - python3-pip
   - python3-setuptools
   - make
   - gh
-  # Cleaning
-  - ucaresystem-core
-  # Apps
+
+# DESKTOP LAYER - Desktop applications via APT (will be migrated to Flatpak)
+desktop_repositories:
+  - ppa:utappia/stable # ucaresystem-core
+
+desktop_packages:
+  # Shell tools (moving to user layer)
+  - bat
+  - zsh
+  - thefuck
+  - fonts-firacode
+  # Desktop applications (migrating to Flatpak)
   - copyq
   - chromium-browser
   - simple-scan
   - deja-dup
   - vlc
+  # System maintenance
+  - ucaresystem-core
 
+# DESKTOP LAYER - Applications via Flatpak (new approach)
+flatpak_packages:
+  # Development
+  - com.visualstudio.code
+  # Communication
+  - com.slack.Slack
+  # Media
+  - com.spotify.Client
+  # Browsers
+  - org.chromium.Chromium
+  # Utilities
+  - org.jdownloader.JDownloader
+
+# LEGACY - Snap packages (for backward compatibility, will be phased out)
 snap_packages:
-  - code
-  - spotify
-  - slack
-  - jdownloader2
   - bw
   - helm
+  # These are being migrated to Flatpak:
+  # - code -> com.visualstudio.code
+  # - spotify -> com.spotify.Client
+  # - slack -> com.slack.Slack
+  # - jdownloader2 -> org.jdownloader.JDownloader
 
+# USER LAYER - Shell configuration (will move to Home Manager)
 zsh:
   plugins:
     - thefuck
@@ -87,6 +123,7 @@ zsh:
         command: 'echo \"\e[31mUse \e[1;31mgcans!\e[0m!\" && return 1',
       }
 
+# USER LAYER - Git configuration (will move to Home Manager)
 git:
   name: "Emilien Escalle"
   email: "emilien.escalle@escemi.com"
@@ -94,12 +131,14 @@ git:
   includes:
     - clients/allopneus
 
+# PROJECT LAYER - Development dependencies (will use Nix flakes)
 yarn:
   packages: []
 
 composer:
   packages: []
 
+# USER LAYER - Secrets management
 bitwarden:
   server: "https://vault.bitwarden.eu"
   email: "{{ BITWARDEN_EMAIL | default('') }}"

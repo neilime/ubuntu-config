@@ -1,0 +1,23 @@
+---
+# Base system packages and essentials for host layer
+- name: Upgrade apt packages
+  ansible.builtin.apt:
+    update_cache: true
+    upgrade: full
+
+- name: Install base system repositories
+  ansible.builtin.apt_repository:
+    repo: "{{ item }}"
+    state: present
+  loop: "{{ setup_base_repositories | default([]) }}"
+
+- name: Install base system packages
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: latest # noqa package-latest
+  loop: "{{ setup_base_packages }}"
+
+- name: Remove dependencies that are no longer required and purge their configuration files
+  ansible.builtin.apt:
+    autoremove: yes
+    purge: true

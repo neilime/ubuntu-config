@@ -1,0 +1,75 @@
+---
+# Setup Home Manager for user-layer configuration management
+- name: Get current user
+  ansible.builtin.command: whoami
+  register: current_user
+  become: false
+  changed_when: false
+
+- name: Set user home directory
+  ansible.builtin.set_fact:
+    user_home: "/home/{{ current_user.stdout }}"
+
+- name: Ensure home configuration directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.config/home-manager"
+    state: directory
+    owner: "{{ current_user.stdout }}"
+    group: "{{ current_user.stdout }}"
+    mode: '0755'
+  become: false
+
+- name: Copy Home Manager flake configuration
+  ansible.builtin.copy:
+    src: "{{ ansible_config_dir | default('/home/ansible/config') }}/../home/"
+    dest: "{{ user_home }}/.config/home-manager/"
+    owner: "{{ current_user.stdout }}"
+    group: "{{ current_user.stdout }}"
+    mode: '0644'
+  become: false
+
+- name: Check if Home Manager is installed
+  ansible.builtin.command: which home-manager
+  register: home_manager_check
+  failed_when: false
+  changed_when: false
+  become: false
+
+- name: Install Home Manager via Nix
+  ansible.builtin.shell: |
+    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+    nix profile install nixpkgs#home-manager
+  when: home_manager_check.rc != 0
+  become: false
+  environment:
+    USER: "{{ current_user.stdout }}"
+
+- name: Initialize Home Manager configuration
+  ansible.builtin.shell: |
+    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+    cd {{ user_home }}/.config/home-manager
+    home-manager switch --flake .#{{ current_user.stdout }}
+  become: false
+  environment:
+    USER: "{{ current_user.stdout }}"
+    HOME: "{{ user_home }}"
+  register: home_manager_init
+  changed_when: "'No change' not in home_manager_init.stdout"
+
+- name: Add Nix profile to shell profile
+  ansible.builtin.lineinfile:
+    path: "{{ user_home }}/.profile"
+    line: '. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
+    create: true
+    owner: "{{ current_user.stdout }}"
+    group: "{{ current_user.stdout }}"
+  become: false
+
+- name: Ensure user can access nix commands
+  ansible.builtin.lineinfile:
+    path: "{{ user_home }}/.bashrc"
+    line: '. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
+    create: true
+    owner: "{{ current_user.stdout }}"
+    group: "{{ current_user.stdout }}"
+  become: false
