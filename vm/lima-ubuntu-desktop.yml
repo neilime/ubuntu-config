@@ -18,11 +18,6 @@ ssh:
   loadDotSSHPubKeys: true
   localPort: 60022
 
-# Port forwarding for easier access
-portForwards:
-  - guestPort: 22
-    hostPort: 60022
-
 # Mount current project directory for easier development
 mounts:
   - location: "."
@@ -54,8 +49,10 @@ provision:
       systemctl start ssh
 
       # Allow SSH with password (for testing)
-      sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
-      sed -i 's/^#*PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+      sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication yes/' \
+        /etc/ssh/sshd_config
+      sed -i 's/^#*PubkeyAuthentication.*/PubkeyAuthentication yes/' \
+        /etc/ssh/sshd_config
       systemctl reload ssh
 
       echo "✅ Enhanced Ubuntu VM setup complete for local development"
@@ -71,9 +68,4 @@ provision:
 
       echo "✅ User environment setup complete"
 
-# Enable systemd
-systemd: true
-
-# Network configuration
-networks:
-  - lima: shared
+# Network configuration (using Lima defaults for Linux hosts)

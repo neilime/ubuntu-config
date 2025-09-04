@@ -1,6 +1,0 @@
----
-# APT Repositories to be added
-setup_apt_repositories: []
-
-# APT Packages to be installed
-setup_apt_packages: []

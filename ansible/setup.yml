@@ -6,64 +6,86 @@
     ansible_config_dir: "/home/ansible/config"
 
   tasks:
-    - name: Get facts on current container
-      community.docker.current_container_facts:
-
-    - name: Setup APT
+    - name: Setup system
       ansible.builtin.import_role:
-        name: setup_apt
-      tags: apt
+        name: setup_system
       vars:
-        setup_apt_repositories: "{{ apt_repositories }}"
-        setup_apt_packages: "{{ apt_packages }}"
+        setup_system_apt: "{{ system.apt }}"
+        setup_system_locale: "{{ system.locale }}"
+        setup_system_timezone: "{{ system.timezone }}"
+        setup_system_favorites: "{{ system.favorites }}"
+      tags: [system]
 
-    - name: Setup Snap
+    # DESKTOP LAYER - Domain-based GUI applications and desktop environment
+    - name: Setup browser
       ansible.builtin.import_role:
-        name: setup_snap
-      tags: snap
+        name: setup_browser
       vars:
-        setup_snap_packages: "{{ snap_packages }}"
+        setup_browser_flatpak: "{{ browser.flatpak }}"
+        setup_browser_favorites: "{{ browser.favorites }}"
+      tags: [browser, desktop]
 
+    - name: Setup communication
+      ansible.builtin.import_role:
+        name: setup_communication
+      vars:
+        setup_communication_flatpak: "{{ communication.flatpak }}"
+        setup_communication_favorites: "{{ communication.favorites }}"
+      tags: [communication, desktop]
+
+    - name: Setup development
+      ansible.builtin.import_role:
+        name: setup_development
+      vars:
+        setup_development_repositories: "{{ development.repositories }}"
+        setup_development_apt: "{{ development.apt }}"
+        setup_development_flatpak: "{{ development.flatpak }}"
+        setup_development_projects_directory: >-
+          {{ development.projects_directory }}
+        setup_development_favorites: "{{ development.favorites }}"
+      tags: [development, desktop]
+
+    - name: Setup media
+      ansible.builtin.import_role:
+        name: setup_media
+      vars:
+        setup_media_flatpak: "{{ media.flatpak }}"
+        setup_media_favorites: "{{ media.favorites }}"
+      tags: [media, desktop]
+
+    - name: Setup utility
+      ansible.builtin.import_role:
+        name: setup_utility
+      vars:
+        setup_utility_repositories: "{{ utility.repositories }}"
+        setup_utility_apt: "{{ utility.apt }}"
+        setup_utility_flatpak: "{{ utility.flatpak }}"
+        setup_utility_favorites: "{{ utility.favorites }}"
+      tags: [utility, desktop]
+
+    - name: Setup Home Manager for user configurations
+      ansible.builtin.import_role:
+        name: setup_home_manager
+      vars:
+        setup_home_manager_git: "{{ development.git }}"
+        setup_home_manager_shell: "{{ development.shell }}"
+        setup_home_manager_nix_packages: "{{ development.nix_packages }}"
+        setup_home_manager_environment: "{{ development.environment }}"
+      tags: [home-manager, user]
+      become: false
+
+    # USER LAYER - User-specific configurations
     - name: Setup keys
       ansible.builtin.import_role:
         name: setup_keys
-      tags: keys
+      tags: [keys, user]
       vars:
         setup_keys_bitwarden_server: "{{ bitwarden.server }}"
         setup_keys_bitwarden_email: "{{ bitwarden.email }}"
         setup_keys_bitwarden_password: "{{ bitwarden.password }}"
         setup_keys_bitwarden_client_id: "{{ bitwarden.client_id }}"
         setup_keys_bitwarden_client_secret: "{{ bitwarden.client_secret }}"
-        setup_keys_bitwarden_ssh_keys_collection_id: "{{ bitwarden.sshKeysCollectionId }}"
-        setup_keys_bitwarden_gpg_keys_collection_id: "{{ bitwarden.gpgKeysCollectionId }}"
-
-    - name: Setup shell
-      ansible.builtin.import_role:
-        name: setup_shell
-      tags: shell
-      become: true
-      vars:
-        setup_shell_zsh_plugins: "{{ zsh.plugins }}"
-        setup_shell_zsh_aliases: "{{ zsh.aliases }}"
-
-    - name: Setup configuration
-      ansible.builtin.import_role:
-        name: setup_configuration
-      vars:
-        setup_configuration_locale: "{{ locale }}"
-        setup_configuration_timezone: "{{ timezone }}"
-        setup_configuration_web_browser: "{{ web_browser }}"
-        setup_configuration_favorites: "{{ favorites }}"
-      tags: configuration
-
-    - name: Setup dev
-      ansible.builtin.import_role:
-        name: setup_dev
-      vars:
-        setup_dev_git_name: "{{ git.name }}"
-        setup_dev_git_email: "{{ git.email }}"
-        setup_dev_git_signing_key: "{{ git.signingKey }}"
-        setup_dev_git_includes: "{{ git.includes }}"
-        setup_dev_yarn_packages: "{{ yarn.packages }}"
-        setup_dev_composer_packages: "{{ composer.packages }}"
-      tags: dev
+        setup_keys_bitwarden_ssh_keys_collection_id: >-
+          {{ bitwarden.sshKeysCollectionId }}
+        setup_keys_bitwarden_gpg_keys_collection_id: >-
+          {{ bitwarden.gpgKeysCollectionId }}

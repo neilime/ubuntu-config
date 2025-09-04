@@ -1,101 +1,133 @@
-locale: en_US.UTF-8
-timezone: Europe/Paris
-web_browser: chromium-browser.desktop
+---
+# System configuration and packages - Essential host layer components
+system:
+  locale: en_US.UTF-8
+  timezone: Europe/Paris
+  apt:
+    - apt-transport-https
+    - ca-certificates
+    - gnupg-agent
+    - software-properties-common
+    - util-linux-extra
+    - systemd
+    - dconf-cli
+    - python3-psutil
+    - curl
+    - wget
+    - unzip
+    - cron
+    - htop
+    - flatpak
+  favorites:
+    - gnome-control-center.desktop
+    - org.gnome.Nautilus.desktop
 
-favorites:
-  - gnome-control-center.desktop
-  - snap-store_ubuntu-software.desktop
-  - org.gnome.Nautilus.desktop
-  - org.gnome.Terminal.desktop
-  - chromium_chromium.desktop
-  - code_code.desktop
-  - slack_slack.desktop
-  - spotify_spotify.desktop
+# Browser domain
+browser:
+  flatpak:
+    - org.chromium.Chromium
+  favorites:
+    - org.chromium.Chromium.desktop
 
-apt_repositories: []
+# Communication domain
+communication:
+  flatpak:
+    - com.slack.Slack
+  favorites:
+    - com.slack.Slack.desktop
 
-apt_packages:
-  # System
-  - apt-transport-https
-  - ca-certificates
-  - gnupg-agent
-  - software-properties-common
-  - dconf-cli
-  - util-linux-extra
-  - systemd
-  - htop
-  # Tools
-  - cron
-  - curl
-  - wget
-  - unzip
-  # Shell
-  - bat
-  - zsh
-  - thefuck
-  - fonts-firacode
-  # Development
-  - python3-dev
-  - python3-pip
-  - python3-setuptools
-  - make
-  - gh
-  # Apps
-  - copyq
-  - chromium-browser
-  - simple-scan
-  - deja-dup
-  - vlc
-
-snap_packages:
-  - code
-  - spotify
-  - slack
-  - jdownloader2
-  - bw
-  - helm
-
-zsh:
-  plugins:
-    - thefuck
-    - git
+# Development domain
+development:
+  projects_directory: "/home/{{ ansible_user }}/Documents/dev-projects"
+  flatpak:
+    - com.visualstudio.code
+  favorites:
+    - com.visualstudio.code.desktop
+    - org.gnome.Terminal.desktop
+  # Git configuration
+  git:
+    user_name: "Emilien Escalle"
+    user_email: "emilien.escalle@escemi.com"
+    default_branch: "main"
+    push_default: "simple"
+    pull_rebase: false
+    editor: "nvim"
+    gpg_sign: true
+  # Shell configuration
+  shell:
+    aliases:
+      cat: "bat --style=plain"
+      ll: "ls -alF"
+      la: "ls -A"
+      l: "ls -CF"
+      # Security aliases to prevent dangerous git operations
+      ggl: "echo '\\e[31mUse \\e[1;31mggfl\\e[0m!' && return 1"
+      gcam: "echo '\\e[31mUse \\e[1;31mgcasm\\e[0m!' && return 1"
+      "gcan!": "echo '\\e[31mUse \\e[1;31mgcans!\\e[0m!' && return 1"
+    oh_my_zsh:
+      plugins:
+        - git
+        - docker
+        - docker-compose
+        - yarn
+        - npm
+        - aws
+        - command-not-found
+        - pre-commit
+      theme: "robbyrussell"
+  # Nix packages for development
+  nix_packages:
+    - tree
+    - jq
+    - gh
+    - just
+    - gnumake
+    - bitwarden-cli
+    - python3
+    - python3Packages.pip
+    - python3Packages.setuptools
+    - nodejs
     - yarn
-    - nvm
-    - command-not-found
+    - fira-code
+    - fira-code-symbols
     - docker
     - docker-compose
-    - composer
-    - aws
-    - pre-commit
-  aliases:
-    - { alias: "cat", command: "batcat -pp" }
-    # Enforce security for git aliases
-    - {
-        alias: "ggl",
-        command: 'echo \"\e[31mUse \e[1;31mggfl\e[0m!\" && return 1',
-      }
-    - {
-        alias: "gcam",
-        command: 'echo \"\e[31mUse \e[1;31mgcasm\e[0m!\" && return 1',
-      }
-    - {
-        alias: "gcan!",
-        command: 'echo \"\e[31mUse \e[1;31mgcans!\e[0m!\" && return 1',
-      }
+    - dive
+    - helm
+    - php
+    - php83Packages.composer
+  # Environment variables
+  environment:
+    EDITOR: "nvim"
+    BROWSER: "chromium"
+    TERMINAL: "gnome-terminal"
 
-git:
-  name: "Emilien Escalle"
-  email: "emilien.escalle@escemi.com"
-  signingKey: ""
-  includes:
-    - clients/allopneus
+# Media domain
+media:
+  flatpak:
+    - com.spotify.Client
+    - org.videolan.VLC
+  favorites:
+    - com.spotify.Client.desktop
 
-yarn:
-  packages: []
+# Utility domain
+utility:
+  apt:
+    - ucaresystem-core
+  flatpak:
+    - org.jdownloader.JDownloader
+    - com.github.hluk.copyq
+    - org.gnome.SimpleScan
+    - org.gnome.DejaDup
+    - com.bitwarden.desktop
+  repositories:
+    - name: "ucaresystem"
+      repo: "ppa:utappia/stable"
+  favorites:
+    - com.github.hluk.copyq.desktop
+    - com.bitwarden.desktop.desktop
 
-composer:
-  packages: []
-
+# Secrets management
 bitwarden:
   server: "https://vault.bitwarden.eu"
   email: "{{ BITWARDEN_EMAIL | default('') }}"

@@ -5,37 +5,7 @@
   vars:
     ansible_config_dir: "/home/ansible/config"
   tasks:
-    - name: Get facts on current container
-      community.docker.current_container_facts:
-
-    - name: Clear Yarn cache
-      ansible.builtin.command: yarn cache clean --all
-
-    - name: Clear NVM cache
-      become: true
-      become_user: "{{ ansible_user }}"
-      ansible.builtin.shell: >
-        set -o pipefail && \
-        source /home/{{ ansible_user }}/.profile && \
-        nvm cache clear
-      args:
-        executable: /bin/bash
-
-    - name: Clear NPM cache
-      become: true
-      become_user: "{{ ansible_user }}"
-      ansible.builtin.shell: >
-        set -o pipefail && \
-        source /home/{{ ansible_user }}/.profile && \
-        npm cache clean --force
-      args:
-        executable: /bin/bash
-
-    - name: Clear Composer cache
-      ansible.builtin.command: composer clear-cache
-
     - name: Docker prune
-      when: not ansible_module_running_in_container
       community.docker.docker_prune:
         containers: true
         images: true
@@ -51,12 +21,7 @@
         state: present
       notify: Run localepurge
 
-    - name: Refresh snap packages
-      when: not ansible_module_running_in_container
-      ansible.builtin.command: snap refresh
-
     - name: Update system using ucaresystem-core
-      when: not ansible_module_running_in_container
       ansible.builtin.command: ucaresystem-core -u
 
     - name: Remove APT dependencies that are no longer required and purge their configuration files
