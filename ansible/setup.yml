@@ -14,6 +14,8 @@
       ansible.builtin.import_role:
         name: setup_base
       tags: [base, host]
+      vars:
+        setup_base_packages: "{{ apt_packages | default([]) }}"
 
     - name: Setup APT packages
       ansible.builtin.import_role:

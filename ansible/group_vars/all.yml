@@ -20,19 +20,31 @@ apt_packages:
   - ca-certificates
   - gnupg-agent
   - software-properties-common
-  - dconf-cli
   - util-linux-extra
   - systemd
   - hwclock
-  # Essential tools (system-level only)
+  - dconf-cli
+  # Essential tools
+  - curl
+  - wget
+  - unzip
   - cron
+  # Monitoring
+  - htop
 
 # DESKTOP LAYER - Desktop applications via APT (minimal)
 desktop_packages:
+  # Desktop applications (moved from setup_desktop role)
+  - copyq
+  - simple-scan
+  - deja-dup
+  - vlc
   # System maintenance
   - ucaresystem-core
   # Development tools (moved from snap)
   - helm
+  # Fonts
+  - fonts-firacode
 
 # DESKTOP LAYER - Applications via Flatpak
 flatpak_packages:
