@@ -1,4 +1,7 @@
 ---
+- name: Get facts on current container
+  community.docker.current_container_facts:
+
 - name: Setup snap packages
   when: not ansible_module_running_in_container
   community.general.snap:

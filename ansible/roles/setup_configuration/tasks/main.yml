@@ -1,4 +1,7 @@
 ---
+- name: Get facts on current container
+  community.docker.current_container_facts:
+
 - name: Ensure a locale exists
   community.general.locale_gen:
     name: "{{ setup_configuration_locale }}"
@@ -56,7 +59,7 @@
   ansible.builtin.shell: copyq
   register: copyq_start
   when: not ansible_module_running_in_container and copyq_status.rc != 0
-  failed_when: ansible_module_running_in_container and copyq_start.rc != 0
+  failed_when: copyq_start.rc != 0
 
 - name: Configure CopyQ global shortcuts
   when: not ansible_module_running_in_container

@@ -16,7 +16,7 @@ apt_repositories:
   - ppa:utappia/stable # ucaresystem-core
 
 apt_packages:
-  # Common
+  # System
   - apt-transport-https
   - ca-certificates
   - gnupg-agent
@@ -24,25 +24,28 @@ apt_packages:
   - dconf-cli
   - util-linux-extra
   - systemd
+  - hwclock
+  - htop
+  # Tools
   - cron
   - curl
   - wget
-  - curl
   - unzip
-  - htop
+  # Shell
   - bat
   - zsh
+  - thefuck
+  - fonts-firacode
+  # Development
   - python3-dev
   - python3-pip
   - python3-setuptools
-  - thefuck
   - make
-  - copyq
-  - fonts-firacode
   - gh
   # Cleaning
   - ucaresystem-core
   # Apps
+  - copyq
   - chromium-browser
   - simple-scan
   - deja-dup
@@ -54,10 +57,7 @@ snap_packages:
   - slack
   - jdownloader2
   - bw
-  - multipass
-  - remmina
   - helm
-  - pixieditor
 
 zsh:
   plugins:
