@@ -1,5 +1,5 @@
 ---
-- name: Setup personal computer
+- name: Setup personal computer with Clean Architecture layers
   hosts: personal_computer
   become: true
   vars:
@@ -9,25 +9,60 @@
     - name: Get facts on current container
       community.docker.current_container_facts:
 
-    - name: Setup APT
+    # HOST LAYER - Essential system packages and configuration
+    - name: Setup base system
+      ansible.builtin.import_role:
+        name: setup_base
+      tags: [base, host]
+
+    - name: Setup APT (legacy compatibility)
       ansible.builtin.import_role:
         name: setup_apt
-      tags: apt
+      tags: [apt, legacy]
       vars:
         setup_apt_repositories: "{{ apt_repositories }}"
         setup_apt_packages: "{{ apt_packages }}"
 
-    - name: Setup Snap
+    # DESKTOP LAYER - GUI applications and desktop environment
+    - name: Setup Flatpak applications
+      ansible.builtin.import_role:
+        name: setup_flatpak
+      tags: [flatpak, desktop]
+      vars:
+        setup_flatpak_packages: "{{ flatpak_packages | default([]) }}"
+
+    - name: Setup desktop applications
+      ansible.builtin.import_role:
+        name: setup_desktop
+      tags: [desktop, gnome]
+      vars:
+        setup_desktop_packages: "{{ desktop_packages | default([]) }}"
+        setup_desktop_repositories: "{{ desktop_repositories | default([]) }}"
+
+    - name: Setup Snap (legacy compatibility)
       ansible.builtin.import_role:
         name: setup_snap
-      tags: snap
+      tags: [snap, legacy]
       vars:
         setup_snap_packages: "{{ snap_packages }}"
 
+    # PROJECT LAYER BOOTSTRAP - Nix for project environments
+    - name: Setup Nix package manager
+      ansible.builtin.import_role:
+        name: setup_nix
+      tags: [nix, project]
+
+    - name: Setup Home Manager for user configurations
+      ansible.builtin.import_role:
+        name: setup_home_manager
+      tags: [home-manager, user]
+      become: false
+
+    # USER LAYER - User-specific configurations
     - name: Setup keys
       ansible.builtin.import_role:
         name: setup_keys
-      tags: keys
+      tags: [keys, user]
       vars:
         setup_keys_bitwarden_server: "{{ bitwarden.server }}"
         setup_keys_bitwarden_email: "{{ bitwarden.email }}"
@@ -40,7 +75,7 @@
     - name: Setup shell
       ansible.builtin.import_role:
         name: setup_shell
-      tags: shell
+      tags: [shell, user]
       become: true
       vars:
         setup_shell_zsh_plugins: "{{ zsh.plugins }}"
@@ -53,10 +88,10 @@
         setup_configuration_locale: "{{ locale }}"
         setup_configuration_timezone: "{{ timezone }}"
         setup_configuration_web_browser: "{{ web_browser }}"
-        setup_configuration_favorites: "{{ favorites }}"
-      tags: configuration
+        setup_configuration_favorites: "{{ favorites_flatpak | default(favorites) }}"
+      tags: [configuration, user]
 
-    - name: Setup dev
+    - name: Setup dev basics
       ansible.builtin.import_role:
         name: setup_dev
       vars:
@@ -66,4 +101,4 @@
         setup_dev_git_includes: "{{ git.includes }}"
         setup_dev_yarn_packages: "{{ yarn.packages }}"
         setup_dev_composer_packages: "{{ composer.packages }}"
-      tags: dev
+      tags: [dev-basics, user]

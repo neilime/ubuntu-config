@@ -1,0 +1,11 @@
+---
+# Default Flatpak applications (desktop layer)
+setup_flatpak_packages:
+  # Development
+  - com.visualstudio.code
+  # Communication
+  - com.slack.Slack
+  # Media
+  - com.spotify.Client
+  # Utilities
+  - org.chromium.Chromium

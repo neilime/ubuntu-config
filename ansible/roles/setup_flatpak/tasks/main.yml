@@ -1,0 +1,29 @@
+---
+# Flatpak setup and application management
+- name: Get facts on current container
+  community.docker.current_container_facts:
+
+- name: Install Flatpak
+  ansible.builtin.apt:
+    name: flatpak
+    state: present
+
+- name: Add Flathub repository
+  when: not ansible_module_running_in_container
+  community.general.flatpak_remote:
+    name: flathub
+    state: present
+    flatpakrepo_url: https://flathub.org/repo/flathub.flatpakrepo
+
+- name: Install Flatpak applications
+  when: not ansible_module_running_in_container
+  community.general.flatpak:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ setup_flatpak_packages }}"
+
+- name: Update Flatpak packages
+  when: not ansible_module_running_in_container
+  ansible.builtin.command: flatpak update -y
+  register: flatpak_update_result
+  changed_when: "'Nothing to do.' not in flatpak_update_result.stdout"

@@ -1,0 +1,55 @@
+---
+# Nix package manager installation and setup
+- name: Check if Nix is already installed
+  ansible.builtin.stat:
+    path: /nix
+  register: nix_directory
+
+- name: Create temporary directory for Nix installer
+  ansible.builtin.tempfile:
+    state: directory
+    suffix: nix_install
+  register: nix_temp_dir
+  when: not nix_directory.stat.exists
+
+- name: Download Nix installer
+  ansible.builtin.get_url:
+    url: https://nixos.org/nix/install
+    dest: "{{ nix_temp_dir.path }}/install.sh"
+    mode: '0755'
+  when: not nix_directory.stat.exists
+
+- name: Install Nix (multi-user)
+  ansible.builtin.shell: |
+    sh {{ nix_temp_dir.path }}/install.sh --daemon --yes
+  environment:
+    NIX_INSTALLER_NO_MODIFY_PROFILE: "1"
+  when: not nix_directory.stat.exists
+  become: true
+
+- name: Create Nix configuration directory
+  ansible.builtin.file:
+    path: /etc/nix
+    state: directory
+    mode: '0755'
+
+- name: Configure Nix with flakes and nix-command
+  ansible.builtin.copy:
+    content: |
+      experimental-features = nix-command flakes
+      trusted-users = root {{ ansible_user | default('ubuntu') }}
+    dest: /etc/nix/nix.conf
+    mode: '0644'
+  notify: restart nix-daemon
+
+- name: Ensure nix-daemon is running
+  ansible.builtin.systemd:
+    name: nix-daemon
+    state: started
+    enabled: true
+
+- name: Clean up temporary directory
+  ansible.builtin.file:
+    path: "{{ nix_temp_dir.path }}"
+    state: absent
+  when: nix_temp_dir is defined
