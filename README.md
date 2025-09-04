@@ -42,7 +42,7 @@ For local development, you'll need:
 
 - Docker and Docker Compose
 - [Lima](https://github.com/lima-vm/lima) for VM testing (consistent with CI/CD)
-  - Installation guide: https://lima-vm.io/docs/installation/
+  - Installation guide: <https://lima-vm.io/docs/installation/>
 
 ### Setup
 
@@ -86,7 +86,7 @@ make vm-setup
 # Run the install script on VM
 make vm-install-script
 
-# Run tests on VM  
+# Run tests on VM
 make vm-test
 
 # Access VM shell
@@ -111,6 +111,7 @@ This project uses GitHub Actions to test the Ansible playbook with TestInfra usi
 - `main-ci.yml` - Main CI workflow that triggers all tests
 
 Both local development and CI/CD use Lima VMs for consistency, ensuring that:
+
 - Local testing environment matches CI/CD exactly
 - Issues caught locally will be caught in CI/CD
 - VM configurations are shared between environments
