@@ -379,7 +379,6 @@ printf "\n%s\n" "#######################################"
 printf "#        %s        #\n" "${GREEN}Install ${BOLD}ubuntu-config${NO_COLOR}"
 printf "%s\n\n" "#######################################"
 
-
 if ! env_var_is_not_empty "REPOSITORY_URL"; then
 	export REPOSITORY_URL=https://github.com/neilime/ubuntu-config.git
 fi
