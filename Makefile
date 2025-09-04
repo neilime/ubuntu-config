@@ -20,20 +20,20 @@ lint-fix: ## Execute linting and fix
 
 setup: ## Setup the project stack
 	$(MAKE) setup-ssh-keys
-	@docker-compose up --remove-orphans --build -d
+	@docker compose up --remove-orphans --build -d
 
 down: ## Stop the project stack
-	@docker-compose down --rmi all --remove-orphans
+	@docker compose down --rmi all --remove-orphans
 
 .PHONY: ansible
 ansible: ## Run ansible
-	@docker-compose exec ansible /home/ubuntu/.local/bin/ansible $(filter-out $@,$(MAKECMDGOALS))
+	@docker compose exec ansible /home/ubuntu/.local/bin/ansible $(filter-out $@,$(MAKECMDGOALS))
 
 ansible-playbook: ## Run ansible-playbook
-	@docker-compose exec ansible /home/ubuntu/.local/bin/ansible-playbook $(filter-out $@,$(MAKECMDGOALS))
+	@docker compose exec ansible /home/ubuntu/.local/bin/ansible-playbook $(filter-out $@,$(MAKECMDGOALS))
 
 ansible-galaxy: ## Run ansible-galaxy
-	@docker-compose exec ansible /home/ubuntu/.local/bin/ansible-galaxy $(filter-out $@,$(MAKECMDGOALS))
+	@docker compose exec ansible /home/ubuntu/.local/bin/ansible-galaxy $(filter-out $@,$(MAKECMDGOALS))
 
 setup-ssh-keys: ## Setup ssh keys for VM access
 	./vm/setup-ssh-keys.sh
@@ -93,7 +93,7 @@ vm-status: ## Show VM status
 
 vm-install-script:  ## Run install script on VM
 	@echo "Running Ansible playbook on VM..."
-	docker-compose exec ansible sh -c '/root/.local/bin/ansible-playbook setup.yml \
+	docker compose exec ansible sh -c '/root/.local/bin/ansible-playbook setup.yml \
 		--limit ubuntu-config-test \
 		-e ANSIBLE_HOST=127.0.0.1 \
 		-e ansible_port=60022 \
