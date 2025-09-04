@@ -42,19 +42,7 @@ For local development, you'll need:
 
 - Docker and Docker Compose
 - [Lima](https://github.com/lima-vm/lima) for VM testing (consistent with CI/CD)
-
-#### Installing Lima
-
-**macOS:**
-```bash
-brew install lima
-```
-
-**Linux:**
-```bash
-# See https://github.com/lima-vm/lima#getting-started for latest instructions
-curl -fsSL https://get.lima.sh | sh
-```
+  - Installation guide: https://lima-vm.io/docs/installation/
 
 ### Setup
 
