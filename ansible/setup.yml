@@ -37,14 +37,6 @@
       vars:
         setup_desktop_packages: "{{ desktop_packages | default([]) }}"
 
-    - name: Setup Snap packages
-      ansible.builtin.import_role:
-        name: setup_snap
-      tags: [snap, legacy]
-      vars:
-        setup_snap_packages: "{{ snap_packages }}"
-      when: snap_packages | length > 0
-
     # PROJECT LAYER BOOTSTRAP - Nix for project environments
     - name: Setup Nix package manager
       ansible.builtin.import_role:

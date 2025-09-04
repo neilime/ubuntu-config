@@ -6,7 +6,6 @@ web_browser: org.chromium.Chromium.desktop
 # Desktop favorites
 favorites:
   - gnome-control-center.desktop
-  - snap-store_ubuntu-software.desktop
   - org.gnome.Nautilus.desktop
   - org.gnome.Terminal.desktop
   - org.chromium.Chromium.desktop
@@ -47,6 +46,8 @@ desktop_packages:
   - vlc
   # System maintenance
   - ucaresystem-core
+  # Development tools (moved from snap)
+  - helm
 
 # DESKTOP LAYER - Applications via Flatpak
 flatpak_packages:
@@ -63,10 +64,6 @@ flatpak_packages:
   # Password Management
   - com.bitwarden.desktop
 
-# LEGACY - Snap packages (being phased out completely)
-snap_packages:
-  - helm
-
 # USER LAYER - Shell configuration (will move to Home Manager)
 zsh:
   plugins:
@@ -81,20 +78,20 @@ zsh:
     - aws
     - pre-commit
   aliases:
-    - { alias: "cat", command: "batcat -pp" }
+    - {alias: "cat", command: "batcat -pp"}
     # Enforce security for git aliases
     - {
-        alias: "ggl",
-        command: 'echo \"\e[31mUse \e[1;31mggfl\e[0m!\" && return 1',
-      }
+      alias: "ggl",
+      command: 'echo \"\e[31mUse \e[1;31mggfl\e[0m!\" && return 1',
+    }
     - {
-        alias: "gcam",
-        command: 'echo \"\e[31mUse \e[1;31mgcasm\e[0m!\" && return 1',
-      }
+      alias: "gcam",
+      command: 'echo \"\e[31mUse \e[1;31mgcasm\e[0m!\" && return 1',
+    }
     - {
-        alias: "gcan!",
-        command: 'echo \"\e[31mUse \e[1;31mgcans!\e[0m!\" && return 1',
-      }
+      alias: "gcan!",
+      command: 'echo \"\e[31mUse \e[1;31mgcans!\e[0m!\" && return 1',
+    }
 
 # USER LAYER - Git configuration (will move to Home Manager)
 git:
