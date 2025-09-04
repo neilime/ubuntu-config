@@ -38,6 +38,18 @@ ansible-galaxy: ## Run ansible-galaxy
 setup-ssh-keys: ## Setup ssh keys for VM access
 	./vm/setup-ssh-keys.sh
 
+check-lima: ## Check if Lima is installed
+	@command -v limactl >/dev/null 2>&1 || { \
+		echo "❌ Lima is not installed. Please install Lima to use VM commands."; \
+		echo ""; \
+		echo "📖 Installation instructions:"; \
+		echo "  macOS: brew install lima"; \
+		echo "  Linux: https://github.com/lima-vm/lima#getting-started"; \
+		echo ""; \
+		exit 1; \
+	}
+	@echo "✅ Lima is installed"
+
 docker-install-script: ## Run install script in Docker container
 	@echo "Running install script in Docker container..."
 	@docker compose exec \
@@ -51,43 +63,49 @@ docker-test: ## Test install script result in Docker container
 		python3 tests/run_tests.py --verbose --host="docker://ubuntu" --user="kasm-user"
 
 vm-setup: ## Setup the VM
+	$(MAKE) check-lima
 	$(MAKE) setup-ssh-keys
-	@multipass list --format json | jq -e '.list[] | select(.name == "ubuntu-config-test" and .state == "Running")' && \
+	@limactl list ubuntu-config-test 2>/dev/null | grep -q "Running" && \
 	echo "VM is already up" || ( \
-		SSH_PUBLIC_KEY=$$(cat vm/id_rsa.pub) && cat vm/user-data.yml | sed "s#{{ ssh_public_key }}#$$SSH_PUBLIC_KEY#g" | \
-		multipass launch lts --name ubuntu-config-test --cpus 4 --disk 15G --memory 4G --timeout 3600 --cloud-init - && \
-		multipass stop ubuntu-config-test && \
-		multipass snapshot ubuntu-config-test --name "initial-setup" && \
-		multipass start ubuntu-config-test \
+		echo "Starting Lima VM..." && \
+		limactl start --name=ubuntu-config-test vm/lima-ubuntu-desktop.yml \
 	)
 
-vm-open: ## Open the VM
-	@remmina -c rdp:$(shell multipass info ubuntu-config-test | grep IPv4 | awk '{print $$2}')
+vm-open: ## Open the VM (remote desktop)
+	@echo "Remote desktop not directly supported with Lima. Use 'make vm-shell' to access the VM via SSH."
+	@echo "For GUI access, consider using X11 forwarding with 'ssh -X' or VNC setup."
 
 vm-shell: ## Open a shell in the VM
-	@ssh -X -i vm/id_rsa ubuntu@$(shell multipass info ubuntu-config-test | grep IPv4 | awk '{print $$2}')
+	@limactl shell ubuntu-config-test
 
-vm-restore: ## Restore the VM
-	@multipass list --format json | jq -e '.list[] | select(.name == "ubuntu-config-test" and .state == "Running")' && \
-	&& multipass list --snapshots --format json | jq -e '.info["ubuntu-config-test"]' && \
-	&& multipass restore -d ubuntu-config-test.initial-setup || echo "No VM to restore"
+vm-restore: ## Restore the VM to initial state
+	@echo "Stopping VM and restarting to restore initial state..."
+	@limactl stop ubuntu-config-test 2>/dev/null || true
+	@limactl delete ubuntu-config-test 2>/dev/null || true
+	@echo "VM reset. Use 'make vm-setup' to recreate it."
 
 vm-down: ## Stop the VM
-	@multipass list | grep -q ubuntu-config-test && (multipass delete -v -p ubuntu-config-test) || echo "VM is already down"
+	@limactl list ubuntu-config-test 2>/dev/null | grep -q "ubuntu-config-test" && (limactl stop ubuntu-config-test && limactl delete ubuntu-config-test) || echo "VM is already down"
+
+vm-status: ## Show VM status
+	@echo "Lima VMs:"
+	@limactl list 2>/dev/null || echo "No Lima VMs found"
 
 vm-install-script:  ## Run install script on VM
 	@echo "Running Ansible playbook on VM..."
 	docker-compose exec ansible sh -c '/root/.local/bin/ansible-playbook setup.yml \
 		--limit ubuntu-config-test \
-		-e ANSIBLE_HOST=$(shell multipass info ubuntu-config-test | grep IPv4 | awk '{print $$2}') \
+		-e ANSIBLE_HOST=127.0.0.1 \
+		-e ansible_port=60022 \
+		-e ansible_user=ubuntu \
+		-e ansible_ssh_private_key_file=/workspace/vm/id_rsa \
 		--diff \
 		$(filter-out $@,$(MAKECMDGOALS)) \
 	'
 
 vm-test: ## Test install script result on VM
 	@echo "Running TestInfra tests on VM..."
-	@VM_IP=$(shell multipass info ubuntu-config-test | grep IPv4 | awk '{print $$2}'); \
-	docker compose run --rm test python3 tests/run_tests.py --verbose --host="ssh://ubuntu@$$VM_IP" --user="ubuntu"
+	@docker compose run --rm test python3 tests/run_tests.py --verbose --host="ssh://ubuntu@127.0.0.1:60022" --user="ubuntu"
 
 define run_linter
 	DEFAULT_WORKSPACE="$(CURDIR)"; \

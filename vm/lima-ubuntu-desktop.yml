@@ -1,9 +1,9 @@
-# Lima configuration for Ubuntu Desktop VM
+# Lima configuration for Ubuntu Desktop VM (Local Development)
 # https://github.com/lima-vm/lima
 
 ---
-# VM details
-cpus: 2
+# VM details - tuned for local development
+cpus: 4
 memory: "4GiB"
 disk: "15GiB"
 
@@ -13,11 +13,22 @@ images:
   - location: "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
     arch: "x86_64"
 
-# SSH configuration (let Lima handle automatically)
+# SSH configuration
 ssh:
   loadDotSSHPubKeys: true
+  localPort: 60022
 
-# Basic provisioning (minimal setup)
+# Port forwarding for easier access
+portForwards:
+  - guestPort: 22
+    hostPort: 60022
+
+# Mount current project directory for easier development
+mounts:
+  - location: "."
+    writable: true
+
+# Enhanced provisioning for local development
 provision:
   - mode: system
     script: |
@@ -27,18 +38,42 @@ provision:
       # Update package list
       apt-get update
 
-      # Install basic packages needed for the install script
+      # Install packages needed for the install script and development
       DEBIAN_FRONTEND=noninteractive apt-get install -y \
         curl \
         wget \
         sudo \
-        systemd
+        systemd \
+        git \
+        openssh-server \
+        python3 \
+        python3-pip
 
       # Ensure SSH is properly configured
       systemctl enable ssh
       systemctl start ssh
 
-      echo "✅ Basic Ubuntu VM setup complete"
+      # Allow SSH with password (for testing)
+      sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+      sed -i 's/^#*PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+      systemctl reload ssh
+
+      echo "✅ Enhanced Ubuntu VM setup complete for local development"
+
+  - mode: user
+    script: |
+      #!/bin/bash
+      set -eux -o pipefail
+
+      # Create SSH directory and set permissions
+      mkdir -p ~/.ssh
+      chmod 700 ~/.ssh
+
+      echo "✅ User environment setup complete"
 
 # Enable systemd
 systemd: true
+
+# Network configuration
+networks:
+  - lima: shared
