@@ -24,12 +24,8 @@ apt_packages:
   - util-linux-extra
   - systemd
   - hwclock
-  - htop
-  # Essential tools
+  # Essential tools (system-level only)
   - cron
-  - curl
-  - wget
-  - unzip
 
 # DESKTOP LAYER - Desktop applications via APT (minimal)
 desktop_packages:
@@ -57,12 +53,8 @@ flatpak_packages:
   # Password Management
   - com.bitwarden.desktop
 
-# PROJECT LAYER - Development dependencies (managed via Nix flakes)
-yarn:
-  packages: []
-
-composer:
-  packages: []
+# PROJECT LAYER - Development dependencies now managed via Nix flakes
+# per project
 
 # USER LAYER - Secrets management (Bitwarden CLI via Home Manager)
 bitwarden:

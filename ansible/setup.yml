@@ -76,7 +76,4 @@
     - name: Setup dev basics
       ansible.builtin.import_role:
         name: setup_dev
-      vars:
-        setup_dev_yarn_packages: "{{ yarn.packages }}"
-        setup_dev_composer_packages: "{{ composer.packages }}"
       tags: [dev-basics, user]

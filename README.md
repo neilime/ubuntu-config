@@ -52,9 +52,6 @@ ansible-playbook setup.yml --tags "user,home-manager"
 
 # Project layer (Nix for development)
 ansible-playbook setup.yml --tags "nix,project"
-
-# Legacy compatibility
-ansible-playbook setup.yml --tags "legacy"
 ```
 
 ## Project Structure
@@ -66,11 +63,14 @@ ubuntu-config
 ├── ansible/
 │   ├── roles/
 │   │   ├── setup_base/     # Host layer: system essentials
+│   │   ├── setup_apt/      # Host layer: APT package management
 │   │   ├── setup_flatpak/  # Desktop layer: Flatpak apps
 │   │   ├── setup_desktop/  # Desktop layer: GUI utilities
 │   │   ├── setup_nix/      # Project layer: Nix bootstrap
 │   │   ├── setup_home_manager/  # User layer: Home Manager setup
-│   │   └── setup_*/        # Legacy roles (maintained for compatibility)
+│   │   ├── setup_keys/     # User layer: SSH/GPG key management
+│   │   ├── setup_dev/      # User layer: Docker development tools
+│   │   └── setup_configuration/  # User layer: system configuration
 │   ├── group_vars/         # Configuration variables by layer
 │   └── setup.yml           # Main playbook with clean architecture
 ├── home/
@@ -102,10 +102,6 @@ ubuntu-config
 - Nix package manager with flakes support
 - Per-project development environments
 - direnv integration for automatic environment activation
-
-### Legacy Support
-- [Snap packages](./ansible/roles/setup_snap/README.md) (being phased out)
-- Backward compatibility with existing configurations
 
 ## Development
 
@@ -145,9 +141,6 @@ make docker-install-script -- "--env SETUP_TAGS=desktop,flatpak"
 
 # Test only user layer
 make docker-install-script -- "--env SETUP_TAGS=user,home-manager"
-
-# Test legacy compatibility
-make docker-install-script -- "--env SETUP_TAGS=legacy"
 ```
 
 #### Run Validation Tests
