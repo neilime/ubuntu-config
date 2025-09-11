@@ -49,20 +49,29 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
 
-# FIXME: copyq issue - "Cannot connect to server"
-# - name: Get CopyQ status
-#   ansible.builtin.shell: |
-#     copyq --check
-#   register: copyq_status
-#   ignore_errors: true
+- name: Start CopyQ server if not running
+  ansible.builtin.shell: |
+    if ! copyq --check >/dev/null 2>&1; then
+      copyq &
+      sleep 3
+    fi
+  register: copyq_server_start
+  when: not ansible_module_running_in_container
+  changed_when: copyq_server_start.rc == 0
+  failed_when: false
 
-# - name: Ensure CopyQ server is started
-#   ansible.builtin.shell: copyq
-#   register: copyq_start
-#   when: not ansible_module_running_in_container and copyq_status.rc != 0
-#   failed_when: copyq_start.rc != 0
+- name: Verify CopyQ server is accessible
+  ansible.builtin.shell: copyq --check
+  register: copyq_status
+  when: not ansible_module_running_in_container
+  retries: 3
+  delay: 2
+  until: copyq_status.rc == 0
+  ignore_errors: true
 
-# - name: Configure CopyQ global shortcuts
-#   when: not ansible_module_running_in_container
-#   ansible.builtin.shell: |
-#     copyq eval "var cmds = commands();var cmd = cmds.find(command => command.internalId === 'copyq_global_toggle'); if(cmd){cmd.globalShortcuts = ['ctrl+shift+v'];}setCommands(cmds)"
+- name: Configure CopyQ global shortcuts
+  ansible.builtin.shell: |
+    copyq eval "var cmds = commands();var cmd = cmds.find(command => command.internalId === 'copyq_global_toggle'); if(cmd){cmd.globalShortcuts = ['ctrl+shift+v'];}setCommands(cmds)"
+  when: not ansible_module_running_in_container and copyq_status is defined and copyq_status.rc == 0
+  register: copyq_config
+  failed_when: copyq_config.rc != 0
