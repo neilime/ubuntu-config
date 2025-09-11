@@ -136,3 +136,34 @@ class TestCleaningTools:
             # Check if the package is properly installed
             # This is OK - the package might provide other functionality
             assert True  # Package is installed, which is what matters
+
+
+class TestCopyQConfiguration:
+    """Test CopyQ clipboard manager configuration."""
+
+    def test_copyq_installed(self, host):
+        """Test that CopyQ is installed."""
+        copyq = host.package("copyq")
+        assert copyq.is_installed
+
+    def test_copyq_executable(self, host):
+        """Test that CopyQ executable exists."""
+        copyq_bin = host.file("/usr/bin/copyq")
+        assert copyq_bin.exists
+        assert copyq_bin.is_file
+        assert copyq_bin.mode & 0o111  # Check execute permissions
+
+    def test_copyq_autostart_file_exists(self, host):
+        """Test that CopyQ autostart file is configured."""
+        autostart_file = host.file(f"/home/{host.user().name}/.config/autostart/copy-q.desktop")
+        assert autostart_file.exists
+        assert autostart_file.is_file
+        assert autostart_file.contains("CopyQ")
+        assert autostart_file.contains("Exec=sh -c \"copyq; sleep 2; copyq show\"")
+
+    def test_copyq_can_run_help(self, host):
+        """Test that CopyQ can run basic help command (doesn't require GUI)."""
+        # Test a command that doesn't require the GUI/server
+        copyq_help = host.run("copyq --help")
+        assert copyq_help.rc == 0
+        assert "clipboard manager" in copyq_help.stdout.lower() or "copyq" in copyq_help.stdout.lower()
