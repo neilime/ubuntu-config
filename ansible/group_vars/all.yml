@@ -23,7 +23,6 @@ apt_packages:
   - dconf-cli
   - util-linux-extra
   - systemd
-  - hwclock
   - htop
   # Tools
   - cron
