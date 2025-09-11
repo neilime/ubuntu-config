@@ -208,28 +208,6 @@
   changed_when: '"ownertrust changed" in gpg_import_ownertrust.stderr'
   no_log: true
 
-- name: Set ultimate trust for the imported key
-  ansible.builtin.shell: |
-    set -o pipefail
-    # Only set ultimate trust if ownertrust was not imported or failed
-    if ! gpg --export-ownertrust | grep -q '{{ key_name }}'; then
-      echo "5
-      y
-      quit" | gpg --command-fd 0 --edit-key '{{ key_name }}' trust quit 2>&1
-    else
-      echo "Key already has trust settings"
-    fi
-  args:
-    executable: /bin/bash
-  register: gpg_trust_result
-  become: true
-  become_user: "{{ ansible_user }}"
-  failed_when:
-    - gpg_trust_result.rc != 0
-    - '"Key already has trust settings" not in gpg_trust_result.stdout'
-  changed_when: '"Key already has trust settings" not in gpg_trust_result.stdout'
-  no_log: true
-
 - name: Verify GPG key is properly imported and trusted
   ansible.builtin.shell: |
     set -o pipefail
