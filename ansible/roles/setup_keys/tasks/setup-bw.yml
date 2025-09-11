@@ -34,8 +34,8 @@
     - name: Login to Bitwarden with API key
       when:
         - bw_status.stdout | from_json | community.general.json_query('status') == "unauthenticated"
-        - (setup_keys_bitwarden_client_id | default('') | bool)
-        - (setup_keys_bitwarden_client_secret| default('') | bool)
+        - setup_keys_bitwarden_client_id | default('', true) | trim | length > 0
+        - setup_keys_bitwarden_client_secret | default('', true) | trim | length > 0
       delegate_to: localhost
       ansible.builtin.command: bw login --apikey
       environment:
@@ -46,8 +46,8 @@
     - name: Login to Bitwarden with email/password
       when:
         - bw_status.stdout | from_json | community.general.json_query('status') == "unauthenticated"
-        - (setup_keys_bitwarden_email | default('') | bool)
-        - (setup_keys_bitwarden_password | default('') | bool)
+        - setup_keys_bitwarden_email | default('', true) | trim | length > 0
+        - setup_keys_bitwarden_password | default('', true) | trim | length > 0
         - not (setup_keys_bitwarden_client_id and setup_keys_bitwarden_client_secret)
       delegate_to: localhost
       ansible.builtin.command: bw login "{{ setup_keys_bitwarden_email }}" "{{ setup_keys_bitwarden_password }}" --raw
