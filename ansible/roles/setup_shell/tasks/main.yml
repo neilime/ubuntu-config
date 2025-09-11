@@ -54,16 +54,32 @@
   with_items: "{{setup_shell_zsh_aliases}}"
   when: setup_shell_zsh_aliases | length > 0
 
+- name: Download Starship install script
+  ansible.builtin.get_url:
+    url: https://starship.rs/install.sh
+    dest: /tmp/starship-install.sh
+    mode: "0755"
+    force: true
+
 - name: Install Starship
   ansible.builtin.shell: |
     set -o pipefail
-    curl -sS https://starship.rs/install.sh | sh -s -- --force
+    /bin/sh /tmp/starship-install.sh --force
   args:
     creates: "/usr/local/bin/starship"
     executable: /bin/bash
   register: starship_install
   become: true
   become_user: "{{ ansible_user }}"
+
+- name: Remove installer script
+  ansible.builtin.file:
+    path: /tmp/starship-install.sh
+    state: absent
+
+- name: Verify Starship installation
+  ansible.builtin.command: /usr/local/bin/starship --version
+  changed_when: false
 
 - name: Configure starship in zsh
   ansible.builtin.blockinfile:
