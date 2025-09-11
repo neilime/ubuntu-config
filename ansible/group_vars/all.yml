@@ -12,8 +12,7 @@ favorites:
   - slack_slack.desktop
   - spotify_spotify.desktop
 
-apt_repositories:
-  - ppa:utappia/stable # ucaresystem-core
+apt_repositories: []
 
 apt_packages:
   # System
