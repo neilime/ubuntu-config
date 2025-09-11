@@ -43,7 +43,7 @@
         executable: /bin/bash
       become: true
       become_user: "{{ ansible_user }}"
-      when: public_key is defined and public_key
+      when: public_key | default('', true) | trim | length > 0
 
     - name: Write private key file (sensitive)
       ansible.builtin.copy:
