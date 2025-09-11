@@ -22,7 +22,7 @@
         content: "{{ public_key }}"
         dest: "{{ gpg_tempdir.path }}/public.asc"
         mode: "0600"
-      when: public_key is defined and public_key
+      when: public_key | default('', true) | trim | length > 0
       become: true
       become_user: "{{ ansible_user }}"
 
@@ -50,7 +50,7 @@
         content: "{{ private_key }}"
         dest: "{{ gpg_tempdir.path }}/private.asc"
         mode: "0600"
-      when: private_key is defined and private_key
+      when: private_key | default('', true) | trim | length > 0
       become: true
       become_user: "{{ ansible_user }}"
       no_log: true
@@ -72,7 +72,7 @@
         executable: /bin/bash
       become: true
       become_user: "{{ ansible_user }}"
-      when: private_key is defined and private_key
+      when: private_key | default('', true) | trim | length > 0
       no_log: true
 
     - name: Write sub-private keys file (sensitive)
@@ -80,7 +80,7 @@
         content: "{{ sub_private_key }}"
         dest: "{{ gpg_tempdir.path }}/subkeys.asc"
         mode: "0600"
-      when: sub_private_key is defined and sub_private_key
+      when: sub_private_key | default('', true) | trim | length > 0
       become: true
       become_user: "{{ ansible_user }}"
       no_log: true
@@ -201,7 +201,7 @@
   register: gpg_import_ownertrust
   become: true
   become_user: "{{ ansible_user }}"
-  when: ownertrust is defined and ownertrust
+  when: ownertrust | default('', true) | trim | length > 0
   failed_when:
     - gpg_import_ownertrust.rc != 0
     - '"no valid user IDs" in gpg_import_ownertrust.stderr'
