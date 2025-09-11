@@ -50,14 +50,6 @@
 set -eu
 printf '\n'
 
-if [ -z "$REPOSITORY_URL" ]; then
-	export REPOSITORY_URL=https://github.com/neilime/ubuntu-config.git
-fi
-
-if [ -z "$REPOSITORY_BRANCH" ]; then
-	export REPOSITORY_BRANCH=main
-fi
-
 BOLD="$(tput bold 2>/dev/null || printf '')"
 GREY="$(tput setaf 0 2>/dev/null || printf '')"
 RED="$(tput setaf 1 2>/dev/null || printf '')"
@@ -386,6 +378,15 @@ run_playbook() {
 printf "\n%s\n" "#######################################"
 printf "#        %s        #\n" "${GREEN}Install ${BOLD}ubuntu-config${NO_COLOR}"
 printf "%s\n\n" "#######################################"
+
+
+if ! env_var_is_not_empty "REPOSITORY_URL"; then
+	export REPOSITORY_URL=https://github.com/neilime/ubuntu-config.git
+fi
+
+if ! env_var_is_not_empty "REPOSITORY_BRANCH"; then
+	export REPOSITORY_BRANCH=main
+fi
 
 info "${BOLD}User${NO_COLOR}: ${GREEN}${USER}${NO_COLOR}"
 info "${BOLD}Repository url${NO_COLOR}: ${GREEN}${REPOSITORY_URL}${NO_COLOR}"
