@@ -40,8 +40,6 @@ apt_packages:
   - python3-setuptools
   - make
   - gh
-  # Cleaning
-  - ucaresystem-core
   # Apps
   - copyq
   - chromium-browser
