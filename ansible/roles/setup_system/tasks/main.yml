@@ -8,7 +8,7 @@
 - name: Install system packages
   ansible.builtin.apt:
     name: "{{ item }}"
-    state: latest # noqa package-latest
+    state: latest  # noqa package-latest
   loop: "{{ setup_system_apt }}"
 
 - name: Setup Flatpak
@@ -40,12 +40,20 @@
     key: "/org/gnome/shell/ubuntu/color-scheme"
     value: "'prefer-dark'"
     state: present
+  when:
+    - dbus_available | default(false)
+    - gui_available | default(false)
+  ignore_errors: true
 
 - name: Set appearance to prefer dark mode
   community.general.dconf:
     key: "/org/gnome/desktop/interface/color-scheme"
     value: "'prefer-dark'"
     state: present
+  when:
+    - dbus_available | default(false)
+    - gui_available | default(false)
+  ignore_errors: true
 
 - name: Pin system favorites to GNOME launcher
   ansible.builtin.include_role:

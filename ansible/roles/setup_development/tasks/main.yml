@@ -5,6 +5,8 @@
     name: "{{ item }}"
     state: present
   loop: "{{ setup_development_flatpak | default([]) }}"
+  when: flatpak_available | default(true)
+  ignore_errors: "{{ not (flatpak_available | default(true)) }}"
 
 - name: Setup development project directories
   ansible.builtin.file:
