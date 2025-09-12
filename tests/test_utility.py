@@ -67,26 +67,18 @@ def test_given_utility_setup_when_checking_flatpak_apps_then_utility_apps_instal
         ), f"Utility Flatpak application {app} should be installed"
 
 
-def test_given_utility_setup_when_checking_repositories_then_utility_repos_should_be_configured(
+def test_given_utility_setup_when_checking_ucaresystem_install_then_package_available(
     host,
 ):
     """
-    Scenario: Utility repositories are configured
+    Scenario: uCareSystem package is installed via .deb download
     Given the utility setup has been executed
-    When I check for utility repositories
-    Then ucaresystem PPA should be configured
+    When I check for ucaresystem installation
+    Then ucaresystem-core package should be available
     """
-    # Check if ucaresystem repository is added
-    ppa_cmd = host.run(
-        "find /etc/apt/sources.list.d -name '*utappia*' -o -name '*ucaresystem*'"
-    )
-    sources_cmd = host.run(
-        "grep -r 'utappia/stable' /etc/apt/sources.list.d/ 2>/dev/null"
-    )
-
-    assert (
-        ppa_cmd.stdout.strip() or sources_cmd.rc == 0
-    ), "Ucaresystem PPA should be configured in APT sources"
+    # Check if ucaresystem-core package is installed
+    pkg = host.package("ucaresystem-core")
+    assert pkg.is_installed, "Ucaresystem-core package should be installed"
 
 
 def test_utility_desktop_entries(host):
