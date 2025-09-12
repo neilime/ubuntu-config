@@ -29,7 +29,7 @@ This project automates Ubuntu desktop/server setup using:
 - Use `ansible.builtin` collection explicitly for core modules
 - Implement idempotency - tasks should be safe to run multiple times
 - Use `check_mode` compatible tasks when possible
-- Handle errors gracefully with appropriate `failed_when` and `ignore_errors`
+- Handle errors gracefully with appropriate `failed_when` when necessary
 - Use `block` and `rescue` for complex error handling
 - Tag tasks appropriately for selective execution
 

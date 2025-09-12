@@ -6,7 +6,6 @@
     state: present
   loop: "{{ setup_browser_flatpak }}"
   when: flatpak_available | default(true)
-  ignore_errors: "{{ not (flatpak_available | default(true)) }}"
 
 - name: Setup default web browser
   ansible.builtin.include_role:

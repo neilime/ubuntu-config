@@ -6,7 +6,6 @@
     state: present
   loop: "{{ setup_communication_flatpak }}"
   when: flatpak_available | default(true)
-  ignore_errors: "{{ not (flatpak_available | default(true)) }}"
 
 - name: Pin communication favorites to GNOME launcher
   ansible.builtin.include_role:
