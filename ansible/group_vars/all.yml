@@ -26,8 +26,10 @@ system:
 browser:
   flatpak:
     - org.chromium.Chromium
+    - org.torproject.torbrowser-launcher
   favorites:
     - org.chromium.Chromium.desktop
+    - org.torproject.torbrowser-launcher.desktop
 
 # Communication domain
 communication:
