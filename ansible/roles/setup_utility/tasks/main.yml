@@ -9,7 +9,7 @@
 - name: Install utility packages via APT
   ansible.builtin.apt:
     name: "{{ item }}"
-    state: latest  # noqa package-latest
+    state: latest # noqa package-latest
   loop: "{{ setup_utility_apt }}"
 
 - name: Install utility applications via Flatpak
@@ -18,7 +18,6 @@
     state: present
   loop: "{{ setup_utility_flatpak }}"
   when: flatpak_available | default(true)
-  ignore_errors: "{{ not (flatpak_available | default(true)) }}"
 
 - name: Pin utility favorites to GNOME launcher
   ansible.builtin.include_role:
