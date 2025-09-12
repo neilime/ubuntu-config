@@ -1,5 +1,14 @@
 ---
 # Setup Home Manager for user-layer configuration management
+- name: Debug Ansible user and environment
+  ansible.builtin.debug:
+    msg: |
+      ansible_user: '{{ ansible_user }}'
+      ansible_user_id: '{{ ansible_user_id | default("not set") }}'
+      ansible_env.USER: '{{ ansible_env.USER | default("not set") }}'
+      ansible_env.HOME: '{{ ansible_env.HOME | default("not set") }}'
+      user_home: '{{ user_home }}'
+
 - name: Set user home directory
   ansible.builtin.set_fact:
     user_home: "/home/{{ ansible_user }}"
@@ -20,7 +29,15 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: "0644"
+    force: true # Ensure the template is always regenerated
   become: false
+  register: home_nix_generation
+
+- name: Display template generation result
+  ansible.builtin.debug:
+    msg: |
+      Template generation changed: {{ home_nix_generation.changed }}
+      Template generation result: {{ home_nix_generation }}
 
 - name: Generate flake.nix configuration from template
   ansible.builtin.template:
@@ -75,6 +92,32 @@
   environment:
     USER: "{{ ansible_user }}"
     HOME: "{{ user_home }}"
+
+- name: Debug generated home.nix configuration
+  ansible.builtin.debug:
+    msg: |
+      User: {{ ansible_user }}
+      Home: {{ user_home }}
+      Checking lines around aliases...
+  when: ansible_verbosity >= 1
+
+- name: Show lines around alias configuration in home.nix
+  ansible.builtin.shell: |
+    if [ -f "{{ user_home }}/.config/home-manager/home.nix" ]; then
+      echo "=== Lines around shell aliases ==="
+      sed -n '30,50p' "{{ user_home }}/.config/home-manager/home.nix" | nl -v30
+      echo "=== End of alias section ==="
+    else
+      echo "home.nix file does not exist yet"
+    fi
+  become: false
+  register: home_nix_debug
+  changed_when: false
+
+- name: Display home.nix alias section
+  ansible.builtin.debug:
+    msg: "{{ home_nix_debug.stdout_lines }}"
+  when: ansible_verbosity >= 1
 
 - name: Initialize Home Manager configuration
   ansible.builtin.shell: |
