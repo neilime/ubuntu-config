@@ -41,7 +41,8 @@
 - name: Install Home Manager via Nix
   ansible.builtin.shell: |
     . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-    nix profile install nixpkgs#home-manager
+    nix --extra-experimental-features 'nix-command flakes' \
+        profile install nixpkgs#home-manager
   when: home_manager_check.rc != 0
   become: false
   environment:
@@ -51,7 +52,8 @@
   ansible.builtin.shell: |
     . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
     cd {{ user_home }}/.config/home-manager
-    home-manager switch --flake .#{{ ansible_user }}
+    home-manager switch --flake .#{{ ansible_user }} \
+        --extra-experimental-features 'nix-command flakes'
   become: false
   environment:
     USER: "{{ ansible_user }}"
