@@ -7,7 +7,7 @@
       ansible_user_id: '{{ ansible_user_id | default("not set") }}'
       ansible_env.USER: '{{ ansible_env.USER | default("not set") }}'
       ansible_env.HOME: '{{ ansible_env.HOME | default("not set") }}'
-      user_home: '{{ user_home }}'
+      user_home: '{{ user_home | default("not set yet") }}'
 
 - name: Set user home directory
   ansible.builtin.set_fact:
