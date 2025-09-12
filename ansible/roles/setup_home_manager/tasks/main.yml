@@ -103,6 +103,7 @@
 
 - name: Show lines around alias configuration in home.nix
   ansible.builtin.shell: |
+    set -o pipefail
     if [ -f "{{ user_home }}/.config/home-manager/home.nix" ]; then
       echo "=== Lines around shell aliases ==="
       sed -n '30,50p' "{{ user_home }}/.config/home-manager/home.nix" | nl -v30
