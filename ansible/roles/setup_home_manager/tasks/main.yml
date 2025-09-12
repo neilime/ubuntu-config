@@ -48,6 +48,34 @@
   environment:
     USER: "{{ ansible_user }}"
 
+- name: Ensure user-local Nix profile directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.local/state/nix/profiles"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0755"
+  become: false
+
+- name: Ensure system per-user Nix profile directory exists
+  ansible.builtin.file:
+    path: "/nix/var/nix/profiles/per-user/{{ ansible_user }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0755"
+  become: true
+
+- name: Initialize Nix user profile
+  ansible.builtin.shell: |
+    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+    nix --extra-experimental-features 'nix-command flakes' \
+        profile list || true
+  become: false
+  environment:
+    USER: "{{ ansible_user }}"
+    HOME: "{{ user_home }}"
+
 - name: Initialize Home Manager configuration
   ansible.builtin.shell: |
     . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
