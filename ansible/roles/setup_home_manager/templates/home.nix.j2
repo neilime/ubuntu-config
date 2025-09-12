@@ -24,7 +24,7 @@
     
     oh-my-zsh = {
       enable = true;
-      plugins = {{ setup_home_manager_shell.oh_my_zsh.plugins | to_json }};
+      plugins = [ {% for plugin in setup_home_manager_shell.oh_my_zsh.plugins %}"{{ plugin }}"{% if not loop.last %} {% endif %}{% endfor %} ];
       theme = "{{ setup_home_manager_shell.oh_my_zsh.theme }}";
     };
     

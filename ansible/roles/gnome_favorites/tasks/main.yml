@@ -7,7 +7,8 @@
   register: gnome_favorites_current_favorites
   when: >-
     gnome_favorites_list is defined and
-    gnome_favorites_list | length > 0
+    gnome_favorites_list | length > 0 and
+    dbus_available | default(true)
   become: false
 
 - name: Parse current favorites when value exists and is valid
@@ -21,6 +22,7 @@
   when: >-
     gnome_favorites_list is defined and
     gnome_favorites_list | length > 0 and
+    dbus_available | default(true) and
     gnome_favorites_current_favorites.value is defined and
     gnome_favorites_current_favorites.value is not none and
     gnome_favorites_current_favorites.value | string | length > 0 and
@@ -33,6 +35,7 @@
   when: >-
     gnome_favorites_list is defined and
     gnome_favorites_list | length > 0 and
+    dbus_available | default(true) and
     (gnome_favorites_current_list is not defined)
 
 - name: Pin applications to GNOME launcher
@@ -50,5 +53,6 @@
     state: present
   when: >-
     gnome_favorites_list is defined and
-    gnome_favorites_list | length > 0
+    gnome_favorites_list | length > 0 and
+    dbus_available | default(true)
   become: false
