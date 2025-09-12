@@ -2,8 +2,8 @@
 
 {
   # Home Manager configuration for Ubuntu developer environment
-  home.username = builtins.getEnv "USER";
-  home.homeDirectory = "/home/${config.home.username}";
+  home.username = "{{ ansible_user }}";
+  home.homeDirectory = "/home/{{ ansible_user }}";
   home.stateVersion = "23.11"; # Please read the comment before changing.
 
   # Enable Nix flakes support
