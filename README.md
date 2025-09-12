@@ -8,8 +8,17 @@ Get your Ubuntu system configured with everything you need in one command:
 
 ```sh
 wget -qO- \
-"https://raw.githubusercontent.com/neilime/ubuntu-config/main/install.sh" | sh
+"https://raw.githubusercontent.com/neilime/ubuntu-config/main/install.sh?$(date +%s)" | sh
 ```
+
+### Requirements
+
+- A fresh Ubuntu 22.04+ installation (tested on 22.04 and 24.04)
+- An internet connection
+- A user account with `sudo` privileges
+- Bitwarden account credentials for secure password management
+
+### What It Does
 
 This single script will automatically:
 
@@ -21,9 +30,17 @@ This single script will automatically:
 
 For domain-specific installations or customization options, see the [Domain-Specific Installation](#domain-specific-installation) section below.
 
+### Specific Installation
+
+You can install specific domains or layers using tags. For example, to install only the system tools:
+
+```sh
+wget -qO- "https://raw.githubusercontent.com/neilime/ubuntu-config/main/install.sh?$(date +%s)" | sh -s -- --env SETUP_TAGS=system
+```
+
 ## Architecture Overview
 
-This setup follows **Clean Architecture** with domain-driven design and three distinct layers:
+This setup follows domain-driven design and three distinct layers:
 
 ### 🖥️ System Layer (Ubuntu + Ansible)
 
@@ -76,16 +93,6 @@ This domain-driven approach provides:
 - **Centralized Management**: All configuration in one place for easy maintenance
 - **Selective Installation**: Install only the domains you need using tags
 - **Consistent Structure**: Predictable configuration format across all domains
-
-## Architectural Improvements
-
-This setup leverages community-maintained Ansible Galaxy roles for better maintainability:
-
-- **Nix Package Manager**: Uses `danielrolls.nix` v3.37.0 for professional Nix installation
-- **Flatpak Management**: Uses `alvistack.flatpak` v11.9.2 for robust Flatpak setup
-- **GNOME Integration**: Custom `gnome_favorites` role for launcher management
-- **Package Consolidation**: Development tools unified under Nix for consistency
-- **Template-based Configuration**: Home Manager config generated from Ansible variables
 
 ## Domain-Specific Installation
 
