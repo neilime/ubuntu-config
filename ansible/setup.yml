@@ -95,7 +95,6 @@
       ansible.builtin.import_role:
         name: setup_utility
       vars:
-        setup_utility_repositories: "{{ utility.repositories }}"
         setup_utility_apt: "{{ utility.apt }}"
         setup_utility_flatpak: "{{ utility.flatpak }}"
         setup_utility_favorites: "{{ utility.favorites }}"

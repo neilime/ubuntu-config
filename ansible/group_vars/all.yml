@@ -122,9 +122,6 @@ utility:
     - org.gnome.SimpleScan
     - org.gnome.DejaDup
     - com.bitwarden.desktop
-  repositories:
-    - name: "ucaresystem"
-      repo: "ppa:utappia/stable"
   favorites:
     - com.github.hluk.copyq.desktop
     - com.bitwarden.desktop.desktop
@@ -136,5 +133,7 @@ bitwarden:
   password: "{{ BITWARDEN_PASSWORD | default('') }}"
   client_id: "{{ BITWARDEN_CLIENT_ID | default('') }}"
   client_secret: "{{ BITWARDEN_CLIENT_SECRET | default('') }}"
+  # yamllint disable-line rule:comments rule:line-length
   sshKeysCollectionId: "7ac0c067-9d61-49c0-b01e-b10d0135372a" # gitleaks:allow - it is an ID
+  # yamllint disable-line rule:comments rule:line-length
   gpgKeysCollectionId: "9ff2a152-3c88-44cd-a04b-b11d00c8b267" # gitleaks:allow - it is an ID
