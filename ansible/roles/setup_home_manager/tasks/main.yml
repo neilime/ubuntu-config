@@ -22,6 +22,12 @@
     mode: "0755"
   become: false
 
+- name: Remove existing Home Manager configuration to force regeneration
+  ansible.builtin.file:
+    path: "{{ user_home }}/.config/home-manager/home.nix"
+    state: absent
+  become: false
+
 - name: Generate Home Manager configuration from template
   ansible.builtin.template:
     src: home.nix.j2
@@ -101,26 +107,28 @@
       Checking lines around aliases...
   when: ansible_verbosity >= 1
 
-- name: Show lines around alias configuration in home.nix
+- name: Verify gcan! alias is properly quoted in generated file
   ansible.builtin.shell: |
     set -o pipefail
     if [ -f "{{ user_home }}/.config/home-manager/home.nix" ]; then
-      echo "=== Lines around shell aliases ==="
-      sed -n '30,50p' "{{ user_home }}/.config/home-manager/home.nix" | nl -v30
-      echo "=== End of alias section ==="
+      echo "=== Searching for gcan! alias ==="
+      grep -n "gcan!" "{{ user_home }}/.config/home-manager/home.nix" || echo "gcan! alias not found"
+      echo "=== Content around line 38 ==="
+      sed -n '35,42p' "{{ user_home }}/.config/home-manager/home.nix" | nl -v35
+      echo "=== Raw bytes around gcan ==="
+      grep -a "gcan" "{{ user_home }}/.config/home-manager/home.nix" | hexdump -C
     else
-      echo "home.nix file does not exist yet"
+      echo "home.nix file does not exist"
     fi
   args:
     executable: /bin/bash
   become: false
-  register: home_nix_debug
+  register: gcan_debug
   changed_when: false
 
-- name: Display home.nix alias section
+- name: Display gcan! debugging information
   ansible.builtin.debug:
-    msg: "{{ home_nix_debug.stdout_lines }}"
-  when: ansible_verbosity >= 1
+    msg: "{{ gcan_debug.stdout_lines }}"
 
 - name: Initialize Home Manager configuration
   ansible.builtin.shell: |
