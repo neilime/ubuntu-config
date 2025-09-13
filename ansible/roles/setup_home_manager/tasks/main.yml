@@ -111,6 +111,8 @@
     else
       echo "home.nix file does not exist yet"
     fi
+  args:
+    executable: /bin/bash
   become: false
   register: home_nix_debug
   changed_when: false
