@@ -1,13 +1,4 @@
 ---
-- name: Get facts on current container
-  community.docker.current_container_facts:
-
-- name: Install Git
-  ansible.builtin.apt:
-    name:
-      - git
-    state: latest # noqa package-latest
-
 - name: Setup Git configuration
   ansible.builtin.template:
     src: gitconfig.j2

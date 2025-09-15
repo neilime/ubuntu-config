@@ -90,5 +90,6 @@
     - name: Logout from Bitwarden
       delegate_to: localhost
       ansible.builtin.command: bw logout
-    - ansible.builtin.fail:
+    - name: Fail with original error
+      ansible.builtin.fail:
         msg: "{{ ansible_failed_result }}"

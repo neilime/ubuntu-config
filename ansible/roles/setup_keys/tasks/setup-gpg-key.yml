@@ -13,14 +13,14 @@
       ansible.builtin.tempfile:
         state: directory
         suffix: gpg-import
-      register: gpg_tempdir
+      register: setup_keys_gpg_tempdir
       become: true
       become_user: "{{ ansible_user }}"
 
     - name: Write public key file
       ansible.builtin.copy:
         content: "{{ public_key }}"
-        dest: "{{ gpg_tempdir.path }}/public.asc"
+        dest: "{{ setup_keys_gpg_tempdir.path }}/public.asc"
         mode: "0600"
       when: public_key | default('', true) | trim | length > 0
       become: true
@@ -29,8 +29,8 @@
     - name: Sanitize public.asc into public.sanitized.asc (normalize armor)
       ansible.builtin.shell: |
         set -o pipefail
-        infile="{{ gpg_tempdir.path }}/public.asc"
-        outfile="{{ gpg_tempdir.path }}/public.sanitized.asc"
+        infile="{{ setup_keys_gpg_tempdir.path }}/public.asc"
+        outfile="{{ setup_keys_gpg_tempdir.path }}/public.sanitized.asc"
         perl -0777 -ne '
           if(/(-----BEGIN PGP (PUBLIC|PRIVATE) KEY BLOCK-----)(.*?)(-----END PGP (PUBLIC|PRIVATE) KEY BLOCK-----)/s){
             $a=$1; $b=$3; $c=$4;
@@ -48,7 +48,7 @@
     - name: Write private key file (sensitive)
       ansible.builtin.copy:
         content: "{{ private_key }}"
-        dest: "{{ gpg_tempdir.path }}/private.asc"
+        dest: "{{ setup_keys_gpg_tempdir.path }}/private.asc"
         mode: "0600"
       when: private_key | default('', true) | trim | length > 0
       become: true
@@ -58,8 +58,8 @@
     - name: Sanitize private.asc into private.sanitized.asc (normalize armor)
       ansible.builtin.shell: |
         set -o pipefail
-        infile="{{ gpg_tempdir.path }}/private.asc"
-        outfile="{{ gpg_tempdir.path }}/private.sanitized.asc"
+        infile="{{ setup_keys_gpg_tempdir.path }}/private.asc"
+        outfile="{{ setup_keys_gpg_tempdir.path }}/private.sanitized.asc"
         perl -0777 -ne '
           if(/(-----BEGIN PGP (PUBLIC|PRIVATE) KEY BLOCK-----)(.*?)(-----END PGP (PUBLIC|PRIVATE) KEY BLOCK-----)/s){
             $a=$1; $b=$3; $c=$4;
@@ -78,7 +78,7 @@
     - name: Write sub-private keys file (sensitive)
       ansible.builtin.copy:
         content: "{{ sub_private_key }}"
-        dest: "{{ gpg_tempdir.path }}/subkeys.asc"
+        dest: "{{ setup_keys_gpg_tempdir.path }}/subkeys.asc"
         mode: "0600"
       when: sub_private_key | default('', true) | trim | length > 0
       become: true
@@ -88,7 +88,7 @@
     - name: Sanitize and import public GPG key (secure)
       ansible.builtin.shell: |
         set -o pipefail
-        DIR="{{ gpg_tempdir.path }}"
+        DIR="{{ setup_keys_gpg_tempdir.path }}"
         src="$DIR/public.asc"
         [ -f "$src" ] || exit 0
         dst="$DIR/public.sanitized.asc"
@@ -136,7 +136,7 @@
     - name: Sanitize and import private/subkeys GPG material (sensitive)
       ansible.builtin.shell: |
         set -o pipefail
-        DIR="{{ gpg_tempdir.path }}"
+        DIR="{{ setup_keys_gpg_tempdir.path }}"
         rc=0
         for f in private subkeys; do
           src="$DIR/$f.asc"
@@ -176,14 +176,14 @@
 
     - name: Remove temporary directory used for GPG import
       ansible.builtin.file:
-        path: "{{ gpg_tempdir.path }}"
+        path: "{{ setup_keys_gpg_tempdir.path }}"
         state: absent
       become: true
       become_user: "{{ ansible_user }}"
   rescue:
     - name: Clean up temporary directory on failure
       ansible.builtin.file:
-        path: "{{ gpg_tempdir.path | default('/tmp') }}"
+        path: "{{ setup_keys_gpg_tempdir.path | default('/tmp') }}"
         state: absent
       become: true
       become_user: "{{ ansible_user }}"

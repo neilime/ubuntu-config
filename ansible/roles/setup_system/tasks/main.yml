@@ -41,8 +41,7 @@
     value: "'prefer-dark'"
     state: present
   when:
-    - dbus_available | default(false)
-    - gui_available | default(false)
+    - not docker_test_env
 
 - name: Set appearance to prefer dark mode
   community.general.dconf:
@@ -50,8 +49,7 @@
     value: "'prefer-dark'"
     state: present
   when:
-    - dbus_available | default(false)
-    - gui_available | default(false)
+    - not docker_test_env
 
 - name: Pin system favorites to GNOME launcher
   ansible.builtin.include_role:

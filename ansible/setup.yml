@@ -6,43 +6,21 @@
     ansible_config_dir: "/home/ansible/config"
 
   tasks:
-    # Environment compatibility checks
-    - name: Check if user namespaces are available for Flatpak
-      ansible.builtin.command: >-
-        unshare --user --pid --mount-proc echo "Namespaces available"
-      register: namespace_check
+    # jscpd:ignore-start
+    - name: Try to get container facts using community.docker
+      community.docker.current_container_facts:
+      register: container_facts
       failed_when: false
       changed_when: false
-      check_mode: false
+      ignore_errors: true
 
-    - name: Check if D-Bus session is available
-      ansible.builtin.command: >-
-        dbus-launch --exit-with-session echo "D-Bus available"
-      register: dbus_check
-      failed_when: false
-      changed_when: false
-      check_mode: false
-
-    - name: Set environment compatibility facts
+    - name: Set docker_test_env fact
       ansible.builtin.set_fact:
-        flatpak_available: "{{ namespace_check.rc == 0 }}"
-        dbus_available: "{{ dbus_check.rc == 0 }}"
-        gui_available: >-
-          {{ ansible_env.DISPLAY is defined or
-             ansible_env.WAYLAND_DISPLAY is defined }}
-
-    - name: Display environment compatibility status
-      ansible.builtin.debug:
-        msg:
-          - >-
-            Flatpak support: {{ 'Available' if flatpak_available
-            else 'Limited (will skip Flatpak installations)' }}
-          - >-
-            D-Bus support: {{ 'Available' if dbus_available
-            else 'Limited (will skip dconf operations)' }}
-          - >-
-            GUI support: {{ 'Available' if gui_available
-            else 'Limited (headless environment)' }}
+        docker_test_env: >-
+          {{ (container_facts is defined and container_facts.ansible_facts is defined and
+              container_facts.ansible_facts.ansible_module_running_in_container) | default(false) }}
+      changed_when: false
+    # jscpd:ignore-end
 
     - name: Setup system
       ansible.builtin.import_role:

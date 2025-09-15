@@ -1,19 +1,16 @@
 ---
-# Setup Home Manager for user-layer configuration management
-- name: Debug Ansible user and environment
-  ansible.builtin.debug:
-    msg: |
-      ansible_user: '{{ ansible_user }}'
-      ansible_user_id: '{{ ansible_user_id | default("not set") }}'
-      ansible_env.USER: '{{ ansible_env.USER | default("not set") }}'
-      ansible_env.HOME: '{{ ansible_env.HOME | default("not set") }}'
-      user_home: '{{ user_home | default("not set yet") }}'
+#---
+# Setup Home Manager for user-layer configuration management (standalone install)
+
+# We expect `nix` to be installed already (nix-daemon). This role configures a
+# per-user home-manager flake and installs/activates Home Manager following the
+# official standalone instructions: https://nix-community.github.io/home-manager/index.xhtml#sec-install-standalone
 
 - name: Set user home directory
   ansible.builtin.set_fact:
     user_home: "/home/{{ ansible_user }}"
 
-- name: Ensure home configuration directory exists
+- name: Ensure home-manager config directory exists
   ansible.builtin.file:
     path: "{{ user_home }}/.config/home-manager"
     state: directory
@@ -22,30 +19,16 @@
     mode: "0755"
   become: false
 
-- name: Remove existing Home Manager configuration to force regeneration
-  ansible.builtin.file:
-    path: "{{ user_home }}/.config/home-manager/home.nix"
-    state: absent
-  become: false
-
-- name: Generate Home Manager configuration from template
+- name: Deploy Home Manager core configuration (home.nix)
   ansible.builtin.template:
     src: home.nix.j2
     dest: "{{ user_home }}/.config/home-manager/home.nix"
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: "0644"
-    force: true # Ensure the template is always regenerated
   become: false
-  register: home_nix_generation
 
-- name: Display template generation result
-  ansible.builtin.debug:
-    msg: |
-      Template generation changed: {{ home_nix_generation.changed }}
-      Template generation result: {{ home_nix_generation }}
-
-- name: Generate flake.nix configuration from template
+- name: Deploy Home Manager flake (flake.nix)
   ansible.builtin.template:
     src: flake.nix.j2
     dest: "{{ user_home }}/.config/home-manager/flake.nix"
@@ -54,33 +37,7 @@
     mode: "0644"
   become: false
 
-- name: Check if Home Manager is installed
-  ansible.builtin.command: which home-manager
-  register: home_manager_check
-  failed_when: false
-  changed_when: false
-  become: false
-
-- name: Install Home Manager via Nix
-  ansible.builtin.shell: |
-    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-    nix --extra-experimental-features 'nix-command flakes' \
-        profile install nixpkgs#home-manager
-  when: home_manager_check.rc != 0
-  become: false
-  environment:
-    USER: "{{ ansible_user }}"
-
-- name: Ensure user-local Nix profile directory exists
-  ansible.builtin.file:
-    path: "{{ user_home }}/.local/state/nix/profiles"
-    state: directory
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-    mode: "0755"
-  become: false
-
-- name: Ensure system per-user Nix profile directory exists
+- name: Ensure per-user Nix profile directory exists
   ansible.builtin.file:
     path: "/nix/var/nix/profiles/per-user/{{ ansible_user }}"
     state: directory
@@ -89,61 +46,16 @@
     mode: "0755"
   become: true
 
-- name: Initialize Nix user profile
-  ansible.builtin.shell: |
-    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-    nix --extra-experimental-features 'nix-command flakes' \
-        profile list || true
+- name: Ensure user-local state directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.local/state/nix/profiles"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0755"
   become: false
-  environment:
-    USER: "{{ ansible_user }}"
-    HOME: "{{ user_home }}"
 
-- name: Debug generated home.nix configuration
-  ansible.builtin.debug:
-    msg: |
-      User: {{ ansible_user }}
-      Home: {{ user_home }}
-      Checking lines around aliases...
-  when: ansible_verbosity >= 1
-
-- name: Verify gcan! alias is properly quoted in generated file
-  ansible.builtin.shell: |
-    set -o pipefail
-    if [ -f "{{ user_home }}/.config/home-manager/home.nix" ]; then
-      echo "=== Searching for gcan! alias ==="
-      grep -n "gcan!" "{{ user_home }}/.config/home-manager/home.nix" || echo "gcan! alias not found"
-      echo "=== Content around line 38 ==="
-      sed -n '35,42p' "{{ user_home }}/.config/home-manager/home.nix" | nl -v35
-      echo "=== Raw bytes around gcan ==="
-      grep -a "gcan" "{{ user_home }}/.config/home-manager/home.nix" | hexdump -C
-    else
-      echo "home.nix file does not exist"
-    fi
-  args:
-    executable: /bin/bash
-  become: false
-  register: gcan_debug
-  changed_when: false
-
-- name: Display gcan! debugging information
-  ansible.builtin.debug:
-    msg: "{{ gcan_debug.stdout_lines }}"
-
-- name: Initialize Home Manager configuration
-  ansible.builtin.shell: |
-    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-    cd {{ user_home }}/.config/home-manager
-    home-manager switch --flake .#{{ ansible_user }} \
-        --extra-experimental-features 'nix-command flakes'
-  become: false
-  environment:
-    USER: "{{ ansible_user }}"
-    HOME: "{{ user_home }}"
-  register: home_manager_init
-  changed_when: "'No change' not in home_manager_init.stdout"
-
-- name: Add Nix profile to shell profile
+- name: Ensure nix profile is sourced from user shell profile
   ansible.builtin.lineinfile:
     path: "{{ user_home }}/.profile"
     line: ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh"
@@ -153,12 +65,66 @@
     mode: "0644"
   become: false
 
-- name: Ensure user can access nix commands
+- name: Ensure nix profile is sourced from bashrc (for interactive shells)
   ansible.builtin.lineinfile:
     path: "{{ user_home }}/.bashrc"
-    line: ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh"
+    line: "if [ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh; fi"
     create: true
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: "0644"
   become: false
+
+- name: Check whether home-manager command is available
+  ansible.builtin.shell: |
+    set -euo pipefail
+    if command -v home-manager >/dev/null 2>&1; then
+      echo yes
+    else
+      echo no
+    fi
+  args:
+    executable: /bin/bash
+  register: home_manager_present
+  changed_when: false
+  failed_when: false
+  become: false
+
+- name: Install Home Manager into user's Nix profile (idempotent)
+  ansible.builtin.shell: |
+    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+    nix --extra-experimental-features 'nix-command flakes' profile install --profile /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile nixpkgs#home-manager
+  when: home_manager_present.stdout == 'no'
+  environment:
+    USER: "{{ ansible_user }}"
+    HOME: "{{ user_home }}"
+  register: install_home_manager
+  args:
+    executable: /bin/bash
+  become: true
+
+- name: Inform about skipping Home Manager activation when daemon missing
+  ansible.builtin.debug:
+    msg: |
+      Skipping Home Manager activation because Nix daemon socket was not found at /nix/var/nix/daemon-socket/socket.
+      Activation should be performed on a host with a running nix-daemon.
+  when: not docker_test_env
+  changed_when: false
+
+- name: Activate Home Manager via flake (home-manager switch)
+  ansible.builtin.shell: |
+    set -euo pipefail
+    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+    cd "{{ user_home }}/.config/home-manager"
+    /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/home-manager switch --flake .#{{ ansible_user }} --extra-experimental-features 'nix-command flakes'
+  environment:
+    USER: "{{ ansible_user }}"
+    HOME: "{{ user_home }}"
+  register: home_manager_switch
+  args:
+    executable: /bin/bash
+  changed_when: "'No changes' not in (home_manager_switch.stdout | default('')) and home_manager_switch.rc == 0"
+  failed_when: home_manager_switch.rc != 0
+  become: true
+  become_user: "{{ ansible_user }}"
+  when: not docker_test_env

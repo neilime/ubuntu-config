@@ -30,7 +30,7 @@
     
     shellAliases = {
 {% for alias, command in setup_home_manager_shell.aliases.items() %}
-      "{{ alias }}" = "{{ command }}";
+      "{{ alias }}" = {{ command | to_json }};
 {% endfor %}
     };
   };

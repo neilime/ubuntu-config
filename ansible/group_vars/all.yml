@@ -73,31 +73,33 @@ development:
         - docker-compose
         - yarn
         - npm
+        - php
         - aws
         - command-not-found
         - pre-commit
       theme: "robbyrussell"
   # Nix packages for development
   nix_packages:
-    - tree
+    # Tools
+    - gnumake
+    - git
     - jq
     - gh
     - just
-    - gnumake
-    - bitwarden-cli
-    - python3
-    - python3Packages.pip
-    - python3Packages.setuptools
-    - nodejs
-    - yarn
     - fira-code
     - fira-code-symbols
+    - bitwarden-cli
+    # PHP
+    - php
+    # JS
+    - nvm
+    - yarn
+    - pnpm
+    # Docker and Kubernetes
     - docker
     - docker-compose
     - dive
     - helm
-    - php
-    - php83Packages.composer
   # Environment variables
   environment:
     EDITOR: "nvim"

@@ -21,10 +21,6 @@
     nvm_version: "latest"
     nvm_node_version: "node"
 
-- name: Install yarn
-  ansible.builtin.include_role:
-    name: Oefenweb.yarn
-
 - name: Retrieve list of globally installed Yarn packages
   become: true
   ansible.builtin.command: yarn global list --depth=0
