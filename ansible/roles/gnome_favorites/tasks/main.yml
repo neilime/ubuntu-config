@@ -6,9 +6,9 @@
     state: read
   register: gnome_favorites_current_favorites
   when: >-
+    not docker_test_env and
     gnome_favorites_list is defined and
-    gnome_favorites_list | length > 0 and
-    dbus_available | default(true)
+    gnome_favorites_list | length > 0
   become: false
 
 - name: Parse current favorites when value exists and is valid
@@ -20,9 +20,9 @@
         | from_json
       }}
   when: >-
+    not docker_test_env and
     gnome_favorites_list is defined and
     gnome_favorites_list | length > 0 and
-    dbus_available | default(true) and
     gnome_favorites_current_favorites.value is defined and
     gnome_favorites_current_favorites.value is not none and
     gnome_favorites_current_favorites.value | string | length > 0 and
@@ -33,9 +33,9 @@
   ansible.builtin.set_fact:
     gnome_favorites_current_list: []
   when: >-
+    not docker_test_env and
     gnome_favorites_list is defined and
     gnome_favorites_list | length > 0 and
-    dbus_available | default(true) and
     (gnome_favorites_current_list is not defined)
 
 - name: Pin applications to GNOME launcher
@@ -52,7 +52,7 @@
       }}
     state: present
   when: >-
+    not docker_test_env and
     gnome_favorites_list is defined and
-    gnome_favorites_list | length > 0 and
-    dbus_available | default(true)
+    gnome_favorites_list | length > 0
   become: false

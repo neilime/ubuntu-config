@@ -36,6 +36,9 @@ ansible-playbook: ## Run ansible-playbook
 ansible-galaxy: ## Run ansible-galaxy
 	@docker compose exec ansible /home/ubuntu/.local/bin/ansible-galaxy $(filter-out $@,$(MAKECMDGOALS))
 
+ansible-lint: ## Run ansible-lint
+	@docker compose exec ansible /home/ubuntu/.local/bin/ansible-lint $(filter-out $@,$(MAKECMDGOALS))
+
 setup-ssh-keys: ## Setup ssh keys for VM access
 	./vm/setup-ssh-keys.sh
 

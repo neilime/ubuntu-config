@@ -28,7 +28,7 @@ This single script will automatically:
 - Install applications across all domains (browser, communication, media, utilities)
 - Configure your shell, Git, SSH keys, and development environment
 
-For domain-specific installations or customization options, see the [Domain-Specific Installation](#domain-specific-installation) section below.
+For domain-specific installations or customization options, see the [Domain-Specific Installation](#specific-installation) section below.
 
 ### Specific Installation
 
@@ -93,24 +93,6 @@ This domain-driven approach provides:
 - **Centralized Management**: All configuration in one place for easy maintenance
 - **Selective Installation**: Install only the domains you need using tags
 - **Consistent Structure**: Predictable configuration format across all domains
-
-## Domain-Specific Installation
-
-You can install specific domains using Ansible tags:
-
-```bash
-# System layer only (system essentials)
-ansible-playbook setup.yml --tags "system"
-
-# Development domain (development tools and environment)
-ansible-playbook setup.yml --tags "development"
-
-# Desktop domains (GUI applications)
-ansible-playbook setup.yml --tags "browser,communication,media,utility"
-
-# User layer (Home Manager configuration)
-ansible-playbook setup.yml --tags "home-manager,keys"
-```
 
 ## Project Structure
 

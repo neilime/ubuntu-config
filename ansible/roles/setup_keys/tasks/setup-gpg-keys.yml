@@ -32,9 +32,9 @@
 
 - ansible.builtin.set_fact:
     gpg_keys: |
-      {{ 
-        bw_items.stdout 
-        | from_json 
+      {{
+        bw_items.stdout
+        | from_json
         | community.general.json_query(gpg_keys_query)
         | selectattr('name', 'defined')
         | selectattr('name', 'ne', '')
