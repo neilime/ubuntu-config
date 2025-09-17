@@ -5,21 +5,23 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # hadolint ignore=DL3008
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        openssh-client \
-        sshpass \
-        curl \
-        wget \
-        git \
-        ca-certificates \
-        && apt-get clean \
-        && rm -rf /var/lib/apt/lists/*
+  apt-get install -y --no-install-recommends \
+  bash \
+  docker.io \
+  openssh-client \
+  sshpass \
+  curl \
+  wget \
+  git \
+  ca-certificates \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user for running tests
 RUN useradd -m -s /bin/bash testuser && \
-    mkdir -p /home/testuser/.ssh && \
-    chown -R testuser:testuser /home/testuser && \
-    mkdir -p /workspace/tests /workspace/vm
+  mkdir -p /home/testuser/.ssh && \
+  chown -R testuser:testuser /home/testuser && \
+  mkdir -p /workspace/tests /workspace/vm
 
 # Set working directory
 WORKDIR /workspace
@@ -37,7 +39,23 @@ RUN printf "Host *\\nStrictHostKeyChecking no\\nUserKnownHostsFile=/dev/null\\nL
 
 # Create entrypoint script to handle SSH key setup at runtime  
 USER root
-RUN printf '#!/bin/bash\\n# Setup SSH key if available\\nif [ -f /workspace/vm/id_rsa ]; then\\n    cp /workspace/vm/id_rsa /home/testuser/.ssh/id_rsa\\n    chmod 600 /home/testuser/.ssh/id_rsa\\n    chown testuser:testuser /home/testuser/.ssh/id_rsa\\nfi\\n\\n# Switch to testuser and execute command\\nif [ $# -eq 0 ]; then\\n    exec su testuser -c "python3 tests/run_tests.py --help"\\nelse\\n    exec su testuser -c "$*"\\nfi\\n' > /entrypoint.sh && chmod +x /entrypoint.sh
+RUN cat > /entrypoint.sh <<'EOF'
+#!/bin/bash
+# Setup SSH key if available
+if [ -f /workspace/vm/id_rsa ]; then
+  cp /workspace/vm/id_rsa /home/testuser/.ssh/id_rsa
+  chmod 600 /home/testuser/.ssh/id_rsa
+  chown testuser:testuser /home/testuser/.ssh/id_rsa
+fi
+
+# Switch to testuser and execute command
+if [ $# -eq 0 ]; then
+  exec su testuser -c "python3 tests/run_tests.py --help"
+else
+  exec su testuser -c "$*"
+fi
+EOF
+RUN chmod +x /entrypoint.sh
 
 # Switch to testuser for final layer
 USER testuser

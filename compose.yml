@@ -45,6 +45,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./tests:/workspace/tests:ro
+      - ./tests/.pytest_cache:/workspace/tests/.pytest_cache:rw
       - ./vm:/workspace/vm:ro
     env_file:
       - .env

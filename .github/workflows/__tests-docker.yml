@@ -71,6 +71,15 @@ jobs:
         with:
           compose-file: compose.ci.yml
 
+      - name: Cache pytest cache dir
+        uses: actions/cache@v4
+        with:
+          path: |
+            tests/.pytest_cache
+          key: ${{ runner.os }}-pytest-cache-${{ hashFiles('**/tests/**') }}
+          restore-keys: |
+            ${{ runner.os }}-pytest-cache-
+
       - name: Run install script
         run: $DOCKER_COMPOSE_EXEC "wget -qO- '""$INSTALL_SCRIPT""' | sh"
 

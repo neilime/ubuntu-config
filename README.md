@@ -69,11 +69,14 @@ This setup follows domain-driven design and three distinct layers:
 
 The setup is organized by functional domains, each managed by dedicated roles:
 
-- **🌐 Browser Domain** (`setup_browser`): Web browsers and browsing tools
-- **💬 Communication Domain** (`setup_communication`): Messaging and collaboration apps
-- **🎵 Media Domain** (`setup_media`): Audio, video, and multimedia applications
-- **🛠️ Utility Domain** (`setup_utility`): System utilities and security tools
-- **⚙️ Development Domain** (`setup_development`): Development tools and environments
+- **🛡️ System** (`setup_system`): Core system packages and services
+- **🌐 Browser** (`setup_browser`): Web browsers and browsing tools
+- **💬 Communication** (`setup_communication`): Messaging and collaboration apps
+- **⚙️ Development** (`setup_development`): Development tools and environments
+- **🎵 Media** (`setup_media`): Audio, video, and multimedia applications
+- **🛠️ Utility** (`setup_utility`): System utilities and security tools
+- **🏠 Home Manager** (`setup_home_manager`): User configuration management
+- **🔑 Keys Management** (`setup_keys`): SSH and GPG key handling
 
 ## Domain Configuration
 

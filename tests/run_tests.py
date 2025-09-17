@@ -1,4 +1,4 @@
-"""Test runner script for ubuntu-config tests."""
+"""Test runner script moved to legacy tests folder."""
 
 import argparse
 import os

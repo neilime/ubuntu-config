@@ -5,3 +5,4 @@ ansible/.ansible
 __pycache__/
 *.py[cod]
 *$py.class
+tests/.pytest_cache/

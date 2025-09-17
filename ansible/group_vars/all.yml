@@ -89,6 +89,7 @@ development:
     - fira-code
     - fira-code-symbols
     - bitwarden-cli
+    - lima
     # PHP
     - php
     # JS
