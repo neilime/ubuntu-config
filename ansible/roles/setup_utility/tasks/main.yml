@@ -40,7 +40,6 @@
     name: "{{ item }}"
     state: present
   loop: "{{ setup_utility_flatpak }}"
-  when: not docker_test_env
 
 - name: Pin utility favorites to GNOME launcher
   ansible.builtin.include_role:

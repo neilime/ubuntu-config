@@ -5,7 +5,7 @@
 # VM details - tuned for local development
 cpus: 4
 memory: "4GiB"
-disk: "15GiB"
+disk: "40GiB"
 
 # Ubuntu image
 images:
@@ -15,7 +15,9 @@ images:
 
 # SSH configuration
 ssh:
-  loadDotSSHPubKeys: true
+  # Do NOT load host user's ~/.ssh/*.pub automatically. This avoids warnings
+  # when there are malformed or non-OpenSSH files in the host ~/.ssh directory.
+  loadDotSSHPubKeys: false
   localPort: 60022
 
 # Mount current project directory for easier development

@@ -6,22 +6,6 @@
     ansible_config_dir: "/home/ansible/config"
 
   tasks:
-    # jscpd:ignore-start
-    - name: Try to get container facts using community.docker
-      community.docker.current_container_facts:
-      register: container_facts
-      failed_when: false
-      changed_when: false
-      ignore_errors: true
-
-    - name: Set docker_test_env fact
-      ansible.builtin.set_fact:
-        docker_test_env: >-
-          {{ (container_facts is defined and container_facts.ansible_facts is defined and
-              container_facts.ansible_facts.ansible_module_running_in_container) | default(false) }}
-      changed_when: false
-    # jscpd:ignore-end
-
     - name: Setup system
       ansible.builtin.import_role:
         name: setup_system

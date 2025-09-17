@@ -1,7 +1,6 @@
 """Communication domain acceptance tests: availability of common communication apps."""
 
 
-
 def test_mail_and_chat_apps_present(host):
     # check for common apps like slack (flatpak names vary)
     for name in ("slack",):

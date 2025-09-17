@@ -51,19 +51,29 @@ define check_lima
 		exit 1; \
 	}
 	@echo "✅ Lima is installed"
+	@command -v qemu-img >/dev/null 2>&1 || { \
+		echo ""; \
+		echo "❌ qemu-img not found. Lima (qemu driver) needs qemu-img to inspect VM disk images."; \
+		echo ""; \
+		echo "Install on Debian/Ubuntu: sudo apt update && sudo apt install -y qemu-utils"; \
+		echo "Install on Fedora: sudo dnf install -y qemu-img"; \
+		echo "Install on macOS (Homebrew): brew install qemu"; \
+		echo ""; \
+		exit 1; \
+	}
+	@echo "✅ qemu-img found"
+	@command -v qemu-system-x86_64 >/dev/null 2>&1 || { \
+		echo ""; \
+		echo "❌ qemu-system-x86_64 not found. QEMU is required to run VM instances with the qemu driver."; \
+		echo ""; \
+		echo "Install on Debian/Ubuntu: sudo apt update && sudo apt install -y qemu-system-x86 qemu-kvm"; \
+		echo "Install on Fedora: sudo dnf install -y qemu-kvm"; \
+		echo "Install on macOS (Homebrew): brew install qemu"; \
+		echo ""; \
+		exit 1; \
+	}
+	@echo "✅ qemu-system-x86_64 found"
 endef
-
-docker-install-script: ## Run install script in Docker container
-	@echo "Running install script in Docker container..."
-	@docker compose exec \
-		$(filter-out $@,$(MAKECMDGOALS)) \
-		--user kasm-user ubuntu \
-		sh -c 'wget -qO- "http://git/?p=ubuntu-config.git;a=blob_plain;f=install.sh;hb=HEAD" | sh'
-
-docker-test: ## Test install script result in Docker container
-	@echo "Running TestInfra tests against Docker container..."
-	@docker compose exec test \
-		python3 tests/run_tests.py --verbose --host="docker://ubuntu" --user="kasm-user"
 
 vm-setup: ## Setup the VM
 	$(call check_lima)
@@ -71,7 +81,7 @@ vm-setup: ## Setup the VM
 	@limactl list ubuntu-config-test 2>/dev/null | grep -q "Running" && \
 	echo "VM is already up" || ( \
 		echo "Starting Lima VM..." && \
-		limactl start --name=ubuntu-config-test vm/lima-ubuntu-desktop.yml \
+		limactl start --yes --name=ubuntu-config-test vm/lima-ubuntu-desktop.yml \
 	)
 
 vm-open: ## Open the VM (remote desktop)
@@ -88,23 +98,18 @@ vm-restore: ## Restore the VM to initial state
 	@echo "VM reset. Use 'make vm-setup' to recreate it."
 
 vm-down: ## Stop the VM
-	@limactl list ubuntu-config-test 2>/dev/null | grep -q "ubuntu-config-test" && (limactl stop ubuntu-config-test && limactl delete ubuntu-config-test) || echo "VM is already down"
+	@limactl list ubuntu-config-test 2>/dev/null | grep -q "ubuntu-config-test" && (limactl stop -f ubuntu-config-test && limactl delete ubuntu-config-test) || echo "VM is already down"
 
 vm-status: ## Show VM status
 	@echo "Lima VMs:"
 	@limactl list 2>/dev/null || echo "No Lima VMs found"
 
 vm-install-script:  ## Run install script on VM
-	@echo "Running Ansible playbook on VM..."
-	docker compose exec ansible sh -c '/root/.local/bin/ansible-playbook setup.yml \
-		--limit ubuntu-config-test \
-		-e ANSIBLE_HOST=127.0.0.1 \
-		-e ansible_port=60022 \
-		-e ansible_user=ubuntu \
-		-e ansible_ssh_private_key_file=/workspace/vm/id_rsa \
-		--diff \
-		$(filter-out $@,$(MAKECMDGOALS)) \
-	'
+	@echo "Running install script inside VM..."
+	@limactl list ubuntu-config-test 2>/dev/null | grep -q "Running" || (echo "VM not running. Run 'make vm-setup' first." && exit 1)
+	@docker compose ps git >/dev/null 2>&1 || (echo "Host docker compose 'git' service not running. Start it with 'make setup' or 'docker compose up -d'" && exit 1)
+	@echo "Using .env to provide Bitwarden credentials into the VM (ensure .env is protected)"
+	@sh vm/run-install-in-vm.sh
 
 vm-test: ## Test install script result on VM
 	@echo "Running TestInfra tests on VM..."

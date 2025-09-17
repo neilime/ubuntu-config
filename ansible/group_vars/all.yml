@@ -83,6 +83,7 @@ development:
     # Tools
     - gnumake
     - git
+    - act
     - jq
     - gh
     - just
@@ -93,7 +94,6 @@ development:
     # PHP
     - php
     # JS
-    - nvm
     - yarn
     - pnpm
     # Docker and Kubernetes

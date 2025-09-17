@@ -184,6 +184,8 @@ For local development, you'll need:
 - Docker and Docker Compose
 - [Lima](https://github.com/lima-vm/lima) for VM testing (consistent with CI/CD)
   - Installation guide: <https://lima-vm.io/docs/installation/>
+  - `qemu-img` (part of `qemu-utils` on Debian/Ubuntu) — Lima uses the qemu driver which relies on `qemu-img` to inspect and manage VM disk images.
+  - `qemu-system-x86_64` (QEMU system emulator) — required to run VMs with the qemu driver.
 
 ### Setup Development Environment
 
@@ -202,33 +204,20 @@ make setup
 
 ### Local Testing
 
-#### Docker Testing (Fast)
+#### VM Testing with Lima
 
-```bash
-# Run the install script in Docker container
-# Test on Docker container (fast, for development)
-make docker-install-script
-
-# Pass env variables to the script
-make docker-install-script -- \
-"--env SKIP_INSTALL_REQUIREMENTS=true --env SETUP_TAGS=system --env SKIP_CLEANUP=true"
-
-# Run tests
-make docker-test
-```
-
-#### VM Testing with Lima (Matches CI/CD)
-
-Local VM testing now uses Lima VMs (consistent with CI/CD) instead of Multipass:
+Local VM testing now uses Lima VMs:
 
 #### Run Validation Tests
 
 ```bash
 # Setup Lima VM (first time or after vm-down)
-make vm-setup
 
 # Run the install script on VM
 make vm-install-script
+
+# (Optional) Run the install script with options
+make vm-install-script SETUP_TAGS=system,development SKIP_CLEANUP=true
 
 # Run tests on VM
 make vm-test
@@ -282,7 +271,6 @@ This project uses GitHub Actions to test the Ansible playbook with TestInfra usi
 
 ### Test Workflows
 
-- `__tests-docker.yml` - Tests the setup in Docker containers using the test service
 - `__tests-vm.yml` - Tests the setup in Lima virtual machines (matching local development)
 - `__shared-ci.yml` - Shared CI workflow that builds test images and orchestrates tests
 - `main-ci.yml` - Main CI workflow that triggers all tests

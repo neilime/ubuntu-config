@@ -5,7 +5,6 @@
     name: "{{ item }}"
     state: present
   loop: "{{ setup_media_flatpak }}"
-  when: not docker_test_env
 
 - name: Pin media favorites to GNOME launcher
   ansible.builtin.include_role:

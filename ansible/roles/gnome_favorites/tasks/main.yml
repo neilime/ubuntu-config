@@ -6,7 +6,6 @@
     state: read
   register: gnome_favorites_current_favorites
   when: >-
-    not docker_test_env and
     gnome_favorites_list is defined and
     gnome_favorites_list | length > 0
   become: false
@@ -20,7 +19,6 @@
         | from_json
       }}
   when: >-
-    not docker_test_env and
     gnome_favorites_list is defined and
     gnome_favorites_list | length > 0 and
     gnome_favorites_current_favorites.value is defined and
@@ -33,7 +31,6 @@
   ansible.builtin.set_fact:
     gnome_favorites_current_list: []
   when: >-
-    not docker_test_env and
     gnome_favorites_list is defined and
     gnome_favorites_list | length > 0 and
     (gnome_favorites_current_list is not defined)
@@ -52,7 +49,6 @@
       }}
     state: present
   when: >-
-    not docker_test_env and
     gnome_favorites_list is defined and
     gnome_favorites_list | length > 0
   become: false

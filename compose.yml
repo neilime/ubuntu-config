@@ -14,21 +14,6 @@ services:
     tty: true
     init: true
 
-  ubuntu:
-    build:
-      context: docker/ubuntu
-    environment:
-      REPOSITORY_URL: http://git/ubuntu-config.git
-      REPOSITORY_BRANCH: main
-      VNC_PW: password
-    shm_size: 1024m
-    cap_add:
-      - SYS_PTRACE
-    ports:
-      - 6901:6901
-    env_file:
-      - .env
-
   git:
     build:
       context: .
@@ -51,5 +36,3 @@ services:
       - .env
     stdin_open: true
     tty: true
-    depends_on:
-      - ubuntu

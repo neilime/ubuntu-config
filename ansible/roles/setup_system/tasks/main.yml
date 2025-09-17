@@ -40,16 +40,12 @@
     key: "/org/gnome/shell/ubuntu/color-scheme"
     value: "'prefer-dark'"
     state: present
-  when:
-    - not docker_test_env
 
 - name: Set appearance to prefer dark mode
   community.general.dconf:
     key: "/org/gnome/desktop/interface/color-scheme"
     value: "'prefer-dark'"
     state: present
-  when:
-    - not docker_test_env
 
 - name: Pin system favorites to GNOME launcher
   ansible.builtin.include_role:

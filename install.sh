@@ -143,7 +143,7 @@ ask_for_bitwarden_credentials() {
 
 	# If neither set of credentials is complete, prompt for email/password (default)
 	if ! env_var_is_not_empty "BITWARDEN_EMAIL"; then
-		prompt_for_env_variable "BITWARDEN_EMAIL" "Enter your Bitwarden email (or leave empty to use API key): " false
+		prompt_for_env_variable "BITWARDEN_EMAIL" "Enter your Bitwarden email (or leave empty to use API key): " false false
 	fi
 
 	# If email is provided but password is not, prompt for password
@@ -174,6 +174,7 @@ prompt_for_env_variable() {
 	var_name="$1"
 	prompt_text="$2"
 	secret="$3"
+	required="${4:-true}"
 	max_attempts=10
 	attempts=0
 
@@ -202,6 +203,11 @@ prompt_for_env_variable() {
 		fi
 
 		if [ -z "$input_value" ]; then
+			if [ "$required" = "false" ]; then
+				# Allow empty value for optional variables
+				break
+			fi
+
 			warn "$var_name cannot be empty. Please try again." >&2
 			attempts=$((attempts + 1))
 		else

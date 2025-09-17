@@ -5,7 +5,6 @@
     name: "{{ item }}"
     state: present
   loop: "{{ setup_browser_flatpak }}"
-  when: not docker_test_env
 
 - name: Setup default web browser
   ansible.builtin.include_role:
