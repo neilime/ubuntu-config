@@ -53,6 +53,12 @@ provision:
         dconf-gsettings-backend \
         at-spi2-core
 
+      # Verify critical GUI packages are installed
+      echo "🔍 Verifying GUI package installation..."
+      which Xvfb && echo "✅ Xvfb installed" || { echo "❌ Xvfb missing"; apt-get install -y xvfb; }
+      which dbus-launch && echo "✅ dbus-launch installed" || { echo "❌ dbus-launch missing"; apt-get install -y dbus-x11; }
+      which dconf && echo "✅ dconf installed" || { echo "❌ dconf missing"; apt-get install -y dconf-cli; }
+
       # Ensure SSH is properly configured
       systemctl enable ssh
       systemctl start ssh
