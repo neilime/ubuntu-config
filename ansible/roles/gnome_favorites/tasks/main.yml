@@ -1,5 +1,29 @@
 ---
 # Reusable role for pinning applications to GNOME launcher favorites
+
+# Check if GUI session is available for dconf operations
+- name: Check if GUI session is available for GNOME favorites
+  ansible.builtin.shell: |
+    # Check for desktop session indicators
+    if [ -n "${XDG_CURRENT_DESKTOP:-}" ] || [ -n "${DESKTOP_SESSION:-}" ] || [ -n "${DISPLAY:-}" ]; then
+      exit 0
+    fi
+    # Check if dbus session is available
+    if command -v dbus-launch >/dev/null 2>&1 && pgrep -x dbus-daemon >/dev/null 2>&1; then
+      exit 0
+    fi
+    # Check if we can connect to dconf without error
+    if dconf read /org/gnome/shell/favorite-apps >/dev/null 2>&1; then
+      exit 0
+    fi
+    exit 1
+  register: gnome_favorites_gui_available
+  failed_when: false
+  changed_when: false
+  when: >-
+    gnome_favorites_list is defined and
+    gnome_favorites_list | length > 0
+
 - name: Get current GNOME launcher favorites
   community.general.dconf:
     key: "/org/gnome/shell/favorite-apps"
@@ -7,7 +31,8 @@
   register: gnome_favorites_current_favorites
   when: >-
     gnome_favorites_list is defined and
-    gnome_favorites_list | length > 0
+    gnome_favorites_list | length > 0 and
+    gnome_favorites_gui_available.rc == 0
   become: false
 
 - name: Parse current favorites when value exists and is valid
@@ -21,6 +46,7 @@
   when: >-
     gnome_favorites_list is defined and
     gnome_favorites_list | length > 0 and
+    gnome_favorites_gui_available.rc == 0 and
     gnome_favorites_current_favorites.value is defined and
     gnome_favorites_current_favorites.value is not none and
     gnome_favorites_current_favorites.value | string | length > 0 and
@@ -33,6 +59,7 @@
   when: >-
     gnome_favorites_list is defined and
     gnome_favorites_list | length > 0 and
+    gnome_favorites_gui_available.rc == 0 and
     (gnome_favorites_current_list is not defined)
 
 - name: Pin applications to GNOME launcher
@@ -50,5 +77,14 @@
     state: present
   when: >-
     gnome_favorites_list is defined and
-    gnome_favorites_list | length > 0
+    gnome_favorites_list | length > 0 and
+    gnome_favorites_gui_available.rc == 0
   become: false
+
+- name: Warn about GNOME favorites configuration skip
+  ansible.builtin.debug:
+    msg: "⚠️  Skipping GNOME favorites configuration - no GUI session detected. Favorites will be set when desktop environment is available."
+  when: >-
+    gnome_favorites_list is defined and
+    gnome_favorites_list | length > 0 and
+    gnome_favorites_gui_available.rc != 0
