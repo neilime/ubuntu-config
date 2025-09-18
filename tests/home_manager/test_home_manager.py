@@ -2,6 +2,7 @@
 
 
 def test_home_manager_profiles_exist(host, user_home):
+    """Check for common home-manager profile files (permissive smoke checks)."""
     # Common home-manager files (example)
     files = [".config/nixpkgs/home.nix", ".config/home-manager"]
     # The checks are permissive: not all systems use home-manager
@@ -10,6 +11,7 @@ def test_home_manager_profiles_exist(host, user_home):
 
 
 def test_default_shell_is_zsh(host, target_user):
+    """Ensure the user's default shell ends with zsh."""
     user = host.user(target_user)
 
     assert user.shell.endswith("zsh"), "User should have zsh as default shell"

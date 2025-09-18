@@ -14,8 +14,8 @@ def test_ssh_dir_and_private_keys_exist(host, user_home):
 
     # Use a safe shell command to list private keys (exclude .pub files)
     keys_cmd = (
-        "sh -c \"ls {home}/.ssh/id_* 2>/dev/null | grep -v '\\\\.pub' || true\""
-    ).format(home=user_home)
+        f"sh -c \"ls {user_home}/.ssh/id_* 2>/dev/null | grep -v '\\\\.pub' || true\""
+    )
     keys = host.run(keys_cmd)
     assert keys.stdout.strip(), "At least one SSH private key should exist in ~/.ssh"
 

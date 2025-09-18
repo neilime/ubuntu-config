@@ -2,6 +2,7 @@
 
 
 def test_mail_and_chat_apps_present(host):
+    """Smoke-check that common communication apps are present (if installed)."""
     # check for common apps like slack (flatpak names vary)
     for name in ("slack",):
         cmd = host.run(f"which {name} >/dev/null 2>&1 || true")
