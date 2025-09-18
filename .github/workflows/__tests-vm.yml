@@ -81,16 +81,41 @@ jobs:
           export DESKTOP_SESSION=ubuntu
           export XDG_SESSION_TYPE=x11
 
+          # Debug: Check if required commands are available
+          echo "🔍 Checking for required GUI commands..."
+          which Xvfb || { echo "❌ Xvfb not found"; whereis Xvfb; ls -la /usr/bin/*vfb* || true; }
+          which dbus-launch || { echo "❌ dbus-launch not found"; whereis dbus-launch; ls -la /usr/bin/dbus* || true; }
+
           # Start system-wide dbus if not running
           sudo systemctl start dbus || true
 
           # Start virtual display as the user (since dconf tasks will run as user)
-          Xvfb :99 -screen 0 1024x768x24 -ac +extension GLX +render -noreset &
-          XVFB_PID=$!
+          # Use full path and provide fallbacks in case of PATH issues
+          if command -v Xvfb >/dev/null 2>&1; then
+            Xvfb :99 -screen 0 1024x768x24 -ac +extension GLX +render -noreset &
+            XVFB_PID=$!
+          elif [ -x /usr/bin/Xvfb ]; then
+            /usr/bin/Xvfb :99 -screen 0 1024x768x24 -ac +extension GLX +render -noreset &
+            XVFB_PID=$!
+          else
+            echo "❌ Xvfb not found, attempting to install..."
+            sudo apt-get update && sudo apt-get install -y xvfb
+            /usr/bin/Xvfb :99 -screen 0 1024x768x24 -ac +extension GLX +render -noreset &
+            XVFB_PID=$!
+          fi
           sleep 3
 
           # Start dbus session as the user (dconf needs user session)
-          eval $(dbus-launch --sh-syntax)
+          # Use full path and provide fallbacks in case of PATH issues
+          if command -v dbus-launch >/dev/null 2>&1; then
+            eval $(dbus-launch --sh-syntax)
+          elif [ -x /usr/bin/dbus-launch ]; then
+            eval $(/usr/bin/dbus-launch --sh-syntax)
+          else
+            echo "❌ dbus-launch not found, attempting to install..."
+            sudo apt-get update && sudo apt-get install -y dbus-x11
+            eval $(/usr/bin/dbus-launch --sh-syntax)
+          fi
           export DBUS_SESSION_BUS_ADDRESS
 
           # Ensure machine-id exists for dbus
@@ -101,7 +126,9 @@ jobs:
           wget -qO- "$6" | sh
 
           # Clean up background processes
-          kill $XVFB_PID || true
+          if [ -n "${XVFB_PID:-}" ]; then
+            kill $XVFB_PID || true
+          fi
 
           # Create success marker
           sudo touch /e2e.success
