@@ -35,43 +35,17 @@
   community.general.timezone:
     name: "{{ setup_system_timezone }}"
 
-- name: Check if GUI session is available
-  ansible.builtin.shell: |
-    # Check for desktop session indicators
-    if [ -n "${XDG_CURRENT_DESKTOP:-}" ] || [ -n "${DESKTOP_SESSION:-}" ] || [ -n "${DISPLAY:-}" ]; then
-      exit 0
-    fi
-    # Check if dbus session is available
-    if command -v dbus-launch >/dev/null 2>&1 && pgrep -x dbus-daemon >/dev/null 2>&1; then
-      exit 0
-    fi
-    # Check if we can connect to dconf without error
-    if dconf read /org/gnome/shell/ubuntu/color-scheme >/dev/null 2>&1; then
-      exit 0
-    fi
-    exit 1
-  register: gui_session_available
-  failed_when: false
-  changed_when: false
-
 - name: Set shell to prefer dark mode
   community.general.dconf:
     key: "/org/gnome/shell/ubuntu/color-scheme"
     value: "'prefer-dark'"
     state: present
-  when: gui_session_available.rc == 0
 
 - name: Set appearance to prefer dark mode
   community.general.dconf:
     key: "/org/gnome/desktop/interface/color-scheme"
     value: "'prefer-dark'"
     state: present
-  when: gui_session_available.rc == 0
-
-- name: Warn about dark mode configuration skip
-  ansible.builtin.debug:
-    msg: "⚠️  Skipping dark mode configuration - no GUI session detected. Settings will be applied when desktop environment is available."
-  when: gui_session_available.rc != 0
 
 - name: Pin system favorites to GNOME launcher
   ansible.builtin.include_role:

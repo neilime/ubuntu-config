@@ -3,6 +3,10 @@ name: Shared - Continuous Integration for common tasks
 
 "on":
   workflow_call:
+    inputs:
+      sign-images:
+        required: true
+        type: boolean
 
 permissions: {}
 
@@ -29,6 +33,7 @@ jobs:
       id-token: write
     with:
       oci-registry: ${{ vars.OCI_REGISTRY }}
+      sign: ${{ inputs.sign-images }}
       images: |
         [
           {

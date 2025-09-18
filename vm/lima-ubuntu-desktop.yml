@@ -35,7 +35,7 @@ provision:
       # Update package list
       apt-get update
 
-      # Install packages needed for the install script and development
+      # Install packages needed for the install script and development  
       DEBIAN_FRONTEND=noninteractive apt-get install -y \
         curl \
         wget \
@@ -44,7 +44,12 @@ provision:
         git \
         openssh-server \
         python3 \
-        python3-pip
+        python3-pip \
+        dbus-x11 \
+        xvfb \
+        dconf-cli \
+        gconf-service \
+        gsettings-desktop-schemas
 
       # Ensure SSH is properly configured
       systemctl enable ssh
@@ -57,7 +62,11 @@ provision:
         /etc/ssh/sshd_config
       systemctl reload ssh
 
-      echo "✅ Enhanced Ubuntu VM setup complete for local development"
+      # Enable dbus for GUI operations
+      systemctl enable dbus
+      systemctl start dbus
+
+      echo "✅ Enhanced Ubuntu VM setup with GUI support complete"
 
   - mode: user
     script: |
