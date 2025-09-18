@@ -75,8 +75,25 @@ jobs:
           export REPOSITORY_URL="$4"
           export REPOSITORY_BRANCH="$5"
 
+          # Set up minimal GUI environment for dconf operations
+          export DISPLAY=:99
+          export XDG_CURRENT_DESKTOP=ubuntu:GNOME
+          export DESKTOP_SESSION=ubuntu
+
+          # Start virtual display for dconf
+          Xvfb :99 -screen 0 1024x768x24 -ac +extension GLX +render -noreset &
+          XVFB_PID=$!
+          sleep 2
+
+          # Start dbus session for dconf
+          eval $(dbus-launch --sh-syntax)
+          export DBUS_SESSION_BUS_ADDRESS
+
           # Download and run the install script
           wget -qO- "$6" | sudo -E sh
+
+          # Clean up background processes
+          kill $XVFB_PID || true
 
           # Create success marker
           sudo touch /e2e.success
