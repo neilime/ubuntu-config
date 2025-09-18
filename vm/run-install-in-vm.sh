@@ -16,6 +16,8 @@ fi
 # Build env export prefix for the streamed script (POSIX-safe)
 export_vars=""
 for var in BITWARDEN_CLIENT_ID BITWARDEN_CLIENT_SECRET BITWARDEN_EMAIL BITWARDEN_PASSWORD SKIP_SETUP SKIP_CLEANUP SKIP_INSTALL_REQUIREMENTS; do
+	# Pre-declare val so static analyzers (shellcheck) know it exists.
+	val=""
 	# POSIX-safe indirect expansion using eval.
 	# This sets val to the value of the variable named in $var, or to an empty
 	# string if it's undefined. The quoting below is careful to work in /bin/sh.

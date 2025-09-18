@@ -39,7 +39,7 @@ RUN printf "Host *\\nStrictHostKeyChecking no\\nUserKnownHostsFile=/dev/null\\nL
 
 # Create entrypoint script to handle SSH key setup at runtime  
 USER root
-RUN cat > /entrypoint.sh <<'EOF'
+RUN cat > /entrypoint.sh <<EOF
 #!/bin/bash
 # Setup SSH key if available
 if [ -f /workspace/vm/id_rsa ]; then
@@ -55,6 +55,7 @@ else
   exec su testuser -c "$*"
 fi
 EOF
+
 RUN chmod +x /entrypoint.sh
 
 # Switch to testuser for final layer

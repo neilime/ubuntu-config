@@ -1,6 +1,10 @@
 .env
 ansible/.ansible
 
+# Ignore local VM secrets
+vm/id_rsa
+vm/id_rsa.pub
+
 # Python
 __pycache__/
 *.py[cod]

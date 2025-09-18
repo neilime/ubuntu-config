@@ -1,3 +1,0 @@
-# Ignore local VM secrets
-vm/id_rsa
-vm/test_gpg_private.asc
