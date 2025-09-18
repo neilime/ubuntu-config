@@ -75,22 +75,30 @@ jobs:
           export REPOSITORY_URL="$4"
           export REPOSITORY_BRANCH="$5"
 
-          # Set up minimal GUI environment for dconf operations
+          # Set up GUI environment for dconf operations (for the user, not root)
           export DISPLAY=:99
           export XDG_CURRENT_DESKTOP=ubuntu:GNOME
           export DESKTOP_SESSION=ubuntu
+          export XDG_SESSION_TYPE=x11
 
-          # Start virtual display for dconf
+          # Start system-wide dbus if not running
+          sudo systemctl start dbus || true
+
+          # Start virtual display as the user (since dconf tasks will run as user)
           Xvfb :99 -screen 0 1024x768x24 -ac +extension GLX +render -noreset &
           XVFB_PID=$!
-          sleep 2
+          sleep 3
 
-          # Start dbus session for dconf
+          # Start dbus session as the user (dconf needs user session)
           eval $(dbus-launch --sh-syntax)
           export DBUS_SESSION_BUS_ADDRESS
 
-          # Download and run the install script
-          wget -qO- "$6" | sudo -E sh
+          # Ensure machine-id exists for dbus
+          sudo dbus-uuidgen --ensure=/etc/machine-id
+
+          # Download and run the install script (which will sudo ansible-pull)
+          # The GUI environment variables will be inherited by the user tasks
+          wget -qO- "$6" | sh
 
           # Clean up background processes
           kill $XVFB_PID || true

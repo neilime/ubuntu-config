@@ -40,12 +40,14 @@
     key: "/org/gnome/shell/ubuntu/color-scheme"
     value: "'prefer-dark'"
     state: present
+  become: false
 
 - name: Set appearance to prefer dark mode
   community.general.dconf:
     key: "/org/gnome/desktop/interface/color-scheme"
     value: "'prefer-dark'"
     state: present
+  become: false
 
 - name: Pin system favorites to GNOME launcher
   ansible.builtin.include_role:

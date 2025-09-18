@@ -49,7 +49,9 @@ provision:
         xvfb \
         dconf-cli \
         gconf-service \
-        gsettings-desktop-schemas
+        gsettings-desktop-schemas \
+        dconf-gsettings-backend \
+        at-spi2-core
 
       # Ensure SSH is properly configured
       systemctl enable ssh
@@ -62,9 +64,15 @@ provision:
         /etc/ssh/sshd_config
       systemctl reload ssh
 
-      # Enable dbus for GUI operations
+      # Enable and ensure dbus is running for GUI operations
       systemctl enable dbus
       systemctl start dbus
+
+      # Create machine-id for dbus if not exists
+      dbus-uuidgen --ensure
+
+      # Set up minimal GSettings schema compilation
+      glib-compile-schemas /usr/share/glib-2.0/schemas/ || true
 
       echo "✅ Enhanced Ubuntu VM setup with GUI support complete"
 
