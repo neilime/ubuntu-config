@@ -17,7 +17,8 @@ fi
 export_vars=""
 for var in BITWARDEN_CLIENT_ID BITWARDEN_CLIENT_SECRET BITWARDEN_EMAIL BITWARDEN_PASSWORD SKIP_SETUP SKIP_CLEANUP SKIP_INSTALL_REQUIREMENTS; do
 	# POSIX-safe indirect expansion using eval
-	eval "val=\"\${$var-}\""
+	# ensure undefined variables expand to empty string to satisfy shellcheck SC2154
+	eval "val=\"\${${var:-}-}\"" || true
 	# append to the export_vars string
 	export_vars="$export_vars $var=\"$val\""
 done
