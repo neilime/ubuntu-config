@@ -62,11 +62,42 @@ jobs:
           done
 
       - name: Run install script
+        timeout-minutes: 30
         run: |
           # Create and upload a script to properly set environment variables and run the install script
           cat > /tmp/run_install.sh << 'EOF'
           #!/bin/bash
           set -eu
+
+          # Function to cleanup background processes
+          cleanup() {
+            echo "🧹 Cleaning up background processes..."
+            
+            # Kill Xvfb process if it exists
+            if [ -n "${XVFB_PID:-}" ]; then
+              echo "Killing Xvfb process $XVFB_PID"
+              kill $XVFB_PID 2>/dev/null || true
+              sleep 1
+              kill -9 $XVFB_PID 2>/dev/null || true
+            fi
+            
+            # Kill any remaining Xvfb processes on display :99
+            pkill -f "Xvfb :99" 2>/dev/null || true
+            
+            # Kill dbus session if it exists
+            if [ -n "${DBUS_SESSION_BUS_PID:-}" ]; then
+              echo "Killing dbus session process $DBUS_SESSION_BUS_PID"
+              kill $DBUS_SESSION_BUS_PID 2>/dev/null || true
+            fi
+            
+            # Kill any remaining dbus-launch processes
+            pkill -f "dbus-launch" 2>/dev/null || true
+            
+            echo "✅ Cleanup completed"
+          }
+
+          # Set up trap to ensure cleanup runs on exit (success or failure)
+          trap cleanup EXIT
 
           # Export environment variables
           export BITWARDEN_CLIENT_ID="$1"
@@ -123,15 +154,17 @@ jobs:
 
           # Download and run the install script (which will sudo ansible-pull)
           # The GUI environment variables will be inherited by the user tasks
-          wget -qO- "$6" | sh
-
-          # Clean up background processes
-          if [ -n "${XVFB_PID:-}" ]; then
-            kill $XVFB_PID || true
+          echo "🚀 Starting install script..."
+          if wget -qO- "$6" | sh; then
+            echo "✅ Install script completed successfully"
+            # Create success marker
+            sudo touch /e2e.success
+          else
+            echo "❌ Install script failed with exit code $?"
+            exit 1
           fi
 
-          # Create success marker
-          sudo touch /e2e.success
+          # Note: cleanup() function will be called automatically via trap on EXIT
           EOF
 
           # Make the script executable
@@ -151,10 +184,12 @@ jobs:
             '$INSTALL_SCRIPT'"
 
       - name: Validate setup success
+        timeout-minutes: 5
         run: |
           ssh lima-ubuntu-desktop '[ -f /e2e.success ] && echo "✅ Success" || { echo "❌ Setup failed"; exit 1; }'
 
       - name: Run TestInfra tests on VM using test image
+        timeout-minutes: 15
         run: |
           docker run --rm --network host -v "$PWD":/workspace -w /workspace \
             "$TEST_IMAGE" \
