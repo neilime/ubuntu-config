@@ -68,7 +68,9 @@
 - name: Ensure nix profile is sourced from bashrc (for interactive shells)
   ansible.builtin.lineinfile:
     path: "{{ user_home }}/.bashrc"
-    line: "if [ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh; fi"
+    line: >-
+      if [ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ];
+      then . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh; fi
     create: true
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
@@ -93,7 +95,9 @@
 - name: Install Home Manager into user's Nix profile (idempotent)
   ansible.builtin.shell: |
     . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-    nix --extra-experimental-features 'nix-command flakes' profile install --profile /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile nixpkgs#home-manager
+    nix --extra-experimental-features 'nix-command flakes' profile install \
+      --profile /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile \
+      nixpkgs#home-manager
   when: home_manager_present.stdout == 'no'
   environment:
     USER: "{{ ansible_user }}"
@@ -103,26 +107,71 @@
     executable: /bin/bash
   become: true
 
-- name: Inform about skipping Home Manager activation when daemon missing
-  ansible.builtin.debug:
-    msg: |
-      Skipping Home Manager activation because Nix daemon socket was not found at /nix/var/nix/daemon-socket/socket.
-      Activation should be performed on a host with a running nix-daemon.
-  changed_when: false
+- name: Ensure user home directory has correct ownership
+  ansible.builtin.file:
+    path: "{{ user_home }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0755"
+  become: true
+
+- name: Ensure user cache directory exists with proper ownership
+  ansible.builtin.file:
+    path: "{{ user_home }}/.cache"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0755"
+  become: true
+
+- name: Ensure user local directories exist with proper ownership
+  ansible.builtin.file:
+    path: "{{ user_home }}/{{ item }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0755"
+  become: true
+  loop:
+    - .local
+    - .local/share
+    - .local/state
+    - .config
+
+- name: Ensure oh-my-zsh cache directory exists with proper ownership
+  ansible.builtin.file:
+    path: "{{ user_home }}/.cache/oh-my-zsh"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0755"
+  become: true
 
 - name: Activate Home Manager via flake (home-manager switch)
   ansible.builtin.shell: |
     set -euo pipefail
+    # Source nix daemon profile
     . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+    # Change to home-manager config directory
     cd "{{ user_home }}/.config/home-manager"
-    /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/home-manager switch --flake .#{{ ansible_user }} --extra-experimental-features 'nix-command flakes'
+    # Run home-manager switch with proper environment
+    /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/home-manager \
+      switch --flake .#{{ ansible_user }} \
+      --extra-experimental-features 'nix-command flakes'
   environment:
     USER: "{{ ansible_user }}"
     HOME: "{{ user_home }}"
+    XDG_CACHE_HOME: "{{ user_home }}/.cache"
+    XDG_CONFIG_HOME: "{{ user_home }}/.config"
+    XDG_DATA_HOME: "{{ user_home }}/.local/share"
+    XDG_STATE_HOME: "{{ user_home }}/.local/state"
   register: home_manager_switch
   args:
     executable: /bin/bash
-  changed_when: "'No changes' not in (home_manager_switch.stdout | default('')) and home_manager_switch.rc == 0"
+  changed_when: >-
+    'No changes' not in (home_manager_switch.stdout | default(''))
+    and home_manager_switch.rc == 0
   failed_when: home_manager_switch.rc != 0
   become: true
   become_user: "{{ ansible_user }}"
