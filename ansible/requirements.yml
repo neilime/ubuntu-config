@@ -1,11 +1,11 @@
 ---
 collections:
   - name: community.general
-    version: 11.2.1
+    version: 11.3.0
   - name: community.docker
     version: 4.7.0
   - name: ansible.posix
-    version: 1.6.2
+    version: 2.1.0
 
 roles:
   - src: gantsign.default-web-browser
