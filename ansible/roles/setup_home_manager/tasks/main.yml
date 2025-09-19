@@ -139,6 +139,15 @@
     - .local/state
     - .config
 
+- name: Ensure Nix cache directory exists with proper ownership
+  ansible.builtin.file:
+    path: "{{ user_home }}/.cache/nix"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0755"
+  become: true
+
 - name: Ensure oh-my-zsh cache directory exists with proper ownership
   ansible.builtin.file:
     path: "{{ user_home }}/.cache/oh-my-zsh"

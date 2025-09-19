@@ -15,6 +15,7 @@ def test_home_manager_required_directories_exist(host, user_home, target_user):
     # Directories that should exist for proper Home Manager operation
     required_dirs = [
         ".cache",
+        ".cache/nix",
         ".cache/oh-my-zsh",
         ".config",
         ".local",
