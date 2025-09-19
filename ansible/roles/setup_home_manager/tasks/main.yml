@@ -182,8 +182,10 @@
   async: 1800 # 30 minutes timeout for the build process
   poll: 10 # Check every 10 seconds
   changed_when: >-
-    'No changes' not in (home_manager_switch.stdout | default(''))
-    and home_manager_switch.rc == 0
-  failed_when: home_manager_switch.rc != 0
+    home_manager_switch.finished == 1
+    and 'No changes' not in (home_manager_switch.stdout | default(''))
+  failed_when: >-
+    home_manager_switch.finished == 1
+    and home_manager_switch.rc != 0
   become: true
   become_user: "{{ ansible_user }}"
