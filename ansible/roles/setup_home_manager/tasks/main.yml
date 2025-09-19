@@ -179,6 +179,8 @@
   register: home_manager_switch
   args:
     executable: /bin/bash
+  async: 1800 # 30 minutes timeout for the build process
+  poll: 10 # Check every 10 seconds
   changed_when: >-
     'No changes' not in (home_manager_switch.stdout | default(''))
     and home_manager_switch.rc == 0
