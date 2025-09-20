@@ -166,7 +166,7 @@
     # Change to home-manager config directory
     cd "{{ user_home }}/.config/home-manager"
     # Run home-manager switch with proper environment
-    /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/home-manager \
+    timeout 1800 /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/home-manager \
       switch --flake .#{{ ansible_user }} \
       --extra-experimental-features 'nix-command flakes'
   environment:
@@ -179,7 +179,5 @@
   register: home_manager_switch
   args:
     executable: /bin/bash
-  async: 1800 # 30 minutes timeout for the build process
-  poll: 10 # Check every 10 seconds
   become: true
   become_user: "{{ ansible_user }}"
