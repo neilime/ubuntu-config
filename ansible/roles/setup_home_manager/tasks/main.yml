@@ -158,6 +158,27 @@
     mode: "0755"
   become: true
 
+- name: Clear any existing nix-env packages to prevent conflicts
+  ansible.builtin.shell: |
+    set -euo pipefail
+    # Source nix daemon profile
+    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+    # Check for existing packages and remove them to prevent conflicts
+    if nix-env -q | grep -q .; then
+      echo "Found existing nix-env packages, removing them to prevent conflicts:"
+      nix-env -q
+      nix-env -e '*'
+    else
+      echo "No existing nix-env packages found"
+    fi
+  environment:
+    USER: "{{ ansible_user }}"
+    HOME: "{{ user_home }}"
+  args:
+    executable: /bin/bash
+  become: true
+  become_user: "{{ ansible_user }}"
+
 - name: Activate Home Manager via flake (home-manager switch)
   ansible.builtin.shell: |
     set -euo pipefail
