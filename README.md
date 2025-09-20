@@ -265,6 +265,20 @@ direnv allow
 vim flake.nix
 ```
 
+### Linting
+
+To ensure code quality, you can run linting checks:
+
+```bash
+make lint
+```
+
+Fix issues automatically with:
+
+```bash
+make lint-fix
+```
+
 ## Continuous Integration
 
 This project uses GitHub Actions to test the Ansible playbook with TestInfra using both Docker containers and Lima VMs. The workflows are defined in `.github/workflows/`.
