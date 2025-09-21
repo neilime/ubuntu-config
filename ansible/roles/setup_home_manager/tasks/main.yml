@@ -163,13 +163,14 @@
     set -euo pipefail
     # Source nix daemon profile
     . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-    # Check for existing packages and remove them to prevent conflicts
-    if nix-env -q | grep -q .; then
-      echo "Found existing nix-env packages, removing them to prevent conflicts:"
-      nix-env -q
-      nix-env -e '*'
+    # Check for existing packages in user profile and remove them to prevent conflicts
+    echo "Checking for existing nix-env packages in user profile..."
+    if nix-env --profile /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile -q 2>/dev/null | grep -q .; then
+      echo "Found existing nix-env packages in user profile, removing them to prevent conflicts:"
+      nix-env --profile /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile -q
+      nix-env --profile /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile -e '*' || echo "Warning: Could not remove some packages, continuing anyway"
     else
-      echo "No existing nix-env packages found"
+      echo "No existing nix-env packages found in user profile"
     fi
   environment:
     USER: "{{ ansible_user }}"
