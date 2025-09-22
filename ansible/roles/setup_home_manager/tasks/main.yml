@@ -163,15 +163,37 @@
     set -euo pipefail
     # Source nix daemon profile
     . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-    # Check for existing packages in user profile and remove them to prevent conflicts
-    echo "Checking for existing nix-env packages in user profile..."
-    if nix-env --profile /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile -q 2>/dev/null | grep -q .; then
-      echo "Found existing nix-env packages in user profile, removing them to prevent conflicts:"
-      nix-env --profile /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile -q
-      nix-env --profile /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile -e '*' || echo "Warning: Could not remove some packages, continuing anyway"
+
+    echo "=== Checking for existing nix-env packages that could conflict ==="
+
+    # Check default user profile (this is what home-manager checks)
+    echo "Checking default user profile..."
+    if nix-env -q 2>/dev/null | grep -q .; then
+      echo "Found existing nix-env packages in default user profile, removing them to prevent conflicts:"
+      nix-env -q
+      nix-env -e '*' || echo "Warning: Could not remove some packages from default profile, continuing anyway"
     else
-      echo "No existing nix-env packages found in user profile"
+      echo "No existing nix-env packages found in default user profile"
     fi
+
+    # Check specific user profile
+    echo "Checking per-user profile..."
+    if nix-env --profile /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile -q 2>/dev/null | grep -q .; then
+      echo "Found existing nix-env packages in per-user profile, removing them to prevent conflicts:"
+      nix-env --profile /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile -q
+      nix-env --profile /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile -e '*' || echo "Warning: Could not remove some packages from per-user profile, continuing anyway"
+    else
+      echo "No existing nix-env packages found in per-user profile"
+    fi
+
+    # Also check if home-manager itself was installed via nix-env (could cause conflicts)
+    echo "Checking if home-manager was installed via nix-env..."
+    if nix-env -q home-manager 2>/dev/null | grep -q home-manager; then
+      echo "Found home-manager installed via nix-env, removing it to prevent conflicts..."
+      nix-env -e home-manager || echo "Warning: Could not remove home-manager from nix-env, continuing anyway"
+    fi
+
+    echo "=== Package conflict cleanup completed ==="
   environment:
     USER: "{{ ansible_user }}"
     HOME: "{{ user_home }}"
@@ -187,10 +209,34 @@
     . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
     # Change to home-manager config directory
     cd "{{ user_home }}/.config/home-manager"
-    # Run home-manager switch with proper environment
+
+    echo "=== Starting Home Manager activation ==="
+
+    # Check if there are any conflicting packages one more time
+    echo "Final check for conflicting nix-env packages..."
+    if nix-env -q 2>/dev/null | grep -q .; then
+      echo "WARNING: Still found nix-env packages that could conflict:"
+      nix-env -q
+      echo "Attempting to remove them..."
+      nix-env -e '*' || echo "Could not remove all packages, proceeding anyway"
+    fi
+
+    # Run home-manager switch with proper environment and better error output
+    echo "Running home-manager switch..."
     timeout 1800 /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/home-manager \
       switch --flake .#{{ ansible_user }} \
-      --extra-experimental-features 'nix-command flakes'
+      --extra-experimental-features 'nix-command flakes' \
+      --show-trace || {
+        echo "=== Home Manager switch failed ==="
+        echo "Checking for remaining nix-env packages:"
+        nix-env -q || echo "No nix-env packages found"
+        echo "Checking home-manager version:"
+        /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/home-manager --version || echo "Could not check home-manager version"
+        echo "=== End of failure diagnostics ==="
+        exit 1
+      }
+
+    echo "=== Home Manager activation completed successfully ==="
   environment:
     USER: "{{ ansible_user }}"
     HOME: "{{ user_home }}"
