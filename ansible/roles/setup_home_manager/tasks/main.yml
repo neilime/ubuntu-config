@@ -6,6 +6,20 @@
 # per-user home-manager flake and installs/activates Home Manager following the
 # official standalone instructions: https://nix-community.github.io/home-manager/index.xhtml#sec-install-standalone
 
+- name: Check if Nix is properly installed
+  ansible.builtin.stat:
+    path: /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+  register: nix_daemon_profile
+  failed_when: false
+
+- name: Verify Nix installation is complete
+  ansible.builtin.fail:
+    msg: |
+      Nix is not properly installed. The file /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh is missing.
+      This suggests that the 'danielrolls.nix' role failed earlier in the installation process.
+      Please check the logs for the 'Install Nix package manager' task in the setup_system role.
+  when: not nix_daemon_profile.stat.exists
+
 - name: Set user home directory
   ansible.builtin.set_fact:
     user_home: "/home/{{ ansible_user }}"
@@ -94,6 +108,13 @@
 
 - name: Install Home Manager into user's Nix profile (idempotent)
   ansible.builtin.shell: |
+    set -euo pipefail
+    # Verify nix-daemon profile exists
+    if [ ! -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
+      echo "ERROR: Nix daemon profile not found. Nix installation may be incomplete."
+      exit 1
+    fi
+    # Source nix daemon profile
     . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
     nix --extra-experimental-features 'nix-command flakes' profile install \
       --profile /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile \
@@ -161,6 +182,11 @@
 - name: Clear any existing nix-env packages to prevent conflicts
   ansible.builtin.shell: |
     set -euo pipefail
+    # Verify nix-daemon profile exists
+    if [ ! -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
+      echo "ERROR: Nix daemon profile not found. Nix installation may be incomplete."
+      exit 1
+    fi
     # Source nix daemon profile
     . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 
@@ -205,6 +231,11 @@
 - name: Activate Home Manager via flake (home-manager switch)
   ansible.builtin.shell: |
     set -euo pipefail
+    # Verify nix-daemon profile exists
+    if [ ! -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
+      echo "ERROR: Nix daemon profile not found. Nix installation may be incomplete."
+      exit 1
+    fi
     # Source nix daemon profile
     . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
     # Change to home-manager config directory
