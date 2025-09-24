@@ -28,11 +28,15 @@ fi
 
 # Also check default profile symlink
 DEFAULT_PROFILE="$HOME/.nix-profile"
-if [ -L "$DEFAULT_PROFILE" ] && nix-env -q 2>/dev/null | grep -q .; then
-	echo "WARNING: Found packages in default profile symlink:"
-	nix-env -q
-	echo "Attempting to remove them..."
-	nix-env -e '*' || echo "Could not remove packages from default profile, proceeding anyway"
+if [ -L "$DEFAULT_PROFILE" ]; then
+	echo "Checking default profile symlink for packages..."
+	# Only check if we can actually access it without permission errors
+	if nix-env --profile "$DEFAULT_PROFILE" -q 2>/dev/null | grep -q .; then
+		echo "WARNING: Found packages in default profile symlink:"
+		nix-env --profile "$DEFAULT_PROFILE" -q
+		echo "Attempting to remove them..."
+		nix-env --profile "$DEFAULT_PROFILE" -e '*' || echo "Could not remove packages from default profile, proceeding anyway"
+	fi
 fi
 
 # Run home-manager switch with proper environment and better error output
@@ -46,7 +50,7 @@ timeout 1800 /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/home-
 	echo "Checking for remaining nix-env packages:"
 	nix-env --profile "$USER_PROFILE" -q || echo "No nix-env packages found in user profile"
 	if [ -L "$DEFAULT_PROFILE" ]; then
-		nix-env -q || echo "No nix-env packages found in default profile"
+		nix-env --profile "$DEFAULT_PROFILE" -q || echo "No nix-env packages found in default profile"
 	fi
 	echo "Checking home-manager version:"
 	# shellcheck disable=SC1083,SC2288
