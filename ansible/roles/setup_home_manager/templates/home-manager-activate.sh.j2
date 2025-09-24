@@ -1,7 +1,4 @@
-# This is a Jinja2 template rendered by Ansible and executed on the target host.
-# It intentionally contains Jinja2 variables like {{ ansible_user }} which confuse
-# static shell linters. We only disable shellcheck on the specific lines that
-# contain Jinja2 expressions or source a non-local file.
+#!/usr/bin/env bash
 set -euo pipefail
 
 # Verify nix-daemon profile exists
@@ -10,7 +7,8 @@ if [ ! -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
 	exit 1
 fi
 # Source nix daemon profile
-. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh # shellcheck disable=SC1091
+# shellcheck disable=SC1091
+. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 # Change to home-manager config directory
 cd "{{ setup_home_manager_user_home }}/.config/home-manager"
 
@@ -51,7 +49,8 @@ timeout 1800 /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/home-
 		nix-env -q || echo "No nix-env packages found in default profile"
 	fi
 	echo "Checking home-manager version:"
-	/nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/home-manager --version || echo "Could not check home-manager version" # shellcheck disable=SC1083,SC2288
+	# shellcheck disable=SC1083,SC2288
+	/nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/home-manager --version || echo "Could not check home-manager version"
 	echo "=== End of failure diagnostics ==="
 	exit 1
 }

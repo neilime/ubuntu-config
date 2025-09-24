@@ -23,23 +23,23 @@
 ---
 # FIXME: should use community.general.bitwarden
 # "{{ lookup('community.general.bitwarden', collection_id=setup_keys_bitwarden_gpg_keys_collection_id, bw_session=bw_session) }}"
-- name: Retrieve GPG keys from Bitwarden
+- name: Fetch GPG items from Bitwarden
   delegate_to: localhost
-  ansible.builtin.command: bw list items --collectionid "{{ setup_keys_bitwarden_gpg_keys_collection_id }}" --session "{{ bw_session | default('') }}" --response
-  register: bw_items
+  ansible.builtin.command: >-
+    bw list items --collectionid "{{ setup_keys_bitwarden_gpg_keys_collection_id }}"
+    --session "{{ bw_session | default('') }}" --response
+  register: setup_keys_bw_items
   changed_when: false
   no_log: true
 
-- ansible.builtin.set_fact:
-    gpg_keys: |
-      {{
-        bw_items.stdout
-        | from_json
-        | community.general.json_query(gpg_keys_query)
-        | selectattr('name', 'defined')
-        | selectattr('name', 'ne', '')
-        | list
-      }}
+- name: Build gpg_keys list from Bitwarden response
+  ansible.builtin.set_fact:
+    setup_keys_gpg_keys: "{{ setup_keys_bw_items.stdout
+      | from_json
+      | community.general.json_query(gpg_keys_query)
+      | selectattr('name', 'defined')
+      | selectattr('name', 'ne', '')
+      | list }}"
   vars:
     gpg_keys_query: |
       data.data[].{
@@ -51,7 +51,7 @@
       }
   no_log: true
 
-- name: Setup GPG keys
+- name: Import each GPG keys
   ansible.builtin.include_tasks: setup-gpg-key.yml
   vars:
     key_name: "{{ item.name }}"
@@ -59,6 +59,6 @@
     private_key: "{{ item.private_key }}"
     sub_private_key: "{{ item.sub_private_key }}"
     ownertrust: "{{ item.ownertrust }}"
-  loop: "{{ gpg_keys }}"
+  loop: "{{ setup_keys_gpg_keys }}"
   loop_control:
     label: "{{ item.name }}"
