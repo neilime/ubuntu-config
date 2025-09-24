@@ -9,4 +9,5 @@ vm/id_rsa.pub
 __pycache__/
 *.py[cod]
 *$py.class
+.pytest_cache/
 tests/.pytest_cache/

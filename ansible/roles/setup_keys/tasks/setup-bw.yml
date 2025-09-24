@@ -18,10 +18,10 @@
       delegate_to: localhost
       ansible.builtin.command: bw config server
       changed_when: false
-      register: bw_server
+      register: setup_keys_bw_server
 
     - name: Set bw server
-      when: bw_server.stdout != setup_keys_bitwarden_server
+      when: setup_keys_bw_server.stdout != setup_keys_bitwarden_server
       delegate_to: localhost
       ansible.builtin.command: bw config server "{{ setup_keys_bitwarden_server }}"
 
@@ -29,11 +29,11 @@
       delegate_to: localhost
       ansible.builtin.command: bw status
       changed_when: false
-      register: bw_status
+      register: setup_keys_bw_status
 
     - name: Login to Bitwarden with API key
       when:
-        - bw_status.stdout | from_json | community.general.json_query('status') == "unauthenticated"
+        - setup_keys_bw_status.stdout | from_json | community.general.json_query('status') == "unauthenticated"
         - setup_keys_bitwarden_client_id | default('', true) | trim | length > 0
         - setup_keys_bitwarden_client_secret | default('', true) | trim | length > 0
       delegate_to: localhost
@@ -45,7 +45,7 @@
 
     - name: Login to Bitwarden with email/password
       when:
-        - bw_status.stdout | from_json | community.general.json_query('status') == "unauthenticated"
+        - setup_keys_bw_status.stdout | from_json | community.general.json_query('status') == "unauthenticated"
         - setup_keys_bitwarden_email | default('', true) | trim | length > 0
         - setup_keys_bitwarden_password | default('', true) | trim | length > 0
         - not (setup_keys_bitwarden_client_id and setup_keys_bitwarden_client_secret)
@@ -57,34 +57,34 @@
       delegate_to: localhost
       ansible.builtin.command: bw status
       changed_when: false
-      register: bw_status_after_login
+      register: setup_keys_bw_status_after_login
 
     - name: Unlock Bitwarden vault with master password
-      when: bw_status_after_login.stdout | from_json | community.general.json_query('status') != "unlocked"
+      when: setup_keys_bw_status_after_login.stdout | from_json | community.general.json_query('status') != "unlocked"
       delegate_to: localhost
       ansible.builtin.command: bw unlock --raw "{{ setup_keys_bitwarden_password }}"
-      register: bw_session_unlock
+      register: setup_keys_bw_session_unlock
       no_log: true
 
     - name: Set session token from unlock
       ansible.builtin.set_fact:
-        bw_session: "{{ bw_session_unlock.stdout }}"
+        setup_keys_bw_session: "{{ setup_keys_bw_session_unlock.stdout }}"
       no_log: true
-      when: bw_session_unlock is defined and bw_session_unlock.stdout is defined
+      when: setup_keys_bw_session_unlock is defined and setup_keys_bw_session_unlock.stdout is defined
 
     - name: Set empty session if already unlocked
       ansible.builtin.set_fact:
-        bw_session: ""
-      when: bw_status_after_login.stdout | from_json | community.general.json_query('status') == "unlocked"
+        setup_keys_bw_session: ""
+      when: setup_keys_bw_status_after_login.stdout | from_json | community.general.json_query('status') == "unlocked"
 
     - name: Ensure bw is unlocked
       delegate_to: localhost
       ansible.builtin.command: bw status
-      register: bw_status
+      register: setup_keys_bw_status
       changed_when: false
-      failed_when: bw_status.stdout | from_json | community.general.json_query('status') != "unlocked"
+      failed_when: setup_keys_bw_status.stdout | from_json | community.general.json_query('status') != "unlocked"
       environment:
-        BW_SESSION: "{{ bw_session | default('') }}"
+        BW_SESSION: "{{ setup_keys_bw_session | default('') }}"
 
   rescue:
     - name: Logout from Bitwarden

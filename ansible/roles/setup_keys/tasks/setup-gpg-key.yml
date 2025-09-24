@@ -198,14 +198,14 @@
     echo '{{ ownertrust }}' | gpg --import-ownertrust 2>&1
   args:
     executable: /bin/bash
-  register: gpg_import_ownertrust
+  register: setup_keys_gpg_import_ownertrust
   become: true
   become_user: "{{ ansible_user }}"
   when: ownertrust | default('', true) | trim | length > 0
   failed_when:
-    - gpg_import_ownertrust.rc != 0
-    - '"no valid user IDs" in gpg_import_ownertrust.stderr'
-  changed_when: '"ownertrust changed" in gpg_import_ownertrust.stderr'
+    - setup_keys_gpg_import_ownertrust.rc != 0
+    - '"no valid user IDs" in setup_keys_gpg_import_ownertrust.stderr'
+  changed_when: '"ownertrust changed" in setup_keys_gpg_import_ownertrust.stderr'
   no_log: true
 
 - name: Verify GPG key is properly imported and trusted
@@ -214,8 +214,8 @@
     gpg --list-keys '{{ key_name }}' && gpg --list-secret-keys '{{ key_name }}'
   args:
     executable: /bin/bash
-  register: gpg_verify_result
+  register: setup_keys_gpg_verify_result
   become: true
   become_user: "{{ ansible_user }}"
-  failed_when: gpg_verify_result.rc != 0
+  failed_when: setup_keys_gpg_verify_result.rc != 0
   changed_when: false
