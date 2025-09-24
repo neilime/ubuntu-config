@@ -35,6 +35,7 @@ USER ubuntu
 RUN --mount=type=cache,target=~/.cache/pipx,sharing=private \
     set -eu; \
     pipx install --include-deps ansible ansible-lint && \
+    pipx upgrade-all && \
     pipx inject --include-apps ansible jmespath nbconvert && \
     pipx ensurepath
 

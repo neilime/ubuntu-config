@@ -1,5 +1,5 @@
 ---
-#---
+# ---
 # Setup Home Manager for user-layer configuration management (standalone install)
 
 # We expect `nix` to be installed already (nix-daemon). This role configures a
@@ -9,7 +9,7 @@
 - name: Check if Nix is properly installed
   ansible.builtin.stat:
     path: /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-  register: nix_daemon_profile
+  register: setup_home_manager_nix_daemon_profile
   failed_when: false
 
 - name: Verify Nix installation is complete
@@ -18,15 +18,15 @@
       Nix is not properly installed. The file /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh is missing.
       This suggests that the 'danielrolls.nix' role failed earlier in the installation process.
       Please check the logs for the 'Install Nix package manager' task in the setup_system role.
-  when: not nix_daemon_profile.stat.exists
+  when: not setup_home_manager_nix_daemon_profile.stat.exists
 
 - name: Set user home directory
   ansible.builtin.set_fact:
-    user_home: "/home/{{ ansible_user }}"
+    setup_home_manager_user_home: "/home/{{ ansible_user }}"
 
 - name: Ensure home-manager config directory exists
   ansible.builtin.file:
-    path: "{{ user_home }}/.config/home-manager"
+    path: "{{ setup_home_manager_user_home }}/.config/home-manager"
     state: directory
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
@@ -36,7 +36,7 @@
 - name: Deploy Home Manager core configuration (home.nix)
   ansible.builtin.template:
     src: home.nix.j2
-    dest: "{{ user_home }}/.config/home-manager/home.nix"
+    dest: "{{ setup_home_manager_user_home }}/.config/home-manager/home.nix"
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: "0644"
@@ -45,7 +45,7 @@
 - name: Deploy Home Manager flake (flake.nix)
   ansible.builtin.template:
     src: flake.nix.j2
-    dest: "{{ user_home }}/.config/home-manager/flake.nix"
+    dest: "{{ setup_home_manager_user_home }}/.config/home-manager/flake.nix"
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: "0644"
@@ -62,7 +62,7 @@
 
 - name: Ensure user-local state directory exists
   ansible.builtin.file:
-    path: "{{ user_home }}/.local/state/nix/profiles"
+    path: "{{ setup_home_manager_user_home }}/.local/state/nix/profiles"
     state: directory
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
@@ -71,7 +71,7 @@
 
 - name: Ensure nix profile is sourced from user shell profile
   ansible.builtin.lineinfile:
-    path: "{{ user_home }}/.profile"
+    path: "{{ setup_home_manager_user_home }}/.profile"
     line: ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh"
     create: true
     owner: "{{ ansible_user }}"
@@ -81,7 +81,7 @@
 
 - name: Ensure nix profile is sourced from bashrc (for interactive shells)
   ansible.builtin.lineinfile:
-    path: "{{ user_home }}/.bashrc"
+    path: "{{ setup_home_manager_user_home }}/.bashrc"
     line: >-
       if [ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ];
       then . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh; fi
@@ -92,18 +92,9 @@
   become: false
 
 - name: Check whether home-manager command is available
-  ansible.builtin.shell: |
-    set -euo pipefail
-    if command -v home-manager >/dev/null 2>&1; then
-      echo yes
-    else
-      echo no
-    fi
-  args:
-    executable: /bin/bash
-  register: home_manager_present
-  changed_when: false
-  failed_when: false
+  ansible.builtin.stat:
+    path: "/nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/home-manager"
+  register: setup_home_manager_home_manager_present
   become: false
 
 - name: Install Home Manager into user's Nix profile (idempotent)
@@ -118,19 +109,20 @@
     . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
     nix --extra-experimental-features 'nix-command flakes' profile install \
       --profile /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile \
-      nixpkgs#home-manager
-  when: home_manager_present.stdout == 'no'
+      "nixpkgs#home-manager"
+  when: not setup_home_manager_home_manager_present.stat.exists
   environment:
     USER: "{{ ansible_user }}"
-    HOME: "{{ user_home }}"
-  register: install_home_manager
+    HOME: "{{ setup_home_manager_user_home }}"
   args:
     executable: /bin/bash
+    creates: "/nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/home-manager"
   become: true
+  register: setup_home_manager_install_home_manager
 
 - name: Ensure user home directory has correct ownership
   ansible.builtin.file:
-    path: "{{ user_home }}"
+    path: "{{ setup_home_manager_user_home }}"
     state: directory
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
@@ -139,7 +131,7 @@
 
 - name: Ensure user cache directory exists with proper ownership
   ansible.builtin.file:
-    path: "{{ user_home }}/.cache"
+    path: "{{ setup_home_manager_user_home }}/.cache"
     state: directory
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
@@ -148,7 +140,7 @@
 
 - name: Ensure user local directories exist with proper ownership
   ansible.builtin.file:
-    path: "{{ user_home }}/{{ item }}"
+    path: "{{ setup_home_manager_user_home }}/{{ item }}"
     state: directory
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
@@ -162,7 +154,7 @@
 
 - name: Ensure Nix cache directory exists with proper ownership (recursive)
   ansible.builtin.file:
-    path: "{{ user_home }}/.cache/nix"
+    path: "{{ setup_home_manager_user_home }}/.cache/nix"
     state: directory
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
@@ -172,7 +164,7 @@
 
 - name: Ensure oh-my-zsh cache directory exists with proper ownership
   ansible.builtin.file:
-    path: "{{ user_home }}/.cache/oh-my-zsh"
+    path: "{{ setup_home_manager_user_home }}/.cache/oh-my-zsh"
     state: directory
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
@@ -192,91 +184,65 @@
 
     echo "=== Checking for existing nix-env packages that could conflict ==="
 
-    # Check default user profile (this is what home-manager checks)
+    # Ensure we're working with the correct user profile paths
+    USER_PROFILE="/nix/var/nix/profiles/per-user/{{ ansible_user }}/profile"
+
+    # Check if the per-user profile directory exists, create if needed
+    if [ ! -d "/nix/var/nix/profiles/per-user/{{ ansible_user }}" ]; then
+      echo "Creating per-user profile directory..."
+      mkdir -p "/nix/var/nix/profiles/per-user/{{ ansible_user }}" || echo "Warning: Could not create per-user profile directory"
+    fi
+
+    # Check default user profile (using explicit profile path to avoid permission issues)
     echo "Checking default user profile..."
-    if nix-env -q 2>/dev/null | grep -q .; then
-      echo "Found existing nix-env packages in default user profile, removing them to prevent conflicts:"
-      nix-env -q
-      nix-env -e '*' || echo "Warning: Could not remove some packages from default profile, continuing anyway"
+    if nix-env --profile "$USER_PROFILE" -q 2>/dev/null | grep -q .; then
+      echo "Found existing nix-env packages in user profile, removing them to prevent conflicts:"
+      nix-env --profile "$USER_PROFILE" -q
+      nix-env --profile "$USER_PROFILE" -e '*' || echo "Warning: Could not remove some packages from user profile, continuing anyway"
     else
-      echo "No existing nix-env packages found in default user profile"
+      echo "No existing nix-env packages found in user profile"
     fi
 
-    # Check specific user profile
-    echo "Checking per-user profile..."
-    if nix-env --profile /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile -q 2>/dev/null | grep -q .; then
-      echo "Found existing nix-env packages in per-user profile, removing them to prevent conflicts:"
-      nix-env --profile /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile -q
-      nix-env --profile /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile -e '*' || echo "Warning: Could not remove some packages from per-user profile, continuing anyway"
-    else
-      echo "No existing nix-env packages found in per-user profile"
-    fi
-
-    # Also check if home-manager itself was installed via nix-env (could cause conflicts)
-    echo "Checking if home-manager was installed via nix-env..."
-    if nix-env -q home-manager 2>/dev/null | grep -q home-manager; then
-      echo "Found home-manager installed via nix-env, removing it to prevent conflicts..."
-      nix-env -e home-manager || echo "Warning: Could not remove home-manager from nix-env, continuing anyway"
+    # Also check if there's a default profile that might conflict
+    DEFAULT_PROFILE="$HOME/.nix-profile"
+    if [ -L "$DEFAULT_PROFILE" ] && nix-env -q 2>/dev/null | grep -q .; then
+      echo "Found packages in default profile symlink, removing them..."
+      nix-env -e '*' || echo "Warning: Could not remove packages from default profile, continuing anyway"
     fi
 
     echo "=== Package conflict cleanup completed ==="
   environment:
     USER: "{{ ansible_user }}"
-    HOME: "{{ user_home }}"
+    HOME: "{{ setup_home_manager_user_home }}"
+    NIX_USER_PROFILE_DIR: "/nix/var/nix/profiles/per-user/{{ ansible_user }}"
   args:
     executable: /bin/bash
   become: true
   become_user: "{{ ansible_user }}"
+  changed_when: false
+- name: Copy home-manager activation script into place
+  ansible.builtin.template:
+    src: home-manager-activate.sh.j2
+    dest: "{{ setup_home_manager_user_home }}/.config/home-manager/home-manager-activate.sh"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0755"
+  become: true
+  become_user: "{{ ansible_user }}"
 
-- name: Activate Home Manager via flake (home-manager switch)
-  ansible.builtin.shell: |
-    set -euo pipefail
-    # Verify nix-daemon profile exists
-    if [ ! -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
-      echo "ERROR: Nix daemon profile not found. Nix installation may be incomplete."
-      exit 1
-    fi
-    # Source nix daemon profile
-    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-    # Change to home-manager config directory
-    cd "{{ user_home }}/.config/home-manager"
-
-    echo "=== Starting Home Manager activation ==="
-
-    # Check if there are any conflicting packages one more time
-    echo "Final check for conflicting nix-env packages..."
-    if nix-env -q 2>/dev/null | grep -q .; then
-      echo "WARNING: Still found nix-env packages that could conflict:"
-      nix-env -q
-      echo "Attempting to remove them..."
-      nix-env -e '*' || echo "Could not remove all packages, proceeding anyway"
-    fi
-
-    # Run home-manager switch with proper environment and better error output
-    echo "Running home-manager switch..."
-    timeout 1800 /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/home-manager \
-      switch --flake .#{{ ansible_user }} \
-      --extra-experimental-features 'nix-command flakes' \
-      --show-trace || {
-        echo "=== Home Manager switch failed ==="
-        echo "Checking for remaining nix-env packages:"
-        nix-env -q || echo "No nix-env packages found"
-        echo "Checking home-manager version:"
-        /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/home-manager --version || echo "Could not check home-manager version"
-        echo "=== End of failure diagnostics ==="
-        exit 1
-      }
-
-    echo "=== Home Manager activation completed successfully ==="
+- name: Run home-manager activation script
+  ansible.builtin.command:
+    cmd: "{{ setup_home_manager_user_home }}/.config/home-manager/home-manager-activate.sh"
+    chdir: "{{ setup_home_manager_user_home }}/.config/home-manager"
   environment:
     USER: "{{ ansible_user }}"
-    HOME: "{{ user_home }}"
-    XDG_CACHE_HOME: "{{ user_home }}/.cache"
-    XDG_CONFIG_HOME: "{{ user_home }}/.config"
-    XDG_DATA_HOME: "{{ user_home }}/.local/share"
-    XDG_STATE_HOME: "{{ user_home }}/.local/state"
-  register: home_manager_switch
-  args:
-    executable: /bin/bash
+    HOME: "{{ setup_home_manager_user_home }}"
+    XDG_CACHE_HOME: "{{ setup_home_manager_user_home }}/.cache"
+    XDG_CONFIG_HOME: "{{ setup_home_manager_user_home }}/.config"
+    XDG_DATA_HOME: "{{ setup_home_manager_user_home }}/.local/share"
+    XDG_STATE_HOME: "{{ setup_home_manager_user_home }}/.local/state"
+    NIX_USER_PROFILE_DIR: "/nix/var/nix/profiles/per-user/{{ ansible_user }}"
+  register: setup_home_manager_home_manager_switch
   become: true
   become_user: "{{ ansible_user }}"
+  changed_when: false
