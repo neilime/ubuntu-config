@@ -27,10 +27,12 @@
   delegate_to: localhost
   ansible.builtin.command: >-
     bw list items --collectionid "{{ setup_keys_bitwarden_gpg_keys_collection_id }}"
-    --session "{{ bw_session | default('') }}" --response
+    --session "{{ setup_keys_bw_session | default('') }}" --response
   register: setup_keys_bw_items
   changed_when: false
   no_log: true
+  environment:
+    PATH: "/nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin:{{ ansible_env.PATH }}"
 
 - name: Build gpg_keys list from Bitwarden response
   ansible.builtin.set_fact:
