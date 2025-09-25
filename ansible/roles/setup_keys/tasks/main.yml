@@ -1,6 +1,8 @@
 ---
 - name: Setup bw
   ansible.builtin.import_tasks: setup-bw.yml
+  environment:
+    PATH: "/nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin:{{ ansible_env.PATH }}"
 
 - name: Setup SSH keys
   ansible.builtin.import_tasks: setup-ssh-keys.yml
