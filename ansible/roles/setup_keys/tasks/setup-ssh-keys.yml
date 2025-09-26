@@ -14,12 +14,10 @@
 # "{{ lookup('community.general.bitwarden', collection_id=setup_keys_bitwarden_ssh_keys_collection_id, bw_session=bw_session) }}"
 - name: Retrieve ssh keys from Bitwarden
   delegate_to: localhost
-  ansible.builtin.command: bw list items --collectionid "{{ setup_keys_bitwarden_ssh_keys_collection_id }}" --session "{{ setup_keys_bw_session | default('') }}" --response
+  ansible.builtin.command: /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/bw list items --collectionid "{{ setup_keys_bitwarden_ssh_keys_collection_id }}" --session "{{ setup_keys_bw_session | default('') }}" --response
   register: setup_keys_bw_items
   changed_when: false
   no_log: true
-  environment:
-    PATH: "/nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin:{{ ansible_env.PATH }}"
 
 - ansible.builtin.set_fact:
     setup_keys_ssh_keys: |
