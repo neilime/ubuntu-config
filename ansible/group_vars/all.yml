@@ -125,6 +125,7 @@ utility:
     - org.gnome.SimpleScan
     - org.gnome.DejaDup
     - com.bitwarden.desktop
+    - org.libreoffice.LibreOffice
   favorites:
     - com.github.hluk.copyq.desktop
     - com.bitwarden.desktop.desktop
