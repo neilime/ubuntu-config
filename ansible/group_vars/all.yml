@@ -55,6 +55,8 @@ development:
     pull_rebase: false
     editor: "nvim"
     gpg_sign: true
+    # Project-specific git includes (folder names in projects_directory)
+    includes: []
   # Shell configuration
   shell:
     aliases:
