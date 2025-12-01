@@ -61,7 +61,7 @@
         else [];
       # Filter to only directories that have a .gitconfig file
       projectsWithGitconfig = builtins.filter (dir:
-        builtins.pathExists (projectsDir + "/" + dir + "/.gitconfig")
+        builtins.pathExists "${projectsDir}/${dir}/.gitconfig"
       ) projectDirs;
     in map (dir: {
       condition = "gitdir:${projectsDir}/${dir}/";
