@@ -48,18 +48,25 @@
       core.editor = "{{ setup_home_manager_git.editor }}";
       commit.gpgsign = {{ setup_home_manager_git.gpg_sign | lower }};
     };
-{% if setup_home_manager_git.includes is defined and setup_home_manager_git.includes %}
 
-    includes = [
-{% for include_name in setup_home_manager_git.includes %}
-{% set include_path = setup_home_manager_projects_directory ~ '/' ~ include_name %}
-      {
-        condition = "gitdir:{{ include_path }}/";
-        path = "{{ include_path }}/.gitconfig";
-      }
-{% endfor %}
-    ];
-{% endif %}
+    # Dynamic git includes: auto-detect .gitconfig files in project directories
+    includes = let
+      projectsDir = "{{ setup_home_manager_projects_directory }}";
+      # Get list of directories in projects directory (if it exists)
+      projectDirs = if builtins.pathExists projectsDir
+        then builtins.attrNames (
+          pkgs.lib.filterAttrs (name: type: type == "directory")
+            (builtins.readDir projectsDir)
+        )
+        else [];
+      # Filter to only directories that have a .gitconfig file
+      projectsWithGitconfig = builtins.filter (dir:
+        builtins.pathExists (projectsDir + "/" + dir + "/.gitconfig")
+      ) projectDirs;
+    in map (dir: {
+      condition = "gitdir:${projectsDir}/${dir}/";
+      path = "${projectsDir}/${dir}/.gitconfig";
+    }) projectsWithGitconfig;
   };
 
   # USER LAYER - Development tools
