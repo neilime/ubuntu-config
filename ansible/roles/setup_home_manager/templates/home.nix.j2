@@ -48,10 +48,18 @@
       core.editor = "{{ setup_home_manager_git.editor }}";
       commit.gpgsign = {{ setup_home_manager_git.gpg_sign | lower }};
     };
-    
+{% if setup_home_manager_git.includes is defined and setup_home_manager_git.includes %}
+
     includes = [
-      { path = "~/.config/git/clients/allopneus"; }
+{% for include_name in setup_home_manager_git.includes %}
+{% set include_path = setup_home_manager_projects_directory ~ '/' ~ include_name %}
+      {
+        condition = "gitdir:{{ include_path }}/";
+        path = "{{ include_path }}/.gitconfig";
+      }
+{% endfor %}
     ];
+{% endif %}
   };
 
   # USER LAYER - Development tools

@@ -70,6 +70,8 @@
         setup_home_manager_shell: "{{ development.shell }}"
         setup_home_manager_nix_packages: "{{ development.nix_packages }}"
         setup_home_manager_environment: "{{ development.environment }}"
+        setup_home_manager_projects_directory: >-
+          {{ development.projects_directory }}
       tags: [home-manager, user]
       become: false
 
