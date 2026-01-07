@@ -43,6 +43,7 @@ development:
   projects_directory: "/home/{{ ansible_user }}/Documents/dev-projects"
   flatpak:
     - com.visualstudio.code
+    - com.usebruno.Bruno
   favorites:
     - com.visualstudio.code.desktop
     - org.gnome.Terminal.desktop
