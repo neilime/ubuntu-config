@@ -8,20 +8,8 @@ def test_gnome_favorites_pinned(host):
     assert out.rc == 0
 
 
-def test_libreoffice_installed(host):
+def test_libreoffice_installed(host, find_desktop_entries):
     """Ensure LibreOffice is installed via Flatpak."""
     # Check for LibreOffice desktop entry
-    search_paths = (
-        "/usr/share/applications",
-        "/usr/local/share/applications",
-        "/var/lib/flatpak/exports/share/applications",
-    )
-    find_cmd = (
-        "find "
-        + " ".join(search_paths)
-        + " -name 'org.libreoffice.LibreOffice*.desktop' 2>/dev/null || true"
-    )
-    cmd = host.run(find_cmd)
-    assert (
-        cmd.stdout.strip()
-    ), "LibreOffice should have desktop entries installed via Flatpak"
+    entries = find_desktop_entries(host, "org.libreoffice.LibreOffice*.desktop")
+    assert entries, "LibreOffice should have desktop entries installed via Flatpak"

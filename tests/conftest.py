@@ -1,7 +1,15 @@
 """TestInfra configuration and fixtures for ubuntu-config tests."""
 
+import shlex
+
 import pytest
 import testinfra
+
+DESKTOP_ENTRY_SEARCH_PATHS = (
+    "/usr/share/applications",
+    "/usr/local/share/applications",
+    "/var/lib/flatpak/exports/share/applications",
+)
 
 
 def pytest_addoption(parser):
@@ -45,6 +53,26 @@ def user_home(target_user):  # pylint: disable=redefined-outer-name
     return f"/home/{target_user}"
 
 
+def _build_desktop_entry_find_cmd(
+    desktop_entry_pattern: str,
+    search_paths: tuple[str, ...] = DESKTOP_ENTRY_SEARCH_PATHS,
+) -> str:
+    quoted_paths = " ".join(shlex.quote(path) for path in search_paths)
+    quoted_pattern = shlex.quote(desktop_entry_pattern)
+    return f"find {quoted_paths} -name {quoted_pattern} 2>/dev/null || true"
+
+
+@pytest.fixture(scope="session")
+def find_desktop_entries():
+    """Return a callable that finds desktop entries on the target host."""
+
+    def _find(test_host, desktop_entry_pattern: str) -> str:
+        cmd = test_host.run(_build_desktop_entry_find_cmd(desktop_entry_pattern))
+        return cmd.stdout.strip()
+
+    return _find
+
+
 def check_desktop_entries_exist(test_host, desktop_entries):
     """
     Check if desktop entries exist in common desktop entry locations.
@@ -55,11 +83,5 @@ def check_desktop_entries_exist(test_host, desktop_entries):
     """
 
     for entry in desktop_entries:
-        # Check in common desktop entry locations
-        desktop_cmd = test_host.run(
-            f"find /var/lib/flatpak/exports/share/applications "
-            f"-name '{entry}' 2>/dev/null"
-        )
-        assert (
-            desktop_cmd.stdout.strip() or desktop_cmd.rc == 0
-        ), f"Desktop entry for {entry} should exist"
+        desktop_cmd = test_host.run(_build_desktop_entry_find_cmd(entry))
+        assert desktop_cmd.stdout.strip(), f"Desktop entry for {entry} should exist"

@@ -1,22 +1,12 @@
 """Browser domain acceptance tests: user flows around browsers and links."""
 
 
-def test_can_launch_chromium_from_desktop(host):
+def test_can_launch_chromium_from_desktop(host, find_desktop_entries):
     """Ensure a Chromium desktop entry exists so the launchbar can start it."""
     # Check for Chromium desktop entry as proxy for launchbar availability
-    search_paths = (
-        "/usr/share/applications",
-        "/usr/local/share/applications",
-        "/var/lib/flatpak/exports/share/applications",
-    )
-    find_cmd = (
-        "find "
-        + " ".join(search_paths)
-        + " -name 'chromium*.desktop' 2>/dev/null || true"
-    )
-    cmd = host.run(find_cmd)
+    entries = find_desktop_entries(host, "chromium*.desktop")
     assert (
-        cmd.stdout.strip()
+        entries
     ), "Chromium should have a desktop entry to be launchable from the launchbar"
 
 
