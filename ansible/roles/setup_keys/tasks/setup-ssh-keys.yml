@@ -4,6 +4,8 @@
     path: "/home/{{ ansible_user }}/.ssh"
     state: directory
     mode: "0700"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
 
 - name: Ensure setup_keys_bitwarden_ssh_keys_collection_id is set
   ansible.builtin.fail:
@@ -14,10 +16,17 @@
 # "{{ lookup('community.general.bitwarden', collection_id=setup_keys_bitwarden_ssh_keys_collection_id, bw_session=bw_session) }}"
 - name: Retrieve ssh keys from Bitwarden
   delegate_to: localhost
-  ansible.builtin.command: /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/bw list items --collectionid "{{ setup_keys_bitwarden_ssh_keys_collection_id }}" --session "{{ setup_keys_bw_session | default('') }}" --response
+  ansible.builtin.command: >-
+    {{ setup_keys_bw_bin }} list items --collectionid "{{ setup_keys_bitwarden_ssh_keys_collection_id }}"
+    --session "{{ setup_keys_bw_session | default('') }}" --response
   register: setup_keys_bw_items
   changed_when: false
   no_log: true
+  become: true
+  become_user: "{{ ansible_user }}"
+  environment:
+    USER: "{{ ansible_user }}"
+    HOME: "/home/{{ ansible_user }}"
 
 - ansible.builtin.set_fact:
     setup_keys_ssh_keys: |
