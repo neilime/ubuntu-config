@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Verify nix-daemon profile exists
-if [ ! -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
-	echo "ERROR: Nix daemon profile not found. Nix installation may be incomplete."
+# Verify and source Nix profile
+NIX_PROFILE_SCRIPT="{{ setup_home_manager_nix_profile_script }}"
+if [ ! -f "$NIX_PROFILE_SCRIPT" ]; then
+	echo "ERROR: Nix profile script not found at $NIX_PROFILE_SCRIPT"
 	exit 1
 fi
-# Source nix daemon profile
-# shellcheck disable=SC1091
-. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+# shellcheck disable=SC1090,SC1091
+. "$NIX_PROFILE_SCRIPT"
 # Change to home-manager config directory
 cd "{{ setup_home_manager_user_home }}/.config/home-manager"
 
