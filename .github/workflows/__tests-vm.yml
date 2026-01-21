@@ -28,38 +28,152 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
-      - name: Set up Lima
-        uses: lima-vm/lima-actions/setup@55627e31b78637bf254a8b2a14da8ea7d12564e5 # v1.1.0
-        id: lima-actions-setup
+      - name: Free disk space on runner
+        shell: bash
+        run: |
+          set -eux -o pipefail
+          echo "Disk before cleanup:"
+          df -h
 
-      - name: Cache Lima
-        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
-        with:
-          path: ~/.cache/lima
-          key: lima-${{ steps.lima-actions-setup.outputs.version }}
+          # GitHub-hosted runners come with large preinstalled toolchains.
+          # Remove the biggest ones to keep enough space for QEMU + Lima images.
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc || true
+
+          # Reduce package manager and Docker footprint.
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/* || true
+          sudo docker system prune -af --volumes || true
+
+          echo "Disk after cleanup:"
+          df -h
+
+      # NOTE: We intentionally do not use `lima-vm/lima-actions/setup@v1.1.0` here.
+      # That composite action hard-fails when `/dev/kvm` is unavailable on the runner
+      # (it runs `modprobe kvm` + `chown ... /dev/kvm`). GitHub-hosted runners may
+      # not expose KVM, and Lima can still work with software emulation.
+      - name: Install QEMU prerequisites
+        shell: bash
+        run: |
+          set -eux -o pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -qqy --no-install-recommends \
+            ovmf \
+            qemu-system-x86 \
+            qemu-utils
+
+          # Prefer KVM when available, but do not fail if it isn't.
+          sudo modprobe kvm || true
+          if [ -e /dev/kvm ]; then
+            sudo chown "$(whoami)" /dev/kvm
+          fi
+
+      - name: Install Lima
+        id: lima-actions-setup
+        env:
+          LIMA_VERSION: v1.1.0
+        shell: bash
+        run: |
+          set -eux -o pipefail
+
+          file="lima-${LIMA_VERSION#v}-Linux-x86_64.tar.gz"
+          url="https://github.com/lima-vm/lima/releases/download/${LIMA_VERSION}/${file}"
+
+          curl -fsSLO "$url"
+          sudo tar -C /usr/local -xzf "$file"
+          rm -f "$file"
+
+          limactl --version
+          echo "version=${LIMA_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up SSH for Lima
+        shell: bash
+        run: |
+          set -eux -o pipefail
+          mkdir -p ~/.ssh
+          chmod 0700 ~/.ssh
+          if [ -e ~/.ssh/config ]; then
+            # "Include" must be in the top section of the config
+            printf '%s\n' 'Include ~/.lima/*/ssh.config' > ~/.ssh/config.tmp
+            cat ~/.ssh/config >> ~/.ssh/config.tmp
+            mv ~/.ssh/config.tmp ~/.ssh/config
+          else
+            printf '%s\n' 'Include ~/.lima/*/ssh.config' > ~/.ssh/config
+          fi
 
       - name: Start Lima Ubuntu Desktop VM
         run: |
           limactl start --name=ubuntu-desktop vm/lima-ubuntu-desktop.yml
 
-      - name: Set up SSH for Lima
-        uses: lima-vm/lima-actions/ssh@55627e31b78637bf254a8b2a14da8ea7d12564e5 # v1.1.0
-        with:
-          name: ubuntu-desktop
+      - name: Get VM SSH port
+        id: vm-ssh
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          port=""
+
+          # Prefer asking OpenSSH for the resolved config, as Lima versions may
+          # embed the port in the generated ssh config rather than passing -p.
+          if command -v ssh >/dev/null 2>&1; then
+            port="$(ssh -G lima-ubuntu-desktop 2>/dev/null | awk '$1=="port" {print $2; exit}')"
+          fi
+
+          # Fallback: parse the generated Lima ssh config directly.
+          if [ -z "$port" ] && [ -f "$HOME/.lima/ubuntu-desktop/ssh.config" ]; then
+            port="$(awk '/^[[:space:]]*Port[[:space:]]+[0-9]+/ {print $2; exit}' "$HOME/.lima/ubuntu-desktop/ssh.config")"
+          fi
+
+          # Fallback: parse `limactl show` output which usually contains the forwarded port.
+          # `limactl show-ssh` can be empty depending on Lima version/driver.
+          if [ -z "$port" ]; then
+            port="$(
+              limactl show ubuntu-desktop 2>/dev/null | \
+                awk -F: 'tolower($1) ~ /ssh(local)?port/ {gsub(/[[:space:]]+/,"",$2); print $2; exit}'
+            )"
+          fi
+
+          # Fallback: parse `limactl show-ssh` output when it contains -p.
+          if [ -z "$port" ]; then
+            ssh_cmd="$(limactl show-ssh ubuntu-desktop 2>&1)"
+            echo "$ssh_cmd"
+            port="$(printf '%s\n' "$ssh_cmd" | sed -n 's/.* -p\s*\([0-9][0-9]*\).*/\1/p' | head -n 1)"
+          fi
+
+          # Final fallback: parse `limactl list` for an address like 127.0.0.1:35255
+          if [ -z "$port" ]; then
+            port="$(
+              limactl list 2>/dev/null | \
+                awk '/ubuntu-desktop/ {for (i=1;i<=NF;i++) if ($i ~ /127\.0\.0\.1:[0-9]+/) {split($i,a,":"); print a[2]; exit}}'
+            )"
+          fi
+
+          if [ -z "$port" ]; then
+            echo "::error::Failed to parse SSH port from limactl show-ssh output" >&2
+            exit 1
+          fi
+
+          echo "port=$port" >> "$GITHUB_OUTPUT"
 
       - name: Wait for VM to be ready
         run: |
           echo "⏳ Waiting for VM to be ready..."
 
           # Wait for SSH to be accessible
+          ready=0
           for i in {1..120}; do
             if ssh lima-ubuntu-desktop echo "✅ SSH ready" 2>/dev/null; then
               echo "✅ VM is ready and SSH is up"
+              ready=1
               break
             fi
             echo "Attempt $i/120: Waiting for VM..."
             sleep 10
           done
+
+          if [ "$ready" -ne 1 ]; then
+            echo "::error::VM did not become ready in time" >&2
+            exit 1
+          fi
 
       - name: Run install script
         timeout-minutes: 30
@@ -67,7 +181,7 @@ jobs:
           # Create and upload a script to properly set environment variables and run the install script
           cat > /tmp/run_install.sh << 'EOF'
           #!/bin/bash
-          set -eu
+          set -euo pipefail
 
           # Function to cleanup background processes
           cleanup() {
@@ -105,6 +219,11 @@ jobs:
           export BITWARDEN_PASSWORD="$3"
           export REPOSITORY_URL="$4"
           export REPOSITORY_BRANCH="$5"
+
+          # In non-interactive SSH sessions, USER may be unset.
+          # install.sh relies on USER to set ansible_user.
+          export USER="$(id -un)"
+          export HOME="$(eval echo "~$USER")"
 
           # Set up GUI environment for dconf operations (for the user, not root)
           export DISPLAY=:99
@@ -155,12 +274,19 @@ jobs:
           # Download and run the install script (which will sudo ansible-pull)
           # The GUI environment variables will be inherited by the user tasks
           echo "🚀 Starting install script..."
-          if wget -qO- "$6" | sh; then
+          INSTALL_LOG="/tmp/e2e-install.log"
+          set +e
+          wget -qO- "$6" | sh 2>&1 | tee "$INSTALL_LOG"
+          install_rc="${PIPESTATUS[1]:-1}"
+          set -e
+
+          if [ "$install_rc" -eq 0 ]; then
             echo "✅ Install script completed successfully"
-            # Create success marker
             sudo touch /e2e.success
           else
-            echo "❌ Install script failed with exit code $?"
+            echo "❌ Install script failed with exit code $install_rc"
+            echo "--- Last 200 lines of install log ($INSTALL_LOG) ---"
+            tail -n 200 "$INSTALL_LOG" || true
             exit 1
           fi
 
@@ -188,9 +314,84 @@ jobs:
         run: |
           ssh lima-ubuntu-desktop '[ -f /e2e.success ] && echo "✅ Success" || { echo "❌ Setup failed"; exit 1; }'
 
+      - name: Login to OCI registry
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+          registry: ${{ vars.OCI_REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Authorize TestInfra SSH key in VM
+        timeout-minutes: 5
+        run: |
+          test_user=""
+          if [ -f "$HOME/.lima/ubuntu-desktop/ssh.config" ]; then
+            test_user="$(awk '/^[[:space:]]*User[[:space:]]+/ {print $2; exit}' "$HOME/.lima/ubuntu-desktop/ssh.config")"
+          fi
+          if [ -z "$test_user" ]; then
+            ssh_cmd="$(limactl show-ssh ubuntu-desktop 2>/dev/null || true)"
+            if [ -n "$ssh_cmd" ]; then
+              test_user="$(printf '%s\n' "$ssh_cmd" | sed -nE 's/.* -l[[:space:]]+([^[:space:]]+).*/\1/p' | head -n 1)"
+              if [ -z "$test_user" ]; then
+                test_user="$(printf '%s\n' "$ssh_cmd" | sed -nE 's/.* ([^[:space:]]+)@127\.0\.0\.1.*/\1/p' | head -n 1)"
+              fi
+            fi
+          fi
+          if [ -z "$test_user" ]; then
+            test_user="ubuntu"
+          fi
+          echo "Using test_user=$test_user"
+          mkdir -p "$PWD/vm"
+
+          if [ -f "$PWD/vm/id_rsa" ] && [ ! -f "$PWD/vm/id_rsa.pub" ]; then
+            # Derive the public key from the private key.
+            ssh-keygen -y -f "$PWD/vm/id_rsa" > "$PWD/vm/id_rsa.pub"
+          fi
+
+          if [ ! -f "$PWD/vm/id_rsa" ] && [ -f "$PWD/vm/id_rsa.pub" ]; then
+            echo "Missing vm/id_rsa (private key), but vm/id_rsa.pub exists."
+            exit 1
+          fi
+
+          if [ ! -f "$PWD/vm/id_rsa" ] && [ ! -f "$PWD/vm/id_rsa.pub" ]; then
+            # Generate an ephemeral keypair for this CI run.
+            ssh-keygen -t rsa -b 4096 -f "$PWD/vm/id_rsa" -N ""
+          fi
+
+          test -f "$PWD/vm/id_rsa.pub" || { echo "Missing vm/id_rsa.pub"; exit 1; }
+
+          # Ensure the VM test user can SSH using the repo's test key, since TestInfra runs from a container
+          # and connects via the forwarded port (127.0.0.1:${{ steps.vm-ssh.outputs.port }}).
+          # shellcheck disable=SC2029
+          ssh lima-ubuntu-desktop "sudo install -d -m 700 -o $test_user -g $test_user /home/$test_user/.ssh"
+          # shellcheck disable=SC2029
+          ssh lima-ubuntu-desktop "sudo touch /home/$test_user/.ssh/authorized_keys && sudo chmod 600 /home/$test_user/.ssh/authorized_keys && sudo chown $test_user:$test_user /home/$test_user/.ssh/authorized_keys"
+
+          # Append key if not already present (idempotent).
+          pubkey="$(cat "$PWD/vm/id_rsa.pub")"
+          # shellcheck disable=SC2029
+          ssh lima-ubuntu-desktop "sudo -u $test_user sh -c 'grep -qxF \"$pubkey\" /home/$test_user/.ssh/authorized_keys || echo \"$pubkey\" >> /home/$test_user/.ssh/authorized_keys'"
+
       - name: Run TestInfra tests on VM using test image
         timeout-minutes: 15
         run: |
-          docker run --rm --network host -v "$PWD":/workspace -w /workspace \
+          test_user=""
+          if [ -f "$HOME/.lima/ubuntu-desktop/ssh.config" ]; then
+            test_user="$(awk '/^[[:space:]]*User[[:space:]]+/ {print $2; exit}' "$HOME/.lima/ubuntu-desktop/ssh.config")"
+          fi
+          if [ -z "$test_user" ]; then
+            ssh_cmd="$(limactl show-ssh ubuntu-desktop 2>/dev/null || true)"
+            if [ -n "$ssh_cmd" ]; then
+              test_user="$(printf '%s\n' "$ssh_cmd" | sed -nE 's/.* -l[[:space:]]+([^[:space:]]+).*/\1/p' | head -n 1)"
+              if [ -z "$test_user" ]; then
+                test_user="$(printf '%s\n' "$ssh_cmd" | sed -nE 's/.* ([^[:space:]]+)@127\.0\.0\.1.*/\1/p' | head -n 1)"
+              fi
+            fi
+          fi
+          if [ -z "$test_user" ]; then
+            test_user="ubuntu"
+          fi
+          echo "Using test_user=$test_user"
+          docker run --rm --network host --user root -v "$PWD":/workspace -w /workspace \
             "$TEST_IMAGE" \
-            python3 tests/run_tests.py --verbose --host="ssh://ubuntu@127.0.0.1:2222" --user="ubuntu"
+            python3 tests/run_tests.py --verbose --host="ssh://${test_user}@127.0.0.1:${{ steps.vm-ssh.outputs.port }}" --user="$test_user"

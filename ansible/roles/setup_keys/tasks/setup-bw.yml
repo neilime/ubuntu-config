@@ -12,39 +12,75 @@
       (not setup_keys_bitwarden_client_id or not setup_keys_bitwarden_client_secret)
     )
 
+- name: Define Bitwarden CLI candidate paths
+  ansible.builtin.set_fact:
+    setup_keys_bw_candidates:
+      - "/home/{{ ansible_user }}/.nix-profile/bin/bw"
+      - "/home/{{ ansible_user }}/.local/state/nix/profiles/profile/bin/bw"
+      - "/home/{{ ansible_user }}/.local/state/nix/profiles/home-manager/bin/bw"
+      - "/nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/bw"
+
 - name: Check if Bitwarden CLI is available
   delegate_to: localhost
   ansible.builtin.stat:
-    path: "/nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/bw"
-  register: setup_keys_bw_binary
+    path: "{{ item }}"
+  loop: "{{ setup_keys_bw_candidates }}"
+  register: setup_keys_bw_binary_candidates
   failed_when: false
+
+- name: Select Bitwarden CLI binary path
+  ansible.builtin.set_fact:
+    setup_keys_bw_bin: >-
+      {{
+        (setup_keys_bw_binary_candidates.results
+         | selectattr('stat.exists', 'equalto', true)
+         | map(attribute='item')
+         | first)
+        | default('')
+      }}
 
 - name: Fail if Bitwarden CLI not found
   ansible.builtin.fail:
     msg: >
-      Bitwarden CLI (bw) not found at /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/bw.
-      This suggests that Home Manager setup has not completed successfully or bitwarden-cli package was not installed.
+      Bitwarden CLI (bw) not found.
+      Tried: {{ setup_keys_bw_candidates | join(', ') }}.
+      This suggests that Home Manager setup has not completed successfully or bitwarden-cli package was not installed into the user's profile.
       Please ensure the setup_home_manager role has run successfully before setup_keys.
-  when: not setup_keys_bw_binary.stat.exists
+  when: setup_keys_bw_bin | default('') | trim | length == 0
 
 - name: Login and unlock Bitwarden
   block:
     - name: Get bw server
       delegate_to: localhost
-      ansible.builtin.command: /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/bw config server
+      ansible.builtin.command: "{{ setup_keys_bw_bin }} config server"
       changed_when: false
       register: setup_keys_bw_server
+      become: true
+      become_user: "{{ ansible_user }}"
+      environment:
+        USER: "{{ ansible_user }}"
+        HOME: "/home/{{ ansible_user }}"
 
     - name: Set bw server
       when: setup_keys_bw_server.stdout != setup_keys_bitwarden_server
       delegate_to: localhost
-      ansible.builtin.command: /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/bw config server "{{ setup_keys_bitwarden_server }}"
+      ansible.builtin.command: "{{ setup_keys_bw_bin }} config server {{ setup_keys_bitwarden_server | quote }}"
+      become: true
+      become_user: "{{ ansible_user }}"
+      environment:
+        USER: "{{ ansible_user }}"
+        HOME: "/home/{{ ansible_user }}"
 
     - name: Get bw status
       delegate_to: localhost
-      ansible.builtin.command: /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/bw status
+      ansible.builtin.command: "{{ setup_keys_bw_bin }} status"
       changed_when: false
       register: setup_keys_bw_status
+      become: true
+      become_user: "{{ ansible_user }}"
+      environment:
+        USER: "{{ ansible_user }}"
+        HOME: "/home/{{ ansible_user }}"
 
     - name: Login to Bitwarden with API key
       when:
@@ -52,8 +88,12 @@
         - setup_keys_bitwarden_client_id | default('', true) | trim | length > 0
         - setup_keys_bitwarden_client_secret | default('', true) | trim | length > 0
       delegate_to: localhost
-      ansible.builtin.command: /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/bw login --apikey
+      ansible.builtin.command: "{{ setup_keys_bw_bin }} login --apikey"
+      become: true
+      become_user: "{{ ansible_user }}"
       environment:
+        USER: "{{ ansible_user }}"
+        HOME: "/home/{{ ansible_user }}"
         BW_CLIENTID: "{{ setup_keys_bitwarden_client_id }}"
         BW_CLIENTSECRET: "{{ setup_keys_bitwarden_client_secret }}"
       any_errors_fatal: true
@@ -65,46 +105,100 @@
         - setup_keys_bitwarden_password | default('', true) | trim | length > 0
         - not (setup_keys_bitwarden_client_id and setup_keys_bitwarden_client_secret)
       delegate_to: localhost
-      ansible.builtin.command: /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/bw login "{{ setup_keys_bitwarden_email }}" "{{ setup_keys_bitwarden_password }}" --raw
+      ansible.builtin.command: >-
+        {{ setup_keys_bw_bin }} login {{ setup_keys_bitwarden_email | quote }} {{ setup_keys_bitwarden_password | quote }} --raw
+      become: true
+      become_user: "{{ ansible_user }}"
+      environment:
+        USER: "{{ ansible_user }}"
+        HOME: "/home/{{ ansible_user }}"
       any_errors_fatal: true
 
     - name: Get bw status after login
       delegate_to: localhost
-      ansible.builtin.command: /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/bw status
+      ansible.builtin.command: "{{ setup_keys_bw_bin }} status"
       changed_when: false
       register: setup_keys_bw_status_after_login
+      become: true
+      become_user: "{{ ansible_user }}"
+      environment:
+        USER: "{{ ansible_user }}"
+        HOME: "/home/{{ ansible_user }}"
 
     - name: Unlock Bitwarden vault with master password
       when: setup_keys_bw_status_after_login.stdout | from_json | community.general.json_query('status') != "unlocked"
       delegate_to: localhost
-      ansible.builtin.command: /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/bw unlock --raw "{{ setup_keys_bitwarden_password }}"
+      ansible.builtin.command: >-
+        {{ setup_keys_bw_bin }} unlock --raw --passwordenv BW_PASSWORD
       register: setup_keys_bw_session_unlock
+      retries: 5
+      delay: 3
+      until: setup_keys_bw_session_unlock.stdout | default('') | trim | length > 0
       no_log: true
+      become: true
+      become_user: "{{ ansible_user }}"
+      environment:
+        USER: "{{ ansible_user }}"
+        HOME: "/home/{{ ansible_user }}"
+        BW_PASSWORD: "{{ setup_keys_bitwarden_password }}"
 
     - name: Set session token from unlock
       ansible.builtin.set_fact:
-        setup_keys_bw_session: "{{ setup_keys_bw_session_unlock.stdout }}"
+        setup_keys_bw_session: "{{ setup_keys_bw_session_unlock.stdout | trim }}"
       no_log: true
       when: setup_keys_bw_session_unlock is defined and setup_keys_bw_session_unlock.stdout is defined
+
+    - name: Fail if Bitwarden session token is empty
+      ansible.builtin.fail:
+        msg: >-
+          Bitwarden unlock did not return a session token. This can happen if the vault is locked
+          and the unlock command did not complete successfully. Check BITWARDEN_PASSWORD validity
+          and Bitwarden service availability.
+      when: setup_keys_bw_session | default('') | trim | length == 0
 
     - name: Set empty session if already unlocked
       ansible.builtin.set_fact:
         setup_keys_bw_session: ""
       when: setup_keys_bw_status_after_login.stdout | from_json | community.general.json_query('status') == "unlocked"
 
+    - name: Wait for Bitwarden vault to report unlocked
+      delegate_to: localhost
+      ansible.builtin.command: "{{ setup_keys_bw_bin }} status"
+      register: setup_keys_bw_status_wait
+      changed_when: false
+      failed_when: false
+      retries: 12
+      delay: 5
+      until: setup_keys_bw_status_wait.stdout | from_json | community.general.json_query('status') == "unlocked"
+      become: true
+      become_user: "{{ ansible_user }}"
+      environment:
+        USER: "{{ ansible_user }}"
+        HOME: "/home/{{ ansible_user }}"
+        BW_SESSION: "{{ setup_keys_bw_session | default('') }}"
+
     - name: Ensure bw is unlocked
       delegate_to: localhost
-      ansible.builtin.command: /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/bw status
+      ansible.builtin.command: "{{ setup_keys_bw_bin }} status"
       register: setup_keys_bw_status
       changed_when: false
       failed_when: setup_keys_bw_status.stdout | from_json | community.general.json_query('status') != "unlocked"
+      become: true
+      become_user: "{{ ansible_user }}"
       environment:
+        USER: "{{ ansible_user }}"
+        HOME: "/home/{{ ansible_user }}"
         BW_SESSION: "{{ setup_keys_bw_session | default('') }}"
 
   rescue:
     - name: Logout from Bitwarden
       delegate_to: localhost
-      ansible.builtin.command: /nix/var/nix/profiles/per-user/{{ ansible_user }}/profile/bin/bw logout
+      ansible.builtin.command: "{{ setup_keys_bw_bin | default('/nix/var/nix/profiles/per-user/' ~ ansible_user ~ '/profile/bin/bw') }} logout"
+      become: true
+      become_user: "{{ ansible_user }}"
+      environment:
+        USER: "{{ ansible_user }}"
+        HOME: "/home/{{ ansible_user }}"
     - name: Fail with original error
       ansible.builtin.fail:
         msg: "{{ ansible_failed_result }}"

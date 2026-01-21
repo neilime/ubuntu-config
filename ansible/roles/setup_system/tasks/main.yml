@@ -3,7 +3,14 @@
 - name: Upgrade apt packages
   ansible.builtin.apt:
     update_cache: true
+    update_cache_retries: 5
+    update_cache_retry_max_delay: 30
     upgrade: full
+    lock_timeout: 600
+  register: setup_system_apt_upgrade
+  retries: 6
+  delay: 30
+  until: setup_system_apt_upgrade is succeeded
 
 - name: Install system packages
   ansible.builtin.apt:

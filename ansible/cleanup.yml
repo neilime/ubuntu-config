@@ -5,7 +5,13 @@
   vars:
     ansible_config_dir: "/home/ansible/config"
   tasks:
-    - name: Docker prune
+    - name: Check whether Docker socket exists
+      ansible.builtin.stat:
+        path: /var/run/docker.sock
+      register: cleanup_docker_socket
+      failed_when: false
+
+    - name: Docker prune (best effort)
       community.docker.docker_prune:
         containers: true
         images: true
@@ -14,6 +20,8 @@
         networks: true
         volumes: true
         builder_cache: true
+      when: cleanup_docker_socket.stat.exists
+      failed_when: false
 
     - name: Clear useless apt resources using localepurge
       ansible.builtin.apt:
@@ -21,8 +29,28 @@
         state: present
       notify: Run localepurge
 
+    - name: Check whether ucaresystem-core exists
+      ansible.builtin.shell: command -v ucaresystem-core
+      args:
+        executable: /bin/bash
+      register: cleanup_ucaresystem_cmd
+      changed_when: false
+
+    - name: Fail if ucaresystem-core is missing
+      ansible.builtin.fail:
+        msg: "ucaresystem-core is required but was not found in PATH"
+      when: cleanup_ucaresystem_cmd.rc != 0
+
     - name: Update system using ucaresystem-core
       ansible.builtin.command: ucaresystem-core -u
+      register: cleanup_ucaresystem_update
+      failed_when: >-
+        cleanup_ucaresystem_update.rc != 0 and
+        ('No snaps are installed yet' not in (cleanup_ucaresystem_update.stderr | default(''))) and
+        ('tput: unknown terminal' not in (cleanup_ucaresystem_update.stderr | default('')))
+      environment:
+        TERM: xterm-256color
+        DEBIAN_FRONTEND: noninteractive
 
     - name: Remove APT dependencies that are no longer required and purge their configuration files
       ansible.builtin.apt:
