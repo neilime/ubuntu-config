@@ -1,4 +1,4 @@
-FROM rockstorm/gitweb:2.47
+FROM rockstorm/gitweb:2.52
 
 # checkov:skip=CKV_DOCKER_8:nginx + gitweb need to be run as root
 # hadolint ignore=DL3002
