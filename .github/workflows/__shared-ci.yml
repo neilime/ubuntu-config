@@ -13,7 +13,7 @@ permissions: {}
 jobs:
   lint:
     # yamllint disable-line rule:line-length
-    uses: hoverkraft-tech/ci-github-common/.github/workflows/linter.yml@71b85947453f32b5d147ff3ab37351439a92d840 # 0.34.2
+    uses: hoverkraft-tech/ci-github-common/.github/workflows/linter.yml@4c9d51717dc04d823dac2dc9ac2857e7b3069454 # 0.35.0
     permissions:
       actions: read
       contents: read
@@ -22,7 +22,7 @@ jobs:
 
   build-test-image:
     # yamllint disable-line rule:line-length
-    uses: hoverkraft-tech/ci-github-container/.github/workflows/docker-build-images.yml@e4bf7a12228a2a4b5993d2d36b99b4dd0ec80bf5 # 0.32.1
+    uses: hoverkraft-tech/ci-github-container/.github/workflows/docker-build-images.yml@e68cac9a52f0a24cd3800fc723dc4899f647e42b # 0.33.0
     permissions:
       contents: read
       packages: write
