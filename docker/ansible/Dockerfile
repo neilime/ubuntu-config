@@ -1,4 +1,4 @@
-FROM ubuntu:24.04 AS base
+FROM ubuntu:26.04 AS base
 
 RUN rm -f /etc/apt/apt.conf.d/docker-clean; echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
 
