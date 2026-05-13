@@ -95,6 +95,7 @@ development:
     # PHP
     - php
     # JS
+    - fnm
     - yarn
     - pnpm
     # Docker and Kubernetes

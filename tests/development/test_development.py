@@ -13,3 +13,9 @@ def test_python_available_and_venv(host):
     """Check that Python3 is available in PATH."""
     py = host.run("python3 --version || true")
     assert py.rc == 0
+
+
+def test_fnm_available(host):
+    """Check that fnm is available in PATH for Node version management."""
+    fnm = host.run("fnm --version")
+    assert fnm.rc == 0
