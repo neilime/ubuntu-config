@@ -1,0 +1,30 @@
+---
+- name: Ensure system state directory exists
+  become: "{{ ubuntu_config_use_become }}"
+  ansible.builtin.file:
+    path: "{{ ubuntu_config_resolved.system.state_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Write system state marker
+  become: "{{ ubuntu_config_use_become }}"
+  ansible.builtin.copy:
+    dest: "{{ ubuntu_config_resolved.system.state_dir }}/system.json"
+    mode: "0644"
+    content: "{{ 'v1' | neilime.ubuntu_config.managed_system_state }}"
+
+- name: Ensure user state directory exists
+  become: "{{ ubuntu_config_use_become }}"
+  ansible.builtin.file:
+    path: "{{ ubuntu_config_resolved.user.state_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Write user state marker
+  become: "{{ ubuntu_config_use_become }}"
+  ansible.builtin.copy:
+    dest: "{{ ubuntu_config_resolved.user.state_dir }}/state.json"
+    mode: "0644"
+    content: >-
+      {{ ubuntu_config_resolved.user.name |
+      neilime.ubuntu_config.managed_user_state }}

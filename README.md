@@ -1,323 +1,98 @@
 # ubuntu-config
 
-My own Ubuntu setup & config. This project uses Clean Architecture principles with domain-driven design to create a layered, reproducible development environment using Ansible, Nix, and Home Manager.
+Ubuntu machine setup driven entirely from this repository.
 
-## Quick Start
+The repository is the source of truth for the tools, packages, and machine
+configuration applied during installation.
 
-Get your Ubuntu system configured with everything you need in one command:
+## Install
 
-```sh
-wget -qO- \
-"https://raw.githubusercontent.com/neilime/ubuntu-config/main/install.sh?$(date +%s)" | sh
-```
+Fresh Ubuntu machine bootstrap requires only:
 
-### Requirements
+- internet access
+- `sudo`
 
-- A fresh Ubuntu 22.04+ installation (tested on 22.04 and 24.04)
-- An internet connection
-- A user account with `sudo` privileges
-- Bitwarden account credentials for secure password management
-
-### What It Does
-
-This single script will automatically:
-
-- Install all essential system packages and development tools
-- Configure your desktop environment with GNOME preferences
-- Set up development environments with Nix and Home Manager
-- Install applications across all domains (browser, communication, media, utilities)
-- Configure your shell, Git, SSH keys, and development environment
-
-For domain-specific installations or customization options, see the [Domain-Specific Installation](#specific-installation) section below.
-
-### Specific Installation
-
-You can install specific domains or layers using tags. For example, to install only the system tools:
+Run the public installer:
 
 ```sh
-wget -qO- "https://raw.githubusercontent.com/neilime/ubuntu-config/main/install.sh?$(date +%s)" | sh -s -- --env SETUP_TAGS=system
+curl -fsSL https://raw.githubusercontent.com/neilime/ubuntu-config/main/install.sh | sh
 ```
 
-## Architecture Overview
+The installer bootstraps its own dependencies, then applies the repository with
+`ansible-pull`.
 
-This setup follows domain-driven design and three distinct layers:
+To install another branch, tag, or commit explicitly:
 
-### 🖥️ System Layer (Ubuntu + Ansible)
-
-- **Purpose**: Essential system packages and core OS configuration
-- **Technology**: APT packages and system services via Ansible
-- **Scope**: System-wide, requires root access
-- **Domain**: System essentials managed by `setup_system` role
-- **Examples**: Core utilities, system services, hardware drivers, GNOME preferences
-
-### 🏠 User Layer (Home Manager)
-
-- **Purpose**: User-specific configurations and dotfiles
-- **Technology**: Nix + Home Manager with templated configuration
-- **Scope**: User-specific, declarative configuration
-- **Domain**: User environment managed by `setup_home_manager` role
-- **Examples**: Shell configs, Git settings, development tools, fonts
-
-### 📁 Project Layer (Nix Flakes)
-
-- **Purpose**: Project-specific development environments
-- **Technology**: Nix flakes + direnv
-- **Scope**: Per-repository, isolated environments
-- **Examples**: Node.js versions, Python environments, project dependencies
-
-### Application Domains
-
-The setup is organized by functional domains, each managed by dedicated roles:
-
-- **🛡️ System** (`setup_system`): Core system packages and services
-- **🌐 Browser** (`setup_browser`): Web browsers and browsing tools
-- **💬 Communication** (`setup_communication`): Messaging and collaboration apps
-- **⚙️ Development** (`setup_development`): Development tools and environments
-- **🎵 Media** (`setup_media`): Audio, video, and multimedia applications
-- **🛠️ Utility** (`setup_utility`): System utilities and security tools
-- **🏠 Home Manager** (`setup_home_manager`): User configuration management
-- **🔑 Keys Management** (`setup_keys`): SSH and GPG key handling
-
-## Domain Configuration
-
-All application domains are centrally configured in [`ansible/group_vars/all.yml`](./ansible/group_vars/all.yml) with a consistent structure:
-
-```yaml
-domain_name:
-  apt: # APT packages for the domain
-  flatpak: # Flatpak applications for the domain
-  repositories: # APT repositories needed for the domain
-  favorites: # Applications to pin to GNOME launcher
+```sh
+curl -fsSL https://raw.githubusercontent.com/neilime/ubuntu-config/main/install.sh | env REPOSITORY_BRANCH=my-branch sh
 ```
 
-This domain-driven approach provides:
+You can also point the installer at another repository source:
 
-- **Separation of Concerns**: Each domain manages its own packages and configuration
-- **Centralized Management**: All configuration in one place for easy maintenance
-- **Selective Installation**: Install only the domains you need using tags
-- **Consistent Structure**: Predictable configuration format across all domains
-
-## Project Structure
-
-```txt
-ubuntu-config
-├── .github/
-│   └── workflows/          # GitHub Actions workflows for CI
-├── ansible/
-│   ├── roles/
-│   │   ├── setup_system/    # System layer: essential packages & configuration
-│   │   ├── setup_development/  # Development domain: dev tools & environment
-│   │   ├── setup_browser/   # Browser domain: web browsers
-│   │   ├── setup_communication/  # Communication domain: messaging apps
-│   │   ├── setup_media/     # Media domain: multimedia applications
-│   │   ├── setup_utility/   # Utility domain: system utilities & security tools
-│   │   ├── setup_home_manager/  # User layer: Home Manager setup
-│   │   ├── setup_keys/      # User layer: SSH/GPG key management
-│   │   └── gnome_favorites/ # Shared: GNOME launcher pinning
-│   ├── group_vars/          # Centralized domain-based configuration
-│   └── setup.yml            # Main playbook with domain architecture
-├── home/
-│   ├── flake.nix           # Home Manager Nix flake
-│   └── home.nix.j2         # User layer configuration template
-├── tests/                  # Domain-based TestInfra validation with Gherkin
-├── legacy/                 # Historical configurations and deprecated roles
-├── vm/                     # Lima VM configuration for testing
-└── docker/                # Development and CI containers
+```sh
+curl -fsSL https://raw.githubusercontent.com/neilime/ubuntu-config/main/install.sh | env REPOSITORY_URL=https://github.com/your-org/ubuntu-config.git REPOSITORY_BRANCH=my-branch sh
 ```
-
-## Features by Domain
-
-### System Layer
-
-- [Essential system packages](./ansible/group_vars/all.yml) (system.apt)
-- System services and core utilities
-- Timezone and locale configuration
-- GNOME desktop environment preferences
-
-### Development Domain
-
-- [Development tools via Nix](./ansible/group_vars/all.yml) (development.nix_packages)
-- [Development Flatpak applications](./ansible/group_vars/all.yml) (development.flatpak)
-- [APT repositories for development](./ansible/group_vars/all.yml) (development.repositories)
-- Projects directory setup
-
-### Browser Domain
-
-- [Web browsers via Flatpak](./ansible/group_vars/all.yml) (browser.flatpak)
-- Browser application management
-
-### Communication Domain
-
-- [Communication apps via Flatpak](./ansible/group_vars/all.yml) (communication.flatpak)
-- Messaging and collaboration tools
-
-### Media Domain
-
-- [Media applications via Flatpak](./ansible/group_vars/all.yml) (media.flatpak)
-- Audio and video players
-
-### Utility Domain
-
-- [System utilities via APT and Flatpak](./ansible/group_vars/all.yml) (utility.apt, utility.flatpak)
-- [Security tools](./ansible/group_vars/all.yml) (Bitwarden password manager)
-- System maintenance and backup tools
-
-### User Layer
-
-- [Shell configuration (Zsh)](./home/home.nix.j2) via Home Manager template
-- [Git configuration](./ansible/group_vars/all.yml) (development.git) with signing and aliases
-- [Development environment variables](./ansible/group_vars/all.yml) (development.environment)
-- [SSH and GPG keys management](./ansible/roles/setup_keys/README.md)
-
-### Project Layer
-
-- Nix package manager with flakes support via Galaxy role
-- Per-project development environments
-- direnv integration for automatic environment activation
 
 ## Development
 
-### Prerequisites
+### Host Requirements
 
-For local development, you'll need:
+Required for normal repository work:
 
-- Docker and Docker Compose
-- [Lima](https://github.com/lima-vm/lima) for VM testing (consistent with CI/CD)
-  - Installation guide: <https://lima-vm.io/docs/installation/>
-  - `qemu-img` (part of `qemu-utils` on Debian/Ubuntu) — Lima uses the qemu driver which relies on `qemu-img` to inspect and manage VM disk images.
-  - `qemu-system-x86_64` (QEMU system emulator) — required to run VMs with the qemu driver.
+- Docker Engine
+- Git
+- Make
 
-### Setup Development Environment
+Required only for end-to-end validation:
 
-1. Clone the repository:
+- cURL
+- Lima
+- `qemu-img`
+- `qemu-system-x86_64`
 
-```bash
-git clone https://github.com/neilime/ubuntu-config.git
-cd ubuntu-config
-```
+### Quick Start
 
-2. Setup the development stack:
-
-```bash
+```sh
 make setup
-```
-
-### Local Testing
-
-#### VM Testing with Lima
-
-Local VM testing now uses Lima VMs:
-
-#### Run Validation Tests
-
-```bash
-# Setup Lima VM (first time or after vm-down)
-
-# Run the install script on VM
-make vm-install-script
-
-# (Optional) Run the install script with options
-make vm-install-script SETUP_TAGS=system,development SKIP_CLEANUP=true
-
-# Run tests on VM
-make vm-test
-
-# Access VM shell
-make vm-shell
-
-# Reset VM to clean state
-make vm-restore
-
-# Stop and remove VM
-make vm-down
-```
-
-### Using Home Manager (User Layer)
-
-After installation, you can manage user configurations with Home Manager. The configuration is generated from a template using centralized variables:
-
-```bash
-# Switch to new configuration
-cd ~/.config/home-manager
-home-manager switch --flake .#$(whoami)
-
-# Edit centralized configuration (affects template generation)
-vim /home/runner/work/ubuntu-config/ubuntu-config/ansible/group_vars/all.yml
-
-# Re-run setup to regenerate Home Manager configuration
-ansible-playbook setup.yml --tags "home-manager"
-home-manager switch --flake .#$(whoami)
-```
-
-### Creating Project Environments (Project Layer)
-
-For project-specific environments, use the provided templates:
-
-```bash
-# Copy template to your project
-cp -r ~/Documents/project-template/* /path/to/your/project/
-cd /path/to/your/project
-
-# Enable direnv (automatic environment activation)
-direnv allow
-
-# Customize flake.nix for your project needs
-vim flake.nix
-```
-
-### Linting
-
-To ensure code quality, you can run linting checks:
-
-```bash
 make lint
+make check-ansible
+make test
 ```
 
-Fix issues automatically with:
+### Static Validation
 
-```bash
-make lint-fix
+Repository-side validation is split into three layers:
+
+- `make lint` runs the repository lint surface
+- `make check-ansible` runs playbook syntax validation
+- `make test` runs `ansible-test sanity` and `ansible-test units`
+
+### End-to-End Validation
+
+The end-to-end flow runs a real user-install-like process inside an Ubuntu VM.
+It fetches `install.sh` over HTTPS, executes the same remote-install path that a
+user runs, then verifies the resulting machine state with testinfra.
+
+```sh
+make e2e-up
+make e2e-install
+make e2e-test
+make e2e-down
 ```
 
-## Continuous Integration
+### CI
 
-This project uses GitHub Actions to test the Ansible playbook with TestInfra using both Docker containers and Lima VMs. The workflows are defined in `.github/workflows/`.
+CI uses the same repository entry points as local development:
 
-### Test Workflows
+- `make setup`
+- `make lint`
+- `make check-ansible`
+- `make test`
+- `make e2e-up`
+- `make e2e-install`
+- `make e2e-test`
 
-- `__tests-vm.yml` - Tests the setup in Lima virtual machines (matching local development)
-- `__shared-ci.yml` - Shared CI workflow that builds test images and orchestrates tests
-- `main-ci.yml` - Main CI workflow that triggers all tests
+The static and end-to-end layers stay separate in CI as well:
 
-Both local development and CI/CD use Lima VMs for consistency, ensuring that:
-
-- Local testing environment matches CI/CD exactly
-- Issues caught locally will be caught in CI/CD
-- VM configurations are shared between environments
-
-The TestInfra test suite runs in a dedicated Docker service and provides comprehensive validation using Gherkin syntax organized by domains:
-
-- **Domain Testing**: `test_system.py`, `test_development.py`, `test_browser.py`, `test_communication.py`, `test_media.py`, `test_utility.py`
-- **Layer Testing**: `test_home_manager.py`, `test_keys.py`
-- **Configuration Testing**: `test_configuration.py`, `test_shell.py`
-
-Each test file follows Gherkin scenarios to validate:
-
-- Package installation and configuration
-- Service status and functionality
-- File permissions and configurations
-- User environment setup
-- Domain-specific application installations
-
-Tests are triggered on every push to the repository and provide detailed reports on the system configuration status.
-
-## Contributing
-
-Pull requests are welcome. For major changes, please open an issue first to
-discuss what you would like to change.
-
-Please make sure to update tests as appropriate.
-
-## License
-
-[MIT](https://choosealicense.com/licenses/mit/)
+- static checks cover linting, Ansible syntax validation, and `ansible-test`
+- end-to-end validation covers the remote install path and VM-level assertions

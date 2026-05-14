@@ -1,0 +1,69 @@
+---
+- name: Install Flatpak support package
+  become: "{{ ubuntu_config_use_become }}"
+  ansible.builtin.apt:
+    name: flatpak
+    state: present
+    update_cache: true
+    cache_valid_time: "{{ ubuntu_config_resolved.system.packages.cache_valid_time }}"
+  when: ubuntu_config_resolved.desktop.flatpak.enabled
+
+- name: List configured Flatpak remotes
+  become: "{{ ubuntu_config_use_become }}"
+  ansible.builtin.command:
+    argv:
+      - flatpak
+      - remotes
+      - --system
+      - --columns=name
+  register: ubuntu_config_flatpak_remote_list
+  changed_when: false
+  when: ubuntu_config_resolved.desktop.flatpak.enabled
+
+- name: Add configured Flatpak remote
+  become: "{{ ubuntu_config_use_become }}"
+  ansible.builtin.command:
+    argv:
+      - flatpak
+      - remote-add
+      - --if-not-exists
+      - --system
+      - "{{ ubuntu_config_resolved.desktop.flatpak.remote }}"
+      - https://dl.flathub.org/repo/flathub.flatpakrepo
+  when:
+    - ubuntu_config_resolved.desktop.flatpak.enabled
+    - >-
+      ubuntu_config_resolved.desktop.flatpak.remote not in
+      (ubuntu_config_flatpak_remote_list.stdout_lines | map('trim') | list)
+
+- name: List installed Flatpak applications
+  become: "{{ ubuntu_config_use_become }}"
+  ansible.builtin.command:
+    argv:
+      - flatpak
+      - list
+      - --system
+      - --app
+      - --columns=application
+  register: ubuntu_config_flatpak_application_list
+  changed_when: false
+  when:
+    - ubuntu_config_resolved.desktop.flatpak.enabled
+    - ubuntu_config_resolved.desktop.flatpak.packages | length > 0
+
+- name: Install declared Flatpak applications
+  become: "{{ ubuntu_config_use_become }}"
+  ansible.builtin.command:
+    argv:
+      - flatpak
+      - install
+      - --system
+      - --assumeyes
+      - "{{ ubuntu_config_resolved.desktop.flatpak.remote }}"
+      - "{{ item }}"
+  loop: "{{ ubuntu_config_resolved.desktop.flatpak.packages }}"
+  loop_control:
+    label: "{{ item }}"
+  when:
+    - ubuntu_config_resolved.desktop.flatpak.enabled
+    - item not in (ubuntu_config_flatpak_application_list.stdout_lines | map('trim') | list)

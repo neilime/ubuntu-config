@@ -1,0 +1,101 @@
+---
+- name: Install system prerequisite packages
+  become: "{{ ubuntu_config_use_become }}"
+  ansible.builtin.apt:
+    name: "{{ ubuntu_config_resolved.system.packages.prerequisites }}"
+    state: present
+    update_cache: true
+    cache_valid_time: "{{ ubuntu_config_resolved.system.packages.cache_valid_time }}"
+  when: ubuntu_config_resolved.system.packages.prerequisites | length > 0
+
+- name: Check configured timezone file exists
+  become: "{{ ubuntu_config_use_become }}"
+  ansible.builtin.stat:
+    path: "/usr/share/zoneinfo/{{ ubuntu_config_resolved.system.timezone }}"
+  register: ubuntu_config_system_timezone_file
+
+- name: Assert configured timezone file exists
+  become: "{{ ubuntu_config_use_become }}"
+  ansible.builtin.assert:
+    that:
+      - ubuntu_config_system_timezone_file.stat.exists
+    fail_msg: >-
+      Configured timezone {{ ubuntu_config_resolved.system.timezone }} is not
+      available on this host.
+
+- name: Ensure configured locale is present in locale.gen
+  become: "{{ ubuntu_config_use_become }}"
+  ansible.builtin.lineinfile:
+    path: /etc/locale.gen
+    regexp: "^#?{{ ubuntu_config_resolved.system.locale }}\\s+UTF-8$"
+    line: "{{ ubuntu_config_resolved.system.locale }} UTF-8"
+    state: present
+  notify: Generate configured locale
+
+- name: Write default locale configuration
+  become: "{{ ubuntu_config_use_become }}"
+  ansible.builtin.copy:
+    dest: /etc/default/locale
+    mode: "0644"
+    content: |
+      LANG={{ ubuntu_config_resolved.system.locale }}
+      LANGUAGE={{ ubuntu_config_resolved.system.locale.split('.')[0] }}:en
+      LC_ALL={{ ubuntu_config_resolved.system.locale }}
+
+- name: Write system timezone selection
+  become: "{{ ubuntu_config_use_become }}"
+  ansible.builtin.copy:
+    dest: /etc/timezone
+    mode: "0644"
+    content: "{{ ubuntu_config_resolved.system.timezone }}\n"
+
+- name: Link system localtime
+  become: "{{ ubuntu_config_use_become }}"
+  ansible.builtin.file:
+    src: "/usr/share/zoneinfo/{{ ubuntu_config_resolved.system.timezone }}"
+    dest: /etc/localtime
+    state: link
+    force: true
+
+- name: Ensure required system directories exist
+  become: "{{ ubuntu_config_use_become }}"
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner | default('root') }}"
+    group: "{{ item.group | default('root') }}"
+    mode: "{{ item.mode | default('0755') }}"
+  loop: >-
+    {{
+      [{"path": ubuntu_config_resolved.system.state_dir}] +
+      ubuntu_config_resolved.system.directories
+    }}
+
+- name: Write managed sysctl configuration
+  become: "{{ ubuntu_config_use_become }}"
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/99-ubuntu-config.conf
+    mode: "0644"
+    content: |
+      # Managed by ubuntu-config.
+      {% for item in ubuntu_config_resolved.system.settings.sysctl | dictsort %}
+      {{ item.0 }} = {{ item.1 }}
+      {% endfor %}
+  when: ubuntu_config_resolved.system.settings.sysctl | length > 0
+  notify: Reload sysctl configuration
+
+- name: Enable configured system services
+  become: "{{ ubuntu_config_use_become }}"
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    enabled: true
+  loop: "{{ ubuntu_config_resolved.system.services.enabled }}"
+  when: ubuntu_config_resolved.system.services.enabled | length > 0
+
+- name: Disable configured system services
+  become: "{{ ubuntu_config_use_become }}"
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    enabled: false
+  loop: "{{ ubuntu_config_resolved.system.services.disabled }}"
+  when: ubuntu_config_resolved.system.services.disabled | length > 0
