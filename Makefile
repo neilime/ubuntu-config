@@ -1,9 +1,37 @@
+SHELL := /bin/bash
+
+HOST_UID := $(shell id -u)
+HOST_GID := $(shell id -g)
+VM_NAME ?= ubuntu-config-v1
+TOOLING_IMAGE ?= ubuntu-config-tooling:local
+TOOLING_IMAGE_PULL ?= 0
+
 .PHONY: help
 
 help: ## Display help
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-lint: ## Execute linting
+setup: ## Build or verify the tooling image
+	@if docker image inspect "$(TOOLING_IMAGE)" >/dev/null 2>&1; then \
+		echo "tooling image available: $(TOOLING_IMAGE)"; \
+	elif [ "$(TOOLING_IMAGE_PULL)" = "1" ]; then \
+		docker pull "$(TOOLING_IMAGE)"; \
+	else \
+		docker build --tag "$(TOOLING_IMAGE)" --file docker/tooling/Dockerfile .; \
+	fi
+
+tool-shell: ## Open a shell in the tooling container
+	@docker run --rm -it \
+		--user "$(HOST_UID):$(HOST_GID)" \
+		--env ANSIBLE_HOME=/tmp/.ansible \
+		--env HOME=/tmp \
+		--env XDG_CACHE_HOME=/tmp/.cache \
+		--volume "$(CURDIR):/workspace" \
+		--workdir /workspace \
+		"$(TOOLING_IMAGE)" \
+		bash
+
+lint: ## Run static checks inside the tooling container
 	$(call run_linter,)
 
 lint-fix: ## Execute linting and fix
@@ -14,122 +42,135 @@ lint-fix: ## Execute linting and fix
 		-e FIX_MARKDOWN=true \
 		-e FIX_MARKDOWN_PRETTIER=true \
 		-e FIX_NATURAL_LANGUAGE=true \
+		-e FIX_CSS_PRETTIER=true \
 		-e FIX_SHELL_SHFMT=true \
-		-e FIX_PYTHON_RUFF=true \
 		-e FIX_PYTHON_BLACK=true \
+		-e FIX_PYTHON_ISORT=true \
+		-e FIX_PYTHON_RUFF=true \
+		-e FIX_PYTHON_RUFF_FORMAT=true \
+		-e FIX_ANSIBLE=true \
 	)
 
-setup: ## Setup the project stack
-	$(MAKE) setup-ssh-keys
-	@docker compose up --remove-orphans --build -d
+check-ansible: ## Run syntax checks inside the tooling container
+	$(call tooling,$(check_ansible_command))
 
-down: ## Stop the project stack
-	@docker compose down --rmi all --remove-orphans
+test: ## Run ansible-test sanity and unit checks inside the tooling container
+	$(call tooling,$(test_command))
 
-.PHONY: ansible
-ansible: ## Run ansible
-	@docker compose exec ansible /home/ubuntu/.local/bin/ansible $(filter-out $@,$(MAKECMDGOALS))
+ci: setup ## Run the local CI equivalent
+	$(MAKE) lint-fix
+	$(MAKE) check-ansible
+	$(MAKE) test
 
-ansible-playbook: ## Run ansible-playbook
-	@docker compose exec ansible /home/ubuntu/.local/bin/ansible-playbook $(filter-out $@,$(MAKECMDGOALS))
-
-ansible-galaxy: ## Run ansible-galaxy
-	@docker compose exec ansible /home/ubuntu/.local/bin/ansible-galaxy $(filter-out $@,$(MAKECMDGOALS))
-
-ansible-lint: ## Run ansible-lint
-	@docker compose exec ansible /home/ubuntu/.local/bin/ansible-lint $(filter-out $@,$(MAKECMDGOALS))
-
-setup-ssh-keys: ## Setup ssh keys for VM access
-	./vm/setup-ssh-keys.sh
-
-define check_lima
-	@command -v limactl >/dev/null 2>&1 || { \
-		echo "❌ Lima is not installed. Please install Lima to use VM commands."; \
-		echo ""; \
-		echo "📖 Installation instructions: https://lima-vm.io/docs/installation/"; \
-		echo ""; \
-		exit 1; \
-	}
-	@echo "✅ Lima is installed"
-	@command -v qemu-img >/dev/null 2>&1 || { \
-		echo ""; \
-		echo "❌ qemu-img not found. Lima (qemu driver) needs qemu-img to inspect VM disk images."; \
-		echo ""; \
-		echo "Install on Debian/Ubuntu: sudo apt update && sudo apt install -y qemu-utils"; \
-		echo "Install on Fedora: sudo dnf install -y qemu-img"; \
-		echo "Install on macOS (Homebrew): brew install qemu"; \
-		echo ""; \
-		exit 1; \
-	}
-	@echo "✅ qemu-img found"
-	@command -v qemu-system-x86_64 >/dev/null 2>&1 || { \
-		echo ""; \
-		echo "❌ qemu-system-x86_64 not found. QEMU is required to run VM instances with the qemu driver."; \
-		echo ""; \
-		echo "Install on Debian/Ubuntu: sudo apt update && sudo apt install -y qemu-system-x86 qemu-kvm"; \
-		echo "Install on Fedora: sudo dnf install -y qemu-kvm"; \
-		echo "Install on macOS (Homebrew): brew install qemu"; \
-		echo ""; \
-		exit 1; \
-	}
-	@echo "✅ qemu-system-x86_64 found"
-endef
-
-vm-setup: ## Setup the VM
+e2e-up: ## Start the Lima end-to-end test VM
 	$(call check_lima)
-	$(MAKE) setup-ssh-keys
-	@limactl list ubuntu-config-test 2>/dev/null | grep -q "Running" && \
-	echo "VM is already up" || ( \
-		echo "Starting Lima VM..." && \
-		limactl start --yes --name=ubuntu-config-test vm/lima-ubuntu-desktop.yml \
-	)
+	@set -e; \
+	config_file="$(CURDIR)/e2e-tests/lima-ubuntu.yml"; \
+	runtime_config_file="$$(mktemp "/tmp/ubuntu-config-lima-XXXXXX.yml")"; \
+	sed 's|location: "."|location: "$(CURDIR)"|' "$$config_file" >"$$runtime_config_file"; \
+	attempt=0; \
+	if limactl list $(VM_NAME) 2>/dev/null | grep -q "$(VM_NAME)"; then \
+		limactl start $(VM_NAME) || true; \
+	else \
+		limactl start -y --containerd=none --name=$(VM_NAME) "$$runtime_config_file" || true; \
+	fi; \
+	rm -f "$$runtime_config_file"; \
+	until limactl shell --workdir / $(VM_NAME) true 2>/dev/null; do \
+		attempt=$$((attempt + 1)); \
+		if [ $$attempt -ge 60 ]; then \
+			echo "e2e VM did not become reachable" >&2; \
+			exit 1; \
+		fi; \
+	done
 
-vm-open: ## Open the VM (remote desktop)
-	@echo "Remote desktop not directly supported with Lima. Use 'make vm-shell' to access the VM via SSH."
-	@echo "For GUI access, consider using X11 forwarding with 'ssh -X' or VNC setup."
+e2e-install: ## Run install.sh inside the Lima end-to-end test VM
+	$(call check_lima)
+	@./e2e-tests/e2e-install.sh $(VM_NAME)
 
-vm-shell: ## Open a shell in the VM
-	@limactl shell ubuntu-config-test
+e2e-test: setup ## Run testinfra checks against the Lima end-to-end test VM
+	$(call check_lima)
+	@./e2e-tests/e2e-test.sh $(VM_NAME)
 
-vm-restore: ## Restore the VM to initial state
-	@echo "Stopping VM and restarting to restore initial state..."
-	@limactl stop ubuntu-config-test 2>/dev/null || true
-	@limactl delete ubuntu-config-test 2>/dev/null || true
-	@echo "VM reset. Use 'make vm-setup' to recreate it."
+e2e-down: ## Stop and remove the Lima end-to-end test VM
+	@limactl stop $(VM_NAME) 2>/dev/null || true
+	@limactl delete -f $(VM_NAME) 2>/dev/null || true
 
-vm-down: ## Stop the VM
-	@limactl list ubuntu-config-test 2>/dev/null | grep -q "ubuntu-config-test" && (limactl stop -f ubuntu-config-test && limactl delete ubuntu-config-test) || echo "VM is already down"
-
-vm-status: ## Show VM status
-	@echo "Lima VMs:"
-	@limactl list 2>/dev/null || echo "No Lima VMs found"
-
-vm-install-script:  ## Run install script on VM
-	@echo "Running install script inside VM..."
-	@limactl list ubuntu-config-test 2>/dev/null | grep -q "Running" || (echo "VM not running. Run 'make vm-setup' first." && exit 1)
-	@docker compose ps git >/dev/null 2>&1 || (echo "Host docker compose 'git' service not running. Start it with 'make setup' or 'docker compose up -d'" && exit 1)
-	@echo "Using .env to provide Bitwarden credentials into the VM (ensure .env is protected)"
-	@sh vm/run-install-in-vm.sh
-
-vm-test: ## Test install script result on VM
-	@echo "Running TestInfra tests on VM..."
-	@docker compose run --rm test python3 tests/run_tests.py --verbose --host="ssh://ubuntu@127.0.0.1:60022" --user="ubuntu"
+e2e-reset: e2e-down e2e-up ## Recreate the Lima end-to-end test VM
 
 define run_linter
 	DEFAULT_WORKSPACE="$(CURDIR)"; \
+	DEFAULT_USERNAME="$(shell id -un)"; \
 	LINTER_IMAGE="linter:latest"; \
 	VOLUME="$$DEFAULT_WORKSPACE:$$DEFAULT_WORKSPACE"; \
 	docker build --build-arg UID=$(shell id -u) --build-arg GID=$(shell id -g) --tag $$LINTER_IMAGE .; \
 	docker run \
-		-e ANSIBLE_REMOTE_USER=ubuntu \
-		-e USER=ubuntu \
 		-e DEFAULT_WORKSPACE="$$DEFAULT_WORKSPACE" \
+		-e LOGNAME="$$DEFAULT_USERNAME" \
 		-e FILTER_REGEX_INCLUDE="$(filter-out $@,$(MAKECMDGOALS))" \
 		-e IGNORE_GITIGNORED_FILES=true \
+		-e USER="$$DEFAULT_USERNAME" \
+		-e USERNAME="$$DEFAULT_USERNAME" \
+		-e VALIDATE_GIT_COMMITLINT=false \
+        -e VALIDATE_TYPESCRIPT_ES=false \
+        -e VALIDATE_TYPESCRIPT_PRETTIER=false \
+        -e VALIDATE_JAVASCRIPT_ES=false \
+        -e VALIDATE_TSX=false \
 		$(1) \
 		-v $$VOLUME \
 		--rm \
 		$$LINTER_IMAGE
+endef
+
+define tooling
+	@docker run --rm \
+		--user "$(HOST_UID):$(HOST_GID)" \
+		--env ANSIBLE_HOME=/tmp/.ansible \
+		--env HOME=/tmp \
+		--env XDG_CACHE_HOME=/tmp/.cache \
+		--volume "$(CURDIR):/workspace" \
+		--workdir /workspace \
+		"$(TOOLING_IMAGE)" \
+		bash -lc '$(1)'
+endef
+
+define check_ansible_command
+	if [ -n "$(REPORTS_DIR)" ]; then \
+		/workspace/ci/run-with-junit.sh \
+			"/workspace/$(REPORTS_DIR)/tests/check-ansible.junit.xml" \
+			"ansible" \
+			"syntax-check" \
+			ansible-playbook --syntax-check -i ansible/inventory.yml ansible/setup.yml; \
+	else \
+		ansible-playbook --syntax-check -i ansible/inventory.yml ansible/setup.yml; \
+	fi
+endef
+
+define test_command
+	set -e; \
+	cd ansible/collections/ansible_collections/neilime/ubuntu_config; \
+	if [ -n "$(REPORTS_DIR)" ]; then \
+		rm -rf tests/output; \
+		/workspace/ci/run-with-junit.sh \
+			"/workspace/$(REPORTS_DIR)/tests/ansible-test-sanity.junit.xml" \
+			"ansible-test" \
+			"sanity" \
+			ansible-test sanity --python 3.12; \
+		unit_exit_code=0; \
+		ansible-test units --python 3.12 || unit_exit_code=$$?; \
+		if [ -d tests/output/junit ]; then \
+			find tests/output/junit -maxdepth 1 -name '*.xml' -exec cp {} "/workspace/$(REPORTS_DIR)/tests/" \; ; \
+		fi; \
+		exit $$unit_exit_code; \
+	else \
+		ansible-test sanity --python 3.12; \
+		ansible-test units --python 3.12; \
+	fi
+endef
+
+define check_lima
+	@command -v limactl >/dev/null 2>&1 || { echo "limactl is required"; exit 1; }
+	@command -v qemu-img >/dev/null 2>&1 || { echo "qemu-img is required"; exit 1; }
+	@command -v qemu-system-x86_64 >/dev/null 2>&1 || { echo "qemu-system-x86_64 is required"; exit 1; }
 endef
 
 #############################

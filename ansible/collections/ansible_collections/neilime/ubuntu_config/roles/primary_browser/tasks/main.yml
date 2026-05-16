@@ -1,0 +1,81 @@
+---
+- name: Compute browser command prefix
+  ansible.builtin.set_fact:
+    ubuntu_config_browser_user_command_prefix: >-
+      {{
+        ansible_user_id
+        | neilime.ubuntu_config.primary_browser_command_prefix(
+            ubuntu_config_resolved.user.name
+          )
+      }}
+  changed_when: false
+  when: ubuntu_config_resolved.desktop.browser.default
+
+- name: Ensure target user XDG config directory exists
+  become: "{{ ubuntu_config_use_become }}"
+  ansible.builtin.file:
+    path: "{{ ubuntu_config_resolved.user.home }}/.config"
+    state: directory
+    owner: "{{ ubuntu_config_resolved.user.name }}"
+    group: "{{ ubuntu_config_resolved.user.name }}"
+    mode: "0755"
+  when: ubuntu_config_resolved.desktop.browser.default
+
+- name: Read current HTTP browser association
+  ansible.builtin.command:
+    argv: >-
+      {{
+        ubuntu_config_browser_user_command_prefix +
+        ['xdg-mime', 'query', 'default', 'x-scheme-handler/http']
+      }}
+  register: ubuntu_config_browser_http_default
+  changed_when: false
+  failed_when: false
+  when: ubuntu_config_resolved.desktop.browser.default
+
+- name: Read current HTTPS browser association
+  ansible.builtin.command:
+    argv: >-
+      {{
+        ubuntu_config_browser_user_command_prefix +
+        ['xdg-mime', 'query', 'default', 'x-scheme-handler/https']
+      }}
+  register: ubuntu_config_browser_https_default
+  changed_when: false
+  failed_when: false
+  when: ubuntu_config_resolved.desktop.browser.default
+
+- name: Read current HTML browser association
+  ansible.builtin.command:
+    argv: >-
+      {{
+        ubuntu_config_browser_user_command_prefix +
+        ['xdg-mime', 'query', 'default', 'text/html']
+      }}
+  register: ubuntu_config_browser_html_default
+  changed_when: false
+  failed_when: false
+  when: ubuntu_config_resolved.desktop.browser.default
+
+- name: Apply primary browser default associations
+  ansible.builtin.command:
+    argv: >-
+      {{
+        ubuntu_config_browser_user_command_prefix +
+        [
+          'xdg-mime',
+          'default',
+          'google-chrome.desktop',
+          'x-scheme-handler/http',
+          'x-scheme-handler/https',
+          'text/html',
+        ]
+      }}
+  when:
+    - ubuntu_config_resolved.desktop.browser.default
+    - >-
+      ubuntu_config_browser_http_default.stdout
+      | neilime.ubuntu_config.primary_browser_should_apply_defaults(
+          ubuntu_config_browser_https_default.stdout,
+          ubuntu_config_browser_html_default.stdout
+        )

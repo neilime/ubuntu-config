@@ -1,0 +1,104 @@
+---
+- name: Compute GNOME command prefix
+  ansible.builtin.set_fact:
+    ubuntu_config_gnome_user_command_prefix: >-
+      {{
+        ['sudo', '-H', '-u', ubuntu_config_resolved.user.name]
+        if ansible_user_id != ubuntu_config_resolved.user.name else []
+      }}
+  changed_when: false
+
+- name: Ensure target user dconf directory exists
+  ansible.builtin.command:
+    argv: >-
+      {{
+        ubuntu_config_gnome_user_command_prefix +
+        ['install', '-d', '-m', '0700', ubuntu_config_resolved.user.home ~ '/.config/dconf']
+      }}
+  changed_when: false
+
+- name: Read current GNOME color scheme preference
+  ansible.builtin.command:
+    argv: >-
+      {{
+        ubuntu_config_gnome_user_command_prefix +
+        [
+          'dbus-run-session',
+          '--',
+          'gsettings',
+          'get',
+          'org.gnome.desktop.interface',
+          'color-scheme',
+        ]
+      }}
+  register: ubuntu_config_gnome_color_scheme
+  changed_when: false
+  failed_when: false
+
+- name: Apply GNOME color scheme preference
+  ansible.builtin.command:
+    argv: >-
+      {{
+        ubuntu_config_gnome_user_command_prefix +
+        [
+          'dbus-run-session',
+          '--',
+          'gsettings',
+          'set',
+          'org.gnome.desktop.interface',
+          'color-scheme',
+          ubuntu_config_gnome_color_scheme_value,
+        ]
+      }}
+  vars:
+    ubuntu_config_gnome_color_scheme_value: >-
+      {{ 'prefer-dark' if ubuntu_config_resolved.desktop.gnome.dark_mode else 'default' }}
+  when:
+    - ubuntu_config_gnome_color_scheme.rc == 0
+    - >-
+      (ubuntu_config_gnome_color_scheme.stdout | trim) !=
+      ("'" ~ ubuntu_config_gnome_color_scheme_value ~ "'")
+
+- name: Read current GNOME favorites
+  ansible.builtin.command:
+    argv: >-
+      {{
+        ubuntu_config_gnome_user_command_prefix +
+        [
+          'dbus-run-session',
+          '--',
+          'gsettings',
+          'get',
+          'org.gnome.shell',
+          'favorite-apps',
+        ]
+      }}
+  register: ubuntu_config_gnome_favorites
+  changed_when: false
+  failed_when: false
+
+- name: Apply GNOME favorites
+  ansible.builtin.command:
+    argv: >-
+      {{
+        ubuntu_config_gnome_user_command_prefix +
+        [
+          'dbus-run-session',
+          '--',
+          'gsettings',
+          'set',
+          'org.gnome.shell',
+          'favorite-apps',
+          ubuntu_config_gnome_favorites_value,
+        ]
+      }}
+  vars:
+    ubuntu_config_gnome_favorites_value: >-
+      {%- if ubuntu_config_resolved.desktop.gnome.favorites | length == 0 -%}
+      @as []
+      {%- else -%}
+      [{{ ubuntu_config_resolved.desktop.gnome.favorites | map('regex_replace', '^(.*)$', "'\\1'") | join(', ') }}]
+      {%- endif -%}
+  when:
+    - ubuntu_config_gnome_favorites.rc == 0
+    - (ubuntu_config_gnome_favorites.stdout | trim) != ubuntu_config_gnome_favorites_value

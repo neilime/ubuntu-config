@@ -1,0 +1,10 @@
+---
+- name: Generate configured locale
+  become: true
+  ansible.builtin.command:
+    cmd: "locale-gen {{ ubuntu_config_resolved.system.locale }}"
+
+- name: Reload sysctl configuration
+  become: true
+  ansible.builtin.command:
+    cmd: sysctl --system

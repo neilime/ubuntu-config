@@ -1,0 +1,13 @@
+namespace: neilime
+name: ubuntu_config
+version: 1.0.0
+readme: README.md
+authors:
+  - Emilien
+description: Internal collection for ubuntu-config playbook helpers and tests.
+license:
+  - MIT
+repository: https://github.com/neilime/ubuntu-config
+documentation: https://github.com/neilime/ubuntu-config/blob/main/README.md
+homepage: https://github.com/neilime/ubuntu-config
+issues: https://github.com/neilime/ubuntu-config/issues
